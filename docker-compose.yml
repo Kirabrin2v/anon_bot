@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+    anon_bot:
+        build: .
+        volumes:
+        - ./txt/config.ini:/app/txt/config.ini:ro
+        - ./modules:/app/modules
+        environment:
+            NODE_ENV: production
+        restart: unless-stopped

@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "configparser": "^0.3.10",
+    "express": "^5.1.0",
+    "forever": "^4.0.3",
+    "mathjs": "^14.3.1",
+    "mineflayer": "^4.26.0",
+    "mineflayer-maps": "^2.0.2",
+    "node-telegram-bot-api": "^0.66.0",
+    "socket": "^0.14.66",
+    "socket.io-client": "^4.8.1"
+  }
+}
