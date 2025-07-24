@@ -21,7 +21,7 @@ const help = "Показывает статистику игроков в бот
 
 const structure = {
   top: {
-    "тип_статистики": {
+    "type_stat": {
       "номер_страницы": {
         _type: "int",
         _default: 1
@@ -35,23 +35,62 @@ const structure = {
   	_type: "nick",
     _optional: true,
     _description: "Ник игрока, чью сатистику нужно посмотреть"
+  },
+  add: {
+  	nick: {
+  		_type: "nick",
+  		_description: "Ник игрока, которого нужно добавить. Важен регистр"
+  	},
+  	_description: "Добавить нового игрока в белый список бота"
+  },
+  delete: {
+  	nick: {
+  		_type: "nick",
+  		_description: "Ник игрока, которого нужно удалить. Важен регистр"
+  	},
+  	_description: "Ограничить игроку доступ к боту"
+  },
+  edit: {
+  	nick: {
+  		key: {
+  			new_value: {
+  				action: {
+  					_type: "string",
+  					_default: "equare",
+  					_optional: true,
+  					_description: "Добавить новое значение к текущему(add) или сделать текущее значение равным новому(equare)"
+  				},
+  				_type: "string",
+  				_description: "Новое значение для выбранного поля"
+  			},
+  			_type: "string",
+  			_description: "Названия поля статистики"
+  		},
+  		_type: "nick",
+  		_description: "Ник игрока, статистику которого нужно отредактировать"
+  	},
+  	_description: "Редактирование статистики игрока"
   }
 }
 
 const stats_table_names = ["nickname", "rank", "messages", "cmd", "donate", "casino", "name", "warns"]
 
-const ranks = {1: "Подопытный", 2: "Стажёр", 3: "Исследователь", 4: "Учёный", 5: "Безумный учёный"}
+const ranks = {1: "Подопытный", 2: "Стажёр", 3: "Исследователь", 4: "Учёный", 5: "Безумный учёный", 6: "Химер Роковой"}
 const price_donate = [0, 40000, 100000, 500000, 1000000]
 
 var actions = []
 
+function cash_player(stat) {
+	players_stats[stat.nickname] = {"rank": stat.rank, "messages": logging.get_count_players_messages(stat.nickname),
+															"cmds": stat.cmds, "donate": stat.donate, "casino": stat.casino,
+															"name": stat.name, "credit": stat.name, "warns": stat.warns, 
+															//"rating_quotes": get_rating_quote[stat.nickname],
+															 "echo": stat.echo, "twinks": JSON.parse(stat.twinks)}
+}
+
 var players_stats = {}
 let all_elements = db.prepare(`SELECT * FROM stats`).all();
-all_elements.forEach(elem => players_stats[elem.nickname] = {"rank": elem.rank, "messages": logging.get_count_players_messages(elem.nickname),
-															"cmds": elem.cmds, "donate": elem.donate, "casino": elem.casino,
-															"name": elem.name, "credit": elem.name, "warns": elem.warns, 
-															//"rating_quotes": get_rating_quote[elem.nickname],
-															 "echo": elem.echo, "twinks": JSON.parse(elem.twinks)})
+all_elements.forEach(elem => cash_player(elem))
 
 function substitute_text(pattern, values) {
 	return pattern.replace(/\{([^}]+)\}/g, (match, key) => values[key]);
@@ -106,6 +145,32 @@ function get_tops(type_stat) {
 
 }
 
+function add_player(nickname) {
+	try {
+		if (get_stats(nickname)) {
+			return update_stats(nickname, "rank", 1)
+		}
+		const insertMessage = db.prepare(`INSERT INTO stats
+																			(nickname)
+																			VALUES (?)`)
+		insertMessage.run(nickname)
+		selectMessage = db.prepare(`SELECT * FROM stats
+																WHERE nickname = ?`)
+		player = selectMessage.one(nickname)
+		cash_player(player)
+
+		return {"is_ok": true}
+
+	} catch (error) {
+		return {"is_ok": false, "error": error.toString()}
+	}
+}
+
+function delete_player(nickname) {
+	return update_stats(nickname, "rank", 0)
+
+}
+
 function update_stats(nickname, key, new_value, action="equare") {
 	try {
 		nickname = get_main_account(nickname)
@@ -138,6 +203,7 @@ function update_stats(nickname, key, new_value, action="equare") {
 			update_stats(nickname, "rank", rank)
 			
 		}
+		return {"is_ok": true}
 
 	} catch (error) {
 		actions.push({
@@ -149,6 +215,7 @@ function update_stats(nickname, key, new_value, action="equare") {
 				args: [nickname, key, new_value, action]
 			}	
 		})
+		return {"is_ok": false, "error": error.toString()}
 	}
 }
 
@@ -186,73 +253,32 @@ function payment_processing(nick, cash, currency, reason, price_TCA) {
 		if (currency == "TCA") cash *= price_TCA;
 		console.log(`Получено ${cash} сурвингов`)
 		update_stats(nick, key="donate", new_value=cash, "add")
-		console.log("Обновилось")
 		if (cash >= 10000) {
 			let phrase = substitute_text(random_choice(phrases["donate"]), {"name": nick, "cash": cash})
 			actions.push({"type": "answ", "content": {"message": phrase}})
 		}
 		return {"used": true}
 	} catch (error) {
-		console.log("Сломалось", error)
 		actions.push({"type": "error", "content": {"date_time": new Date(), "module_name": module_name, "error": error,
 			"args": [nick, cash, currency, reason, price_TCA],  "sender": nick}})
 		return {"used": false}
 	}
 }
 
-function cmd_processing (sender, args, parameters) {
-	try {
+function cmd_processing (sender, args, parameters, valid_args) {
 		const seniors = parameters.seniors
+		const rank = parameters.rank_sender
+		args = valid_args
 		let send_in_private_message = true;
-		if (args[0] == "help") {
-			answ = "Возможные аргументы: [*nickname* - покажет ста-ку игрока в боте; top - покажет топ по указанной ста-ке]";
-			
-		} else if (args[0] == "edit" && seniors.includes(sender)) {
-			if (args.length >= 4) {
-				let [nickname, key, new_value, action] = args.slice(1)
-				new_value = Number(new_value)
-				if (!new_value) {
-					new_value = args[3]
-				}
-				console.log(nickname, key,typeof new_value, [action])
-				if (nickname && key && new_value) {
-					update_stats(nickname, key, new_value, action)
-				} else {
-					answ = `Неверно введены аргументы: nickname: ${nickname}, key: ${key}, new_value: ${new_value}`
-				}
-			} 
-			
-		} else if (args[0] == "top") {
-			if (args[0] == "help" || args.length == 1) {
-				answ = "Возможные аргументы: [rank, messages, cmds, donate, casino] [номер страницы]"
-				send_in_private_message = true;
-				
-			} else if (args.length >= 2) {
-				let [type_stat, num_page] = args.slice(1)
-				if (stats_table_names.includes(type_stat)) {
-					if (num_page) {
-						num_page = Number(num_page);
-					} else {
-						num_page = 1;
-					}
-					let top_stats = get_tops(type_stat);
-
-					answ = text.stats_split_into_pages(get_tops(type_stat), nums_in_page=5, num_page=num_page)["answ"]
-				} else {
-					answ = "Статистики данного типа не существует"
-				}
-				}
-			
-		} else {
+		if (!args[0] || args[0].name == "nick") {
 			let nickname;
-			if (args.length > 0) {
-				nickname = args[0]
+			if (args[0]) {
+				nickname = args[0].value
 			} else {
 				nickname = sender
 			}
 			if (get_stats(nickname)) {
 				send_in_private_message = false;
-				console.log(get_stats(nickname))
 				answ = Object.entries(get_stats(nickname)).map(([key, value]) => {
 					[key, value] = stats_to_text(key, value)
 					if (key && value) {
@@ -263,11 +289,64 @@ function cmd_processing (sender, args, parameters) {
 			} else {
 				answ = `Игрок не найден. Убедитесь, что ник указан в верном регистре`;
 			}
-		}
+
+		} else if (args[0].name == "edit" && seniors.includes(sender)) {
+			let nickname = args[1].value
+			let key = args[2].value
+			let new_value = args[3].value
+			let action = args[4].value
+			if (Number(new_value)) {
+				new_value = Number(new_value)
+			}
+			console.log(nickname, key,typeof new_value, [action])
+			if (nickname && key && new_value) {
+				let status = update_stats(nickname, key, new_value, action)
+				if (status.is_ok) {
+					answ = "Данные успешно обновлены"
+				} else {
+					answ = status.error
+				}
+			} else {
+				answ = `Неверно введены аргументы: nickname: ${nickname}, key: ${key}, new_value: ${new_value}`
+			}
+			
+		} else if (args[0].name == "top") {
+			// if (args[0] == "help" || args.length == 1) {
+			// 	answ = "Возможные аргументы: [rank, messages, cmds, donate, casino] [номер страницы]"
+			// 	send_in_private_message = true;
+			let type_stat = args[1].value
+			let num_page = args[2].value
+			if (stats_table_names.includes(type_stat)) {
+				num_page = Number(num_page);
+
+				let top_stats = get_tops(type_stat);
+
+				answ = text.stats_split_into_pages(get_tops(type_stat), nums_in_page=5, num_page=num_page)["answ"]
+			} else {
+				answ = "Статистики данного типа не существует"
+			}
+				
+			
+		} else if (args[0].name == "add" && rank >= 6) {
+			let nickname = args[1].value
+			status = add_player(nickname)
+			if (status.is_ok) {
+				answ = "Игрок успешно добавлен"
+			} else {
+				answ = status.error
+			}
+
+		} else if (args[0].name == "delete" && rank >= 6) {
+			let nickname = args[1].value
+			status = delete_player(nickname)
+			if (status.is_ok) {
+				answ = "Игрок успешно удалён"
+			} else {
+				answ = status.error
+			}
+
+		} 
 		return {"type": "answ", "content": {"recipient": sender, "message": answ, "send_in_private_message": send_in_private_message}}
-	} catch (error) {
-		return {"type": "error", "content": {"date_time": new Date(), "module_name": module_name, "error": error, "args": args, "sender": sender}}
-	} 
 }
 
 function get_actions() {
