@@ -1,16 +1,16 @@
 BEGIN TRANSACTION;
 CREATE TABLE IF NOT EXISTS "stats" (
 	"nickname"	TEXT,
-	"rank"	INTEGER,
-	"messages"	INTEGER,
-	"cmds"	INTEGER,
-	"donate"	INTEGER,
-	"casino"	INTEGER,
+	"rank"	INTEGER DEFAULT 1,
+	"messages"	INTEGER DEFAULT 0,
+	"cmds"	INTEGER DEFAULT 0,
+	"donate"	INTEGER DEFAULT 0,
+	"casino"	INTEGER DEFAULT 0,
 	"name"	TEXT,
-	"credit"	INTEGER,
-	"warns"	INTEGER,
-	"echo"	INTEGER,
-	"twinks"	TEXT,
+	"credit"	INTEGER DEFAULT 0,
+	"warns"	INTEGER DEFAULT 0,
+	"echo"	INTEGER DEFAULT 1,
+	"twinks"	TEXT DEFAULT '[]',
 	PRIMARY KEY("nickname")
 );
 COMMIT;
