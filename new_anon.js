@@ -9,7 +9,7 @@ const express = require("express");
 
 const bot_username = "anon_bot";
 const bot = mineflayer.createBot({
-    host: "proxy.teslacraft.org",
+    host: "mnrt.teslacraft.org",
     port: "25565",
     maps_outputDir: "img/",
     maps_saveToFile: false,
@@ -54,9 +54,10 @@ class ModuleManager {
 	async load_modules(modules_info) {
 		const load_promises = modules_info.map(async (module_info) => {
 			const path = module_info[0]
+			let parameters, mod;
 			try {
-				const parameters = module_info[1]
-				const mod = require(path)
+				parameters = module_info[1]
+				mod = require(path)
 				//console.log("реквайр", mod)
 				if (mod.initialize) {
 					mod.initialize(parameters)
@@ -69,7 +70,16 @@ class ModuleManager {
 				console.log(`${mod.module_name} успешно импортирован\n`)
 			
 			} catch (error) {
+				if (!mod) mod = {}
 				console.log(`При импортировании модуля '${path}' возникла ошибка: ${error}`)
+				actions_processing({
+									type: "error",
+									content: {
+										date_time: new Date(),
+										module_name: mod.module_name || path,
+										error: error,
+									}
+								})
 			}
 		})
 		await Promise.all(load_promises)
@@ -96,7 +106,7 @@ class ModuleManager {
 										sender: initiator
 									}
 								})
-								//console.error(`[${requester}] Ошибка при вызове ${prop} из модуля ${moduleName}:`, e)
+								console.error(`[${initiator}] Ошибка при вызове ${prop} из модуля ${moduleName}:`, e)
 							}
 						}
 					} else {
@@ -255,8 +265,8 @@ const tesla_ranks = [undefined, "Рядовой", "Ефрейтор", "Мл. С�
 
 var location_bot;
 
-const reg_bal_survings = String.raw`Ваш баланс сурвингов: \$([0-9,]{1,10}\.[0-9]{0,2})`
-const reg_bal_TCA = String.raw`Баланс баллов TCA: ([0-9]{1,5})`
+const reg_bal_survings = new RegExp(String.raw`^Ваш баланс сурвингов: \$([0-9,]{1,10}\.[0-9]{0,2})`)
+const reg_bal_TCA = new RegExp(String.raw`^Баланс баллов TCA: ([0-9]{1,5})`)
 
 const reg_nickname = String.raw`([А-яA-Za-z0-9~!@#$^*\-_=+ёЁ]{1,16})`;
 const reg_message = String.raw`(.{1,256})`;
@@ -264,7 +274,7 @@ const reg_me_send = new RegExp(`^\\[${reg_nickname} -> Мне\\] ${reg_message}`
 const reg_i_send = new RegExp(`^\\[Я -> ${reg_nickname}\\] ${reg_message}`)
 
 const reg_encrypted_ip = String.raw`[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}`;
-const reg_lookup = new RegExp(`ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ\n ` +
+const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ\n ` +
 "Статус: (.*)\n " +
 "Звание: (?:\\[([А-яA-z\. ]*)\\].*){0,1}\n" +
 "(?: Клан:   (.*)\n){0,1}\n " +
@@ -287,10 +297,10 @@ const reg_vic_fast = String.raw`\[Викторина\] Напечатайте п
 const reg_vic_example = String.raw`\[Викторина\] Решите первым пример (.*), чтобы выиграть!`
 const reg_vic_quest = String.raw`\[Викторина\] (.*)`
 
-const reg_vic_question = new RegExp("\\[Викторина\\] Для ответа используйте команду /Answ <Ответ>\n" +
+const reg_vic_question = new RegExp("^\\[Викторина\\] Для ответа используйте команду /Answ <Ответ>\n" +
 									`(?:(?:${reg_vic_anagrams})|(?:${reg_vic_fast})|(?:${reg_vic_example})|(?:${reg_vic_quest}))`)
 
-const reg_vic_answ = new RegExp("[Викторина] Для ответа используйте команду /Answ <Ответ>\n" +
+const reg_vic_answ = new RegExp("^[Викторина] Для ответа используйте команду /Answ <Ответ>\n" +
 								"[Викторина] Время для ответа закончилось. Правильный ответ: (.*)")
 
 const reg_tryme_info = new RegExp("^\\*{61}\n" + 
@@ -301,16 +311,16 @@ String.raw`Прошло времени до ответа: ([0-9]{1,3}\.[0-9]{1,2
 String.raw`До следущего вопроса: [0-9]{1,3}\.[0-9]{1,2} sec\n` +
 String.raw`Номер вопроса: ([0-9]|none)\n` +
 String.raw`Вопрос: (.*)\n` +
-"\\*{61}$")
+"\\*{61}")
 
-const reg_seen = new RegExp(`${reg_nickname} (Онлайн|Офлайн) в течение ((?:(?:[0-9]* дн\\. )?[0-9]{2}:[0-9]{2}(?::[0-9]{2})?)|(?:[0-9]{1,2} с))\\n` + 
+const reg_seen = new RegExp(`^${reg_nickname} (Онлайн|Офлайн) в течение ((?:(?:[0-9]* дн\\. )?[0-9]{2}:[0-9]{2}(?::[0-9]{2})?)|(?:[0-9]{1,2} с))\\n` + 
 	`Сервер (.*)\\. Координаты: Мир [^ ,.]*, (\\-?[0-9]+), (\\-?[0-9]+), (\\-?[0-9]+)`)
 
 const reg_survings_send = new RegExp(`^\\$([0-9,]*\\.[0-9]*) отправлено игроку ${reg_nickname}`)
 const reg_TCA_send = new RegExp(`^Вы перевели ([0-9]*) балл(?:а||ов){1,2} TCA игроку ${reg_nickname}`)
 
 const reg_log_line = String.raw`\- ([0-9]{2}\.[0-9]{2}\.[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}) (\+|\-)([0-9]{1,5}) TCA \(([0-9]{1,5}) TCA\) Передача баллов (?:от игрока|игроку) ${reg_nickname}`
-const reg_tca_accept = new RegExp(`Лог последних операций с баллами TCA:\n` +
+const reg_tca_accept = new RegExp(`^Лог последних операций с баллами TCA:\n` +
 								(reg_log_line + "\n").repeat(15).slice(0, -1)
 								)
 
@@ -322,6 +332,29 @@ const reg_warn = new RegExp(`^${reg_nickname} был предупреждён б
 const reg_ban = new RegExp(`^${reg_nickname} был забанен на (.*) блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
 const reg_mute = new RegExp(`^Выдан временный мут игроку ${reg_nickname} на (.*) блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
 const reg_kick = new RegExp(`^${reg_nickname} был кикнут с сервера блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
+
+regexes = [
+	reg_bal_survings,
+	reg_bal_TCA,
+
+	reg_lookup,
+
+	reg_vic_question,
+	reg_vic_answ,
+	reg_tryme_info,
+
+	reg_seen,
+
+	reg_survings_send,
+	reg_TCA_send,
+	reg_tca_accept,
+	reg_survings_accept,
+
+	reg_warn,
+	reg_ban,
+	reg_mute,
+	reg_kick
+]
 
 port_keyboard_event = config.get("VARIABLES", "port_keyboard_event")
 const app = express();
@@ -832,7 +865,6 @@ bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
 			}
 
 			let rank = modules.call_module("stats").get_stats(criminal_nick, "rank")
-			console.log(rank)
 			if (rank == 5) rank = 0;
 			if (!rank) rank = 0;
 
@@ -850,7 +882,7 @@ bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
 // })
 
 let time_last_server_message = 0
-let combine_server_message = "" // Объединение одного логического сообщения, разбитого на разные строки
+let combine_server_message = [] // Объединение одного логического сообщения, разбитого на разные строки
 let reset_wait_next_message;
 
 bot.on('messagestr', (message, sender, message_json) => {
@@ -883,8 +915,12 @@ bot.on('messagestr', (message, sender, message_json) => {
  		console.log(`[${type_chat}]` + "\033[32m " + sender + ":\033[33m " + message + "\033[0m")
 
 		let rank_sender = modules.call_module("stats").get_stats(sender, "rank")
+		if (seniors.includes(sender)) {
+			rank_sender = 6;
+		}
 		if (!rank_sender) {
 			rank_sender = 0;
+			
 		}
 		modules.call_module("telegram").server_message_processing(sender, message, raw_message, new Date())
 
@@ -1013,31 +1049,191 @@ bot.on('messagestr', (message, sender, message_json) => {
 		}
 
 		reset_wait_next_message = setTimeout(() => {
-			processing_server_message(sender, combine_server_message.slice(0, -1), message_json)
-			combine_server_message = ""
-		}, 50)
+			if (combine_server_message.length == 0) return;
+			processing_server_message(sender, combine_server_message.join("\n"), message_json)
+			combine_server_message = []
+			// processing_server_message(sender, combine_server_message.join("\n"), message_json)
+		}, 80)
 
-		if (delta_time < 11) {
-			combine_server_message += message + "\n"
+		if (delta_time < 70 || combine_server_message.length == 0) {
+			if (now_reg) {
+				reg_lines = now_reg.source.split("\n")
+				reg_line = regex_lines[now_reg_index]
+				if (message.match(reg_line)) {
+					if (now_reg_index+1 == reg_lines.length) {
+						processing_server_message(sender, combine_server_message.join("\n"), message_json)
+						combine_server_message = []
+						now_reg = undefined;
+						now_reg_index = 0;
+					} else {
+						combine_server_message.push(message)
+						now_reg += 1;
+					}
+				} else {
+					processing_server_message(sender, combine_server_message.join("\n"), message_json)
+					combine_server_message = [message]
+					now_reg_index = 0;
+					now_reg = undefined;
+				}
+			} else {
+				let is_matched = false;
+				for (let i = 0; i < regexes.length; i++) {
+					regex_lines = regexes[i].source.split("\n")
+					let reg_line = regex_lines[0]
+					if (message.match(reg_line)) {
+						if (combine_server_message.length != 0) {
+							processing_server_message(sender, combine_server_message.join("\n"), message_json)
+						}
+						if (regex_lines.length == 1) {
+							processing_server_message(sender, message, message_json)
+						} else {
+							combine_server_message.push(message)
+							now_reg = regexes[i]
+							now_reg_index = 1;
+						}
+						is_matched = true;
+					}
+				}
+				if (!is_matched) {
+					combine_server_message.push(message)
+				}
+			}
+
 			return;
 
 		} else {
-			[message, combine_server_message] = [combine_server_message, message]
-			combine_server_message += "\n"
+			combine_server_message.push(message)
+			processing_server_message(sender, combine_server_message.join("\n"), message_json)
+			combine_server_message = []
+
 			//console.log("Цельное сообщение:", [message])
 			//combine_server_message = message
 		}
-		if (message == "") return;
-		processing_server_message(sender, message.slice(0, -1), message_json)
+		// if (combine_server_message.length == 0) return;
+		// processing_server_message(sender, combine_server_message.join("\n"), message_json)
 
 	}
 })
+let now_reg_index = 0;
+let now_reg;
+
+
+function divide_messages(sender, messages, message_json) {
+	if (messages[0].includes("Отправил Вам")) {
+		processing_server_message(sender, messages[0]+"\nПричина: Не указано", undefined)
+	} else if (messages[0].includes("сурв")) {
+		processing_server_message(sender, messages[0], undefined)
+	} else return;
+	// console.log(messages)
+	raw_messages = Array.from(messages)
+	for (let i = 0; i < regexes.length; i++) {
+		regex = regexes[i]
+		// console.log("regex", regex, regex.source, regex.toString())
+		for (let s = 0; s < regex.source.split("\n").length; s++) {
+			reg_line = regex.source.split("\n")[s]
+			is_matched = true;
+			let matched;
+			let last_msg_index = -1;
+			for (let j = 0; j < messages.length; j++) {
+				let msg = messages[j]
+				matched = msg.match(reg_line)
+				if (!matched) {
+					last_msg_index = j-1
+					break;
+				}
+			}
+			if (last_msg_index != -1) {
+				confirmed_message = messages.slice(0, last_msg_index+1).join("\n")
+				messages = messages.slice(last_msg_index+1)
+				console.log("Подтверждённое сообщение", confirmed_message)
+				processing_server_message(sender, confirmed_message, message_json)
+			}
+
+		}
+		// console.log([regex])
+		// let index_split_reg = 0;
+		// for (let j = 0; j < messages.length; j++) {
+		// 	if (messages.slice(j).length < regex.split("\n")) continue;
+		// 	let is_matched = true;
+		// 	// console.log(j, messages)
+		// 	msg = messages[j]
+		// 	matched = msg.match(regex)
+		// 	if (msg.includes("Причина:")) console.log(msg, new Date().getTime() - time_last_server_message)
+
+		// 	if (matched) {
+		// 		is_matched = true;
+		// 		processing_server_message(sender, msg, message_json)
+		// 		break;
+		// 	} else {
+
+		// 		raw_messages[j] = undefined
+		// 	}
+		// }
+	}
+	raw_messages = raw_messages.filter(msg => msg != undefined)
+	processing_server_message(sender, raw_messages.join("\n"), message_json)
+}
+
+// function divide_messages(sender, messages, message_json) {
+// 	// console.log(messages)
+// 	raw_messages = Array.from(messages)
+// 	for (let i = 0; i < regexes.length; i++) {
+// 		regex = regexes[i]
+		
+// 		for (let s = 0; s < regex.source.split("\n").length; s++) {
+// 			reg_line = regex.source.split("\n")[s]
+// 			is_matched = true;
+// 			let matched;
+// 			let last_msg_index = -1;
+// 			for (let j = 0; j < messages.length; j++) {
+// 				let msg = messages[j]
+// 				matched = msg.match(reg_line)
+// 				if (msg.includes("Herobrin2v")) console.log(msg, regex)
+// 				if (!matched) {
+// 					last_msg_index = j-1
+// 					break;
+// 				}
+// 			}
+// 			console.log("Ласт индекс", last_msg_index)
+// 			if (last_msg_index != -1) {
+// 				confirmed_message = messages.slice(0, last_msg_index+1).join("\n")
+// 				messages = messages.slice(last_msg_index+1)
+// 				console.log("Подтверждённое сообщение", confirmed_message)
+// 				processing_server_message(sender, confirmed_message, message_json)
+// 				break;
+// 			}
+
+// 		}
+// 		// console.log([regex])
+// 		// let index_split_reg = 0;
+// 		// for (let j = 0; j < messages.length; j++) {
+// 		// 	if (messages.slice(j).length < regex.split("\n")) continue;
+// 		// 	let is_matched = true;
+// 		// 	// console.log(j, messages)
+// 		// 	msg = messages[j]
+// 		// 	matched = msg.match(regex)
+// 		// 	if (msg.includes("Причина:")) console.log(msg, new Date().getTime() - time_last_server_message)
+
+// 		// 	if (matched) {
+// 		// 		is_matched = true;
+// 		// 		processing_server_message(sender, msg, message_json)
+// 		// 		break;
+// 		// 	} else {
+
+// 		// 		raw_messages[j] = undefined
+// 		// 	}
+// 		// }
+// 	}
+// 	raw_messages = raw_messages.filter(msg => msg != undefined)
+// 	processing_server_message(sender, raw_messages.join("\n"), message_json)
+// }
 
 function processing_server_message(sender, message, message_json) {
 	let wait_cmd;
 	let now_cmd;
 	let values = {}
 	let count_args = 1;
+	// console.log("Серверное сообщение", [message], new Date().getTime() - time_last_server_message)
 	if (queue_waiting_data["cmd"].length != 0) {
 		wait_cmd = queue_waiting_data["cmd"][0].cmd
 		//wait_data_processing("cmd", {"server_answ": message})
@@ -1336,8 +1532,56 @@ bot.on('playerJoined', (player) => {
 	modules.call_module("detector").player_joined_event(player.username)
 })
 
+// bot.on('entitySpawn', (entity) => {
+// 	if (entity.name == "snowball") {
+// 		let players_and_distances = get_distance_to_players(start_point=entity.position)
+// 		if (players_and_distances.length == 0) return; 
+// 		let [nick, distance] = players_and_distances[0];
+// 		if (distance > 2) return;
+// 		let gamemode = bot.players[nick].gamemode
+// 		if (throw_snow[nick]) {
+// 			let count_snow;
+// 			if (gamemode == 0) {
+// 				count_snow = throw_snow[nick][0]
+// 				if (count_snow % 100 == 0) {
+// 					send_pay(nick, 50, reason=`Вы кинули ${count_snow}-й снежок в гм 0!`)
+// 				}
+// 				throw_snow[nick][0]++;
+// 			} else {
+// 				count_snow = throw_snow[nick][1]
+// 				if (count_snow % 100 == 0) {
+// 					send_pay(nick, 5, reason=`Вы кинули ${count_snow}-й снежок в гм 1!`)
+// 				}
+// 				throw_snow[nick][1]++;
+// 			}
+
+// 		} else {
+// 				throw_snow[nick] = [1, 1]; //Инициализация начальных значений
+// 		}
+
+// 	} else if (entity.displayName == "Thrown egg") {
+
+// 		let egg_id = entity.id;
+// 		//console.log("egg id", egg_id)
+// 		if (egg_id % 200 == 0) {
+// 			let players_and_distances = get_distance_to_players(start_point=entity.position)
+// 			if (players_and_distances.length == 0) return; 
+// 			let [nick, distance] = players_and_distances[0];
+// 			send_pay(nick, 0.01, reason=`Зачем вы кидаетесь ${entity.name}? Новый год ведь, лучше снежками бросайтесь!`)
+// 		}
+	
+// 	} else if (entity.type == "player" && seniors.includes(entity.username)){
+// 		console.log("Появился", entity.username)
+// 		seniors_online = true;
+// 	}
+
+// })
+
 bot.on('entitySpawn', (entity) => {
-	if (entity.type == "player") {
+	// console.log(entity.name, entity.displayName)
+	if (entity.name == "snowball" && false) {
+		modules.call_module("")
+	} else if (entity.type == "player") {
 		const nick = entity.username
 		if (bot.players[nick]) {
 			const url = bot.players[nick].skinData.url
