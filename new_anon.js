@@ -106,7 +106,7 @@ class ModuleManager {
 										sender: initiator
 									}
 								})
-								console.error(`[${initiator}] Ошибка при вызове ${prop} из модуля ${moduleName}:`, e)
+								console.error(`[${initiator}] Ошибка при вызове ${prop} из модуля ${module_name}:`, error)
 							}
 						}
 					} else {
@@ -135,6 +135,8 @@ class ModuleManager {
 const modules = new ModuleManager()
 modules.load_modules([
 	["./modules/text/text.js"],
+
+	["./modules/choice/choice.js"],
 
 	["./modules/detector/detector.js"],
 
@@ -553,7 +555,7 @@ function get_players_on_loc() {
 	return players_on_loc
 }
 
-function get_players_and_distance(start_point=bot.entity.position, ignore_bot=true) {
+function get_players_and_distance(start_point=bot.entity.position, max_distance=512, ignore_bot=true) {
 
 	let players = Object.entries(bot.players)
 	let players_and_distances = players.map(([nick, info]) => {
@@ -561,8 +563,9 @@ function get_players_and_distance(start_point=bot.entity.position, ignore_bot=tr
 		let entity = info.entity;
 		if (username.match(reg_nickname) && entity && (!ignore_bot || username != bot_username)) {
 			let distance = Number(start_point.distanceTo(entity.position).toFixed(2));
-			
-			return [username, distance];
+			if (distance <= max_distance) {
+				return [username, distance];
+			}
 		}
 	})
 	players_and_distances = players_and_distances.filter((value) => value !== undefined)
@@ -1579,6 +1582,10 @@ bot.on('playerJoined', (player) => {
 
 bot.on('entitySpawn', (entity) => {
 	// console.log(entity.name, entity.displayName)
+	if (entity.displayName && entity.displayName.includes("Thrown")) {
+		let object_id = entity.id
+		
+	}
 	if (entity.name == "snowball" && false) {
 		modules.call_module("")
 	} else if (entity.type == "player") {
@@ -1591,6 +1598,17 @@ bot.on('entitySpawn', (entity) => {
 		}
 
 	}
+})
+
+bot.on('entityGone', (entity) => {
+	setTimeout(() => {
+
+	if (entity.displayName && entity.displayName.includes("Thrown")) {
+		let object_id = entity.id
+		console.log(`Летящий объект с id=${object_id} пропал на координатах: ${entity.position}`)
+		console.log("Игроки рядом:", get_players_and_distance(start_point=entity.position, max_distance=2, ignore_bot=false))
+	}
+	}, 10)
 })
 
 function module_connect(module_recipient, module_sender, json_cmd, access_lvl) {
@@ -1688,6 +1706,13 @@ function check_return_detector() {
 	let actions = modules.call_module("detector").get_actions()
 	actions_processing(actions)
 }
+
+function check_return_choice() {
+	let actions = modules.call_module("выбери").get_actions()
+	actions_processing(actions)
+}
+
+setInterval(check_return_choice, 500)
 
 setInterval(check_return_detector, 500)
 
