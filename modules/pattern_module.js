@@ -3,32 +3,20 @@ const help = ""
 
 const structure = {}
 
-function cmd_processing(sender, args) {
-	try {
-		let answ;
-		if (args.length == 0 || args[0] == "help") {
-			answ = ""
+let actions = [] 
 
-		}
-		if (answ) {
-			return {
-				type: "answ",
-				content: {
-					message: answ,
-					recipient: sender
-				}
+function cmd_processing(sender, args, cmd_parameters, valid_args) {
+	args = valid_args
+	let answ;
+
+	if (answ) {
+		return {
+			type: "answ",
+			content: {
+				message: answ,
+				recipient: sender
 			}
 		}
-
-	} catch (error) {
-		return {
-			type: "error",
-			content: {
-				date_time: new Date(),
-				module_name: module_name,
-				error: error,
-				args: args, 
-				sender: sender}}
 	}
 }
 
@@ -40,4 +28,8 @@ function diagnostic_eval (eval_expression) {
 	}
 }
 
-module.exports = {cmd_processing, diagnostic_eval, structure, help}
+function get_actions() {
+	return actions.splice(0)
+}
+
+module.exports = {module_name, cmd_processing, diagnostic_eval, structure, help}
