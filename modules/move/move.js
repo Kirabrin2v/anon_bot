@@ -15,6 +15,7 @@ function initialize(constants) {
 	bot = constants.bot
 }
 
+
 const cmd_access = {"ручуп": [
 	{},
 	{},
@@ -26,6 +27,7 @@ const cmd_access = {"ручуп": [
 
 let actions = []
 
+let tracker_player = {}
 let control_player = {}
 
 function control_head(delta_yaw, delta_pitch) {
@@ -49,6 +51,13 @@ function repeat_head_position(nickname) {
 		const yaw = bot.players[nickname].entity.yaw
 		const pitch = bot.players[nickname].entity.pitch
 		bot.look(yaw, pitch, true)
+	}
+}
+
+function track_player(nickname) {
+	if (bot.players[nickname] && bot.players[nickname].entity) {
+		const position = bot.players[nickname].entity.position
+		bot.lookAt(position)
 	}
 }
 
@@ -236,6 +245,22 @@ function control_head_with_pixels(delta_x, delta_y) {
 	control_head(yaw, pitch)
 }
 
+
+function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) {
+	if (json_cmd.type == "request") {
+		let answ;
+		const cmd = json_cmd.cmd;
+		const args = json_cmd.args;
+		if (cmd == "look") {
+			nickname = args[0].value
+			if (tracker_player.interval_check) {
+				clearInterval(tracker_player.interval_check)
+			}
+			tracker_player.interval_check = setInterval(() => track_player(nickname), 5)
+		}
+	}
+}
+
 function get_actions() {
 	return actions.splice(0)
 }
@@ -248,7 +273,7 @@ function diagnostic_eval (eval_expression) {
 	}
 }
 
-module.exports = {module_name, initialize, diagnostic_eval, control_head, control_head_with_pixels, control_state_with_keyboard, cmd_access, cmd_processing, get_actions, help, structure}
+module.exports = {module_name, initialize, diagnostic_eval, control_head, control_head_with_pixels, control_state_with_keyboard, cmd_access, cmd_processing, module_dialogue, get_actions, help, structure}
 
 
 
@@ -258,29 +283,3 @@ module.exports = {module_name, initialize, diagnostic_eval, control_head, contro
 
 
 
-
-
-// function check_loc_bot() {
-// 	let tablist = bot.tablist.header.text.split("\n")
-// 	if (tablist.length >= 3) {
-// 		let new_location_bot = tablist[2].split("» §b§l")[1].split(" §e§l«")[0];
-// 		if (new_location_bot != location_bot) {
-// 			if (location_bot) {
-// 				console.log(`Бот переместился с ${location_bot} на ${new_location_bot}`)
-// 				if (!location_bot.includes("Классическое выживание") && new_location_bot.includes("Классическое выживание")) {
-// 					if (!timer_check_surv || timer_check_surv._destroyed) {
-// 						timer_check_surv = setTimeout(() => {bot.chat("/bal")}, interval_check_surv)
-// 					}
-// 				}
-// 				location_bot = new_location_bot;
-
-// 			} else {
-// 				location_bot = new_location_bot;
-// 				console.log(`Бот появился на локации ${new_location_bot}`)
-// 				//tg.start()
-// 			}
-// 		} else {
-// 			location__bot = tablist.join(" ");
-// 		}
-// 	}
-// }
