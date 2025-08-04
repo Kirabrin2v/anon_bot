@@ -156,7 +156,7 @@ function add_player(nickname) {
 		insertMessage.run(nickname)
 		selectMessage = db.prepare(`SELECT * FROM stats
 																WHERE nickname = ?`)
-		player = selectMessage.one(nickname)
+		player = selectMessage.all(nickname)[0]
 		cash_player(player)
 
 		return {"is_ok": true}
