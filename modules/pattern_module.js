@@ -32,4 +32,4 @@ function get_actions() {
 	return actions.splice(0)
 }
 
-module.exports = {module_name, cmd_processing, diagnostic_eval, structure, help}
+module.exports = {module_name, get_actions, cmd_processing, diagnostic_eval, structure, help}
