@@ -22,15 +22,28 @@ function validate_command(module_name, inputArgs) {
       return result;
     }
     // 1. Если аргумент — это имя ветки (без _type), переходим внутрь
-    if (arg in currentStructure && !currentStructure[arg]._type) {
+    let is_matched = arg in currentStructure && !currentStructure[arg]._type;
+    if (!is_matched) {
+      const keys = Object.keys(currentStructure)
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i]
+        if (currentStructure[key]._aliases && currentStructure[key]._aliases.includes(arg)) {
+          is_matched = true;
+          currentStructure = currentStructure[key];
+          break;
+        }
+      }
+    } else {
+      currentStructure = currentStructure[arg];
+    }
+    if (is_matched) {
       //const fullName = [...path, arg].join('.');
-      if (currentStructure[arg].hasOwnProperty("_default")) {
-        result.args.push({ name: arg, value: !currentStructure[arg]["_default"] });
+      if (currentStructure.hasOwnProperty("_default")) {
+        result.args.push({ name: arg, value: !currentStructure["_default"] });
       } else {
         result.args.push({ name: arg, value: true })
       }
       usedArgs.add(arg);
-      currentStructure = currentStructure[arg];
       path.push(arg);
       i++;
       continue;

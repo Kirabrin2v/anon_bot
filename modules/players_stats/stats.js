@@ -29,6 +29,7 @@ const structure = {
       _type: "string",
       _description: "Вид статистики, по которому нужно сгенерировать топ. Доступные: rank, messages, cmds, donate, casino"
     },
+    _aliases: ["топ"],
     _description: "Покажет топ по выбранному типу статистики"
   },
   nick: {
@@ -41,6 +42,7 @@ const structure = {
   		_type: "nick",
   		_description: "Ник игрока, которого нужно добавить. Важен регистр"
   	},
+  	_aliases: ["добавить", "+"],
   	_description: "Добавить нового игрока в белый список бота"
   },
   delete: {
@@ -48,6 +50,7 @@ const structure = {
   		_type: "nick",
   		_description: "Ник игрока, которого нужно удалить. Важен регистр"
   	},
+  	_aliases: ["del", "remove", "удалить", "-"],
   	_description: "Ограничить игроку доступ к боту"
   },
   edit: {
@@ -69,6 +72,7 @@ const structure = {
   		_type: "nick",
   		_description: "Ник игрока, статистику которого нужно отредактировать"
   	},
+  	_aliases: ["изменить", "редактировать"],
   	_description: "Редактирование статистики игрока"
   }
 }

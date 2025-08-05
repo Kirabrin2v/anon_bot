@@ -11,12 +11,14 @@ const structure = {
 		"+": {
 			nick2: {
 				"=": {
-					_default: true,
+					_default: false,
+					_aliases: ["равно", "дети", "имя"],
 					_description: "Если указано, покажет возможное имя будущего ребёнка. Если не указано, покажет процент совместимости"
 				},
 				_type: "nick",
 				_description: "Ник второго игрока"
 			},
+			_aliases: ["и", "с", "плюс"],
 			_description: "Разделитель между никами"
 		},
 		_type: "nick",
@@ -151,10 +153,6 @@ function check_compatibility (nick1, nick2) {
 
 	let random_percent = Math.round(sum_nicks_charcode(nick1, nick2) / 100 * max_percent_random)
 
-	// console.log(`${delta_nicks}/${max_percent_delta}`, `${similarity_nicks}/${max_percent_similarity}`,
-	//  `${right_nicks}/${max_percent_right_1+max_percent_right_2}`, `${count_parts}/${max_percent_parts}`,
-	//  `${random_percent}/${max_percent_random}`)
-
 	return (delta_nicks + similarity_nicks + count_parts + right_nicks + random_percent)
 }
 
@@ -204,39 +202,37 @@ function combine_nicks(nick1, nick2, mode) {
 	}
 }
 
-function cmd_processing(sender, args, parameters) {
-	try {
-		let send_in_private_message = false;
-		if (args.length == 0 || args[0] == "help") {
-			send_in_private_message = true;
-			answ = "Возможные аргументы: [nick1] + [nick2] [=]"
-		} else {
-			let nick1, nick2;
-			if (args[1] == "+") {
-				nick1 = args[0]
-				nick2 = args[2]
-			} else {
-				nick1 = args[0]
-				nick2 = args[1]
+function cmd_processing(sender, args, parameters, valid_args) {
+	args = valid_args;
+	let send_in_private_message = false;
+
+	const nick1 = args[0].value
+	const nick2 = args[2].value
+
+	if (args[3].value) {
+		const new_nick = combine_nicks(nick1, nick2, random_choice(["random_symbols", "gen"]))
+		answ = `${nick1} + ${nick2} = ${new_nick}`
+	} else {
+		const percent_compatibility = check_compatibility(nick1, nick2)
+		answ = substitute_text(
+			random_choice(phrases["compatibility"]),
+			{
+				"nick1": nick1,
+				"nick2": nick2,
+				"percent": percent_compatibility
 			}
-			if (nick1 && nick2) {
-				if (args.at(-1) == "=") {
-					let new_nick = combine_nicks(nick1, nick2, random_choice(["random_symbols", "gen"]))
-					answ = `${nick1} + ${nick2} = ${new_nick}`
-				} else {
-					let percent_compatibility = check_compatibility(nick1, nick2)
-					answ = substitute_text(random_choice(phrases["compatibility"]), {"nick1": nick1, "nick2": nick2, "percent": percent_compatibility})
-				}
-			
-			} else {
-				answ = "Вы не ввели два ника, по которым нужно определить совместимость"
-				send_in_private_message = true;
+		)
+
+	}
+		
+	if (answ) {
+		return {
+			type: "answ",
+			content: {
+				message: answ,
+				recipient: sender, send_in_private_message
 			}
 		}
-		
-		return {"type": "answ", "content": {"recipient": sender, "message": answ, "send_in_private_message": send_in_private_message}}
-	} catch (error) {
-		return {"type": "error", "content": {"date_time": new Date(), "module_name": module_name, "error": error, "args": args}}
 	}
 }
 
