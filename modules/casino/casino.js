@@ -180,26 +180,31 @@ function payment_processing(nick, amount, currency, reason, price_TCA) {
 			amount = amount * price_TCA; 
 		}
 		if (wait_pay[nick]) {
-			let mode_casino = wait_pay[nick]["mode_casino"]
-			let bet = wait_pay[nick]["bet"]
-			delete wait_pay[nick]
+			if (wait_pay[nick] == amount) {
 
-			if (mode_casino == 1) {
+				let mode_casino = wait_pay[nick]["mode_casino"]
+				let bet = wait_pay[nick]["bet"]
+				delete wait_pay[nick]
 
-				let win = casino_random_numbers()
-				//console.log(mode_casino, bet, win)
-				win_processing(nick, bet, win)
+				if (mode_casino == 1) {
 
-				return {"used": true}
+					let win = casino_random_numbers()
+					//console.log(mode_casino, bet, win)
+					win_processing(nick, bet, win)
 
-			} else if (mode_casino == 2) {
-				let action = prepare_casino_violators(nick, bet)
-				actions.push(action)
+					return {"used": true}
 
-				return {"used": true}
+				} else if (mode_casino == 2) {
+					let action = prepare_casino_violators(nick, bet)
+					actions.push(action)
 
-			} else if (mode_casino == 3) {
+					return {"used": true}
 
+				} else if (mode_casino == 3) {
+
+				}
+			} else {
+				return {"used": false}
 			}
 		} else {
 			return {"used": false}
