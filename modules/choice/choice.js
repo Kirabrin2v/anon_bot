@@ -40,11 +40,13 @@ let actions = []
 function cmd_processing(sender, args, cmd_parameters, valid_args) {
 	args = valid_args
 	let answ;
+	let send_in_private_message = true;
 
 	if (informed_users.includes(sender)) {
 		const variant = random_choice([args[0].value, args[2].value])
 		const phrase = random_choice(phrases["выбери"])
 		answ = `${phrase} - ${variant}`
+		send_in_private_message = false;
 
 	} else {
 		answ = phrases["warn_use_cmd"]
@@ -63,7 +65,8 @@ function cmd_processing(sender, args, cmd_parameters, valid_args) {
 			type: "answ",
 			content: {
 				message: answ,
-				recipient: sender
+				recipient: sender,
+				send_in_private_message: send_in_private_message
 			}
 		}
 	}
