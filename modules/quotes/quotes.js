@@ -212,74 +212,111 @@ function get_prepared_quotes_paginated(page = 1, per_page = 1) {
 }
 
 function format_prepared_quote_text(quote) {
-    const date = new Date(Number(quote.date_offer)).toLocaleString("ru-RU")
+    const date = new Date(Number(quote.date_offer)).toLocaleString("ru-RU");
     return (
-        `\n\n` +
-        `Автор: ${quote.author}\n` +
-        `Дата: ${date}\n\n` +
-        `"${quote.citation}"`
-    )
+        `*Автор:* ${quote.author}\n` +
+        `*Дата предложения:* ${date}\n\n` +
+        `_"${quote.citation}"_`
+    );
+}
+
+function send_processing_quotes_message(tg_id, prepared_quotes, last_quote_id, page = 1) {
+    if (prepared_quotes.length === 0) {
+        actions.push({
+            type: "answ",
+            content: { message: "Новых цитат для модерации нет.", send_in_private_message: true }
+        });
+        return;
+    }
+
+    const quote = prepared_quotes[0];
+    const text = format_prepared_quote_text(quote);
+
+    const keyboard = {
+        inline_keyboard: [
+            [
+                { text: "Принять ✅", callback_data: `quote:accept:${quote.ID}:${page}` },
+                { text: "Отклонить ❌", callback_data: `quote:reject:${quote.ID}:${page}` }
+            ],
+            [
+                { text: "Следующая ➡️", callback_data: `quote:next:${quote.ID}:${page + 1}` }
+            ]
+        ]
+    };
+
+    actions.push({
+        type: "module_request",
+        module_recipient: "telegram",
+        module_sender: module_name,
+        content: {
+            type: "answ",
+            old_data: { tg_id, prepared_quote_id: quote.ID },
+            type_content: "message",
+            message: text,
+            keyboard: keyboard
+        }
+    });
 }
 
 function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) {
     try {
         if (json_cmd.type == "request") {
-            let answ;
             const cmd = json_cmd.cmd;
-            const args = json_cmd.args
-            let type = "message"
-            console.log("Цитата аргументы:", args)
-            if (args[0] == "accept") {
-                const prepared_quote_id = Number(args[1])
+            const args = json_cmd.args;
+            const tg_id = json_cmd.tg_id;
+            let answ;
+            let type = "message";
+
+            if (args[0] === "accept") {
+                const prepared_quote_id = Number(args[1]);
                 if (!prepared_quote_id) {
-                    answ = "Некорректно указан айди"
+                    answ = "Некорректно указан айди";
                 } else {
-                    const status = accept_quote(prepared_quote_id)
-                    answ = status.is_ok ? "Цитата успешно добавлена" : `Ошибка: ${status.message_error}`
+                    const status = accept_quote(prepared_quote_id);
+                    answ = status.is_ok ? "Цитата успешно добавлена" : `Ошибка: ${status.message_error}`;
                 }
-            } else if (args[0] == "reject") {
-                const prepared_quote_id = Number(args[1])
+            } else if (args[0] === "reject") {
+                const prepared_quote_id = Number(args[1]);
                 if (!prepared_quote_id) {
-                    answ = "Некорректно указан айди"
+                    answ = "Некорректно указан айди";
                 } else {
-                    const status = reject_quote(prepared_quote_id)
-                    answ = status.is_ok ? "Цитата успешно отклонена" : `Ошибка: ${status.message_error}`
+                    const status = reject_quote(prepared_quote_id);
+                    answ = status.is_ok ? "Цитата успешно отклонена" : `Ошибка: ${status.message_error}`;
                 }
-            } else if (args.length == 0) {
-            	const page = 1;
-					    const prepared = get_prepared_quotes_paginated(page);
-					    if (prepared.quotes.length == 0) {
-					        answ = "Новых цитат для модерации нет.";
-					    } else {
-					        answ = prepared.quotes.map(q => `[ID:${q.ID}] ${q.citation} (от ${q.author})`).join("\n\n");
-					        answ += `\nСтраница ${prepared.current_page} из ${prepared.total_pages}`;
-					    }
+            } else if (args[0] === "next") {
+                const page = Number(args[3]) || 1;
+                const prepared = get_prepared_quotes_paginated(page);
+                send_processing_quotes_message(tg_id, prepared.quotes, null, page);
+                return;
+            } else if (args.length === 0) {
+                const page = 1;
+                const prepared = get_prepared_quotes_paginated(page);
+                send_processing_quotes_message(tg_id, prepared.quotes, null, page);
+                return;
             } else {
-                answ = "Команда не найдена. Доступные: accept; reject"
+                answ = "Команда не найдена. Доступные: accept; reject; next";
             }
 
             actions.push({
                 type: "module_request",
                 module_recipient: module_sender,
-                module_sender: module_recipient,
+                module_sender: module_name,
                 content: {
                     type: "answ",
                     old_data: json_cmd,
                     type_content: type,
                     message: answ
                 }
-            })
-            console.log(actions)
+            });
         }
     } catch (error) {
-        const answ = `Возникла ошибка: ${error.toString()}`
-        console.log(answ)
+        const answ = `Возникла ошибка: ${error.toString()}`;
         actions.push({
             type: "module_request",
             module_recipient: module_sender,
-            module_sender: module_recipient,
-            content: {type: "answ", old_data: json_cmd, message: answ}
-        })
+            module_sender: module_name,
+            content: { type: "answ", old_data: json_cmd, message: answ }
+        });
     }
 }
 
