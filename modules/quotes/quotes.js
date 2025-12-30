@@ -245,7 +245,15 @@ function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) 
                     const status = reject_quote(prepared_quote_id)
                     answ = status.is_ok ? "Цитата успешно отклонена" : `Ошибка: ${status.message_error}`
                 }
-            } else if (args[0] == "list" && args[1] == "prepared") {
+            } else if (args.length == 0) {
+            	const page = 1;
+					    const prepared = get_prepared_quotes_paginated(page);
+					    if (prepared.quotes.length == 0) {
+					        answ = "Новых цитат для модерации нет.";
+					    } else {
+					        answ = prepared.quotes.map(q => `[ID:${q.ID}] ${q.citation} (от ${q.author})`).join("\n\n");
+					        answ += `\nСтраница ${prepared.current_page} из ${prepared.total_pages}`;
+					    }
             } else {
                 answ = "Команда не найдена. Доступные: accept; reject"
             }
