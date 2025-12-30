@@ -193,7 +193,7 @@ function get_prepared_quotes_paginated(page = 1, per_page = 1) {
     const quotes = db.prepare(`
         SELECT ID, citation, author, date_offer
         FROM prepare_quotes
-        WHERE status = 0
+        WHERE status = -1
         ORDER BY date_offer ASC
         LIMIT ? OFFSET ?
     `).all(per_page, offset)
@@ -201,7 +201,7 @@ function get_prepared_quotes_paginated(page = 1, per_page = 1) {
     const total = db.prepare(`
         SELECT COUNT(*) as cnt
         FROM prepare_quotes
-        WHERE status = 0
+        WHERE status = -1
     `).get().cnt
 
     return {
