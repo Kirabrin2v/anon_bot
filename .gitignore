@@ -19,9 +19,7 @@ modules/skinnaper/skins/*
 modules/telegram
 modules/test
 *.tar
-<<<<<<< HEAD
-=======
 old_version
 *.jpg
 *.txt
->>>>>>> 500fdf5 (Add manage quotes)
+anon/
