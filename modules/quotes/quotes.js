@@ -114,6 +114,94 @@ function add_prepared_quotes_to_bd() {
 
 add_prepared_quotes_to_bd()
 
+<<<<<<< HEAD
+=======
+function get_prepared_quotes(status = 0, author, date_offer) {
+    const conditions = ['status = ?']
+    const params = [status]
+    
+    if (author !== undefined) {
+        conditions.push('author = ?')
+        params.push(author)
+    }
+    if (date_offer !== undefined) {
+        conditions.push('date_offer = ?')
+        params.push(date_offer)
+    }
+    if (id !== undefined) {
+    	conditions.push('id = ?')
+    	params.push(id)
+    }
+    
+    const whereClause = conditions.join(' AND ')
+    const selectPrompt = `
+        SELECT ID, citation, author
+        FROM prepare_quotes
+        WHERE ${whereClause}
+    `
+    
+    const selectMessage = db.prepare(selectPrompt)
+    return selectMessage.all(...params)
+}
+
+function get_prepared_quote(id) {
+	const selectMessage = db.prepare(`
+														        SELECT ID, citation, author
+														        FROM prepare_quotes
+														        WHERE id = ?
+															    `)
+  return selectMessage.get(id)
+}
+
+function accept_quote(prepared_quote_id) {
+	const prepared_quote = get_prepared_quote(prepared_quote_id)
+	if (prepared_quote) {
+		const ID = prepared_quote.ID
+		const citation = prepared_quote.citation
+		const author = prepared_quote.author
+
+		create_quote(citation, author)		
+		delete_prepared_quote(prepared_quote_id)
+
+		return {"is_ok": true}
+	} else {
+		return {"is_ok": false, "message_error": "not_exist"}
+	}
+
+}
+
+function reject_quote(prepared_quote_id) {
+	const prepared_quote = get_prepared_quote(prepared_quote_id)
+	if (prepared_quote) {
+		const ID = prepared_quote.ID
+		const citation = prepared_quote.citation
+		const author = prepared_quote.author
+
+		delete_prepared_quote(prepared_quote_id)
+
+		return {"is_ok": true}
+	} else {
+		return {"is_ok": false, "message_error": "not_exist"}
+	}
+
+}
+
+function create_quote(citation, author) {
+	const insertMessage = db.prepare(`INSERT INTO quotes
+																		(citation, author)
+																		VALUES (?, ?)
+																		`)
+	insertMessage.run(citation, author)
+}
+
+function delete_prepared_quote(ID) {
+	const deleteMessage = db.prepare(`DELETE FROM prepare_quotes
+																			WHERE ID == ?
+																		`)
+	deleteMessage.run(ID)
+}
+
+>>>>>>> 500fdf5 (Add manage quotes)
 function random_number (min_num, max_num) {
 	return Math.floor(Math.random() * (max_num - min_num + 1)) + min_num;
 }
@@ -160,6 +248,44 @@ function get_quotes_from_author(author) {
 	
 }
 
+<<<<<<< HEAD
+=======
+function get_prepared_quotes_paginated(page = 1, per_page = 1) {
+	const offset = (page - 1) * per_page
+	const quotes = db.prepare(`
+		SELECT ID, citation, author, date_offer
+		FROM prepare_quotes
+		WHERE status = 0
+		ORDER BY date_offer ASC
+		LIMIT ? OFFSET ?
+	`).all(per_page, offset)
+
+	const total = db.prepare(`
+		SELECT COUNT(*) as cnt
+		FROM prepare_quotes
+		WHERE status = 0
+	`).get().cnt
+
+	return {
+		quotes,
+		total_pages: Math.ceil(total / per_page),
+		current_page: page
+	}
+}
+
+function format_prepared_quote_text(quote) {
+	const date = new Date(Number(quote.date_offer)).toLocaleString("ru-RU")
+	return (
+		`\n\n` +
+		`Автор: ${quote.author}\n` +
+		`Дата: ${date}\n\n` +
+		`"${quote.citation}"`
+	)
+}
+
+
+
+>>>>>>> 500fdf5 (Add manage quotes)
 function send_quote(ID) {
 	console.log(ID, quotes[ID])
 	let quote_info = quotes[ID]
@@ -482,10 +608,84 @@ function cmd_processing(sender, args, parameters) {
 	}
 }
 
+<<<<<<< HEAD
+=======
+function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) {
+	try {
+		if (json_cmd.type == "request") {
+			let answ;
+			const cmd = json_cmd.cmd;
+			const args = json_cmd.args
+			let type = "message"
+			console.log("Цитата аргументы:" args)
+			if (args[0] == "accept") {
+				prepared_quote_id = Number(args[1])
+				if (!prepared_quote_id) {
+					answ = "Некорректно указан айди"
+				} else {
+					const status = accept_quote(prepared_quote_id)
+					if (status.is_ok) {
+						answ = "Цитата успешно добавлена"
+					} else {
+						answ = `Ошибка: ${status.message_error}`
+					}
+				}
+
+			} else if (args[0] == "reject") {
+				prepared_quote_id = Number(args[1])
+				if (!prepared_quote_id) {
+					answ = "Некорректно указан айди"
+				} else {
+					const status = reject_quote(prepared_quote_id)
+					if (status.is_ok) {
+						answ = "Цитата успешно отклонена"
+					} else {
+						answ = `Ошибка: ${status.message_error}`
+					}
+				}
+
+			} else if (args[0] == "list") {
+				if (args[1] == "prepared") {
+
+				}
+			}
+			 else {
+				answ = "Команда не найдена. Доступные: accept; reject"
+			}
+
+
+			actions.push({type: "module_request",
+								module_recipient: module_sender,
+								module_sender: module_recipient,
+								content: {type: "answ",
+										old_data: json_cmd,
+										type_content: type,
+										message: answ}
+					})
+			console.log(actions)
+		}
+	} catch (error) {
+		const answ = `Возникла ошибка: ${error.toString()}`
+		console.log(answ)
+		actions.push({type: "module_request",
+						module_recipient: module_sender,
+						module_sender: module_recipient,
+						content: {type: "answ",
+								old_data: json_cmd,
+								message: answ}
+		})
+	}
+}
+
+>>>>>>> 500fdf5 (Add manage quotes)
 function get_actions() {
 	return actions.splice(0)
 }
 
 setInterval(send_random_quote, 12000 * 10**3)
 
+<<<<<<< HEAD
 module.exports = {module_name, cmd_processing, get_actions, help, structure}
+=======
+module.exports = {module_name, cmd_processing, get_actions, module_dialogue, help, structure}
+>>>>>>> 500fdf5 (Add manage quotes)

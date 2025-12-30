@@ -730,7 +730,11 @@ function send_cmds() {
 
 		bot.chat(cmd.trim())
 		if (cmd_object.module_sender) {
+<<<<<<< HEAD
 			setTimeout(() => queue_waiting_data["cmd"].push(cmd_object), 100)
+=======
+			setTimeout(() => queue_waiting_data["cmd"].push(cmd_object), 20)
+>>>>>>> 500fdf5 (Add manage quotes)
 		}
 	}
 }
@@ -956,7 +960,11 @@ bot.on('messagestr', (message, sender, message_json) => {
 				} else if (flag == "l") {
 					chat_send = ""
 
+<<<<<<< HEAD
 				} else if (flag == "g" && seniors.includes(sender)) {
+=======
+				} else if (flag == "g" && (seniors.includes(sender) || rank_sender >= 6)) {
+>>>>>>> 500fdf5 (Add manage quotes)
 					chat_send = "!"
 				} else {
 					flags.push(flag)
@@ -965,7 +973,11 @@ bot.on('messagestr', (message, sender, message_json) => {
 					break;
 				}
 			}
+<<<<<<< HEAD
 			console.log("ФЛаги:", flags, chat_send, send_in_private_message)
+=======
+			console.log("Флаги:", flags, chat_send, send_in_private_message)
+>>>>>>> 500fdf5 (Add manage quotes)
 			message = message.split("cmd ")[1]
 			message = message.split(" ")
 			cmd = message[0].toLowerCase()
@@ -979,7 +991,11 @@ bot.on('messagestr', (message, sender, message_json) => {
 			if (cmd == "help") {
 				let answ;
 				if (args[0] == "help") {
+<<<<<<< HEAD
 					answ = "Возможные аргументы: [номер страницы]**"
+=======
+					answ = "Возможные аргументы: [номер страницы]"
+>>>>>>> 500fdf5 (Add manage quotes)
 				}
 				else {
 					let num_page;
@@ -1120,6 +1136,120 @@ bot.on('messagestr', (message, sender, message_json) => {
 let now_reg_index = 0;
 let now_reg;
 
+<<<<<<< HEAD
+=======
+
+function divide_messages(sender, messages, message_json) {
+	if (messages[0].includes("Отправил Вам")) {
+		processing_server_message(sender, messages[0]+"\nПричина: Не указано", undefined)
+	} else if (messages[0].includes("сурв")) {
+		processing_server_message(sender, messages[0], undefined)
+	} else return;
+	// console.log(messages)
+	raw_messages = Array.from(messages)
+	for (let i = 0; i < regexes.length; i++) {
+		regex = regexes[i]
+		// console.log("regex", regex, regex.source, regex.toString())
+		for (let s = 0; s < regex.source.split("\n").length; s++) {
+			reg_line = regex.source.split("\n")[s]
+			is_matched = true;
+			let matched;
+			let last_msg_index = -1;
+			for (let j = 0; j < messages.length; j++) {
+				let msg = messages[j]
+				matched = msg.match(reg_line)
+				if (!matched) {
+					last_msg_index = j-1
+					break;
+				}
+			}
+			if (last_msg_index != -1) {
+				confirmed_message = messages.slice(0, last_msg_index+1).join("\n")
+				messages = messages.slice(last_msg_index+1)
+				console.log("Подтверждённое сообщение", confirmed_message)
+				processing_server_message(sender, confirmed_message, message_json)
+			}
+
+		}
+		// console.log([regex])
+		// let index_split_reg = 0;
+		// for (let j = 0; j < messages.length; j++) {
+		// 	if (messages.slice(j).length < regex.split("\n")) continue;
+		// 	let is_matched = true;
+		// 	// console.log(j, messages)
+		// 	msg = messages[j]
+		// 	matched = msg.match(regex)
+		// 	if (msg.includes("Причина:")) console.log(msg, new Date().getTime() - time_last_server_message)
+
+		// 	if (matched) {
+		// 		is_matched = true;
+		// 		processing_server_message(sender, msg, message_json)
+		// 		break;
+		// 	} else {
+
+		// 		raw_messages[j] = undefined
+		// 	}
+		// }
+	}
+	raw_messages = raw_messages.filter(msg => msg != undefined)
+	processing_server_message(sender, raw_messages.join("\n"), message_json)
+}
+
+// function divide_messages(sender, messages, message_json) {
+// 	// console.log(messages)
+// 	raw_messages = Array.from(messages)
+// 	for (let i = 0; i < regexes.length; i++) {
+// 		regex = regexes[i]
+		
+// 		for (let s = 0; s < regex.source.split("\n").length; s++) {
+// 			reg_line = regex.source.split("\n")[s]
+// 			is_matched = true;
+// 			let matched;
+// 			let last_msg_index = -1;
+// 			for (let j = 0; j < messages.length; j++) {
+// 				let msg = messages[j]
+// 				matched = msg.match(reg_line)
+// 				if (msg.includes("Herobrin2v")) console.log(msg, regex)
+// 				if (!matched) {
+// 					last_msg_index = j-1
+// 					break;
+// 				}
+// 			}
+// 			console.log("Ласт индекс", last_msg_index)
+// 			if (last_msg_index != -1) {
+// 				confirmed_message = messages.slice(0, last_msg_index+1).join("\n")
+// 				messages = messages.slice(last_msg_index+1)
+// 				console.log("Подтверждённое сообщение", confirmed_message)
+// 				processing_server_message(sender, confirmed_message, message_json)
+// 				break;
+// 			}
+
+// 		}
+// 		// console.log([regex])
+// 		// let index_split_reg = 0;
+// 		// for (let j = 0; j < messages.length; j++) {
+// 		// 	if (messages.slice(j).length < regex.split("\n")) continue;
+// 		// 	let is_matched = true;
+// 		// 	// console.log(j, messages)
+// 		// 	msg = messages[j]
+// 		// 	matched = msg.match(regex)
+// 		// 	if (msg.includes("Причина:")) console.log(msg, new Date().getTime() - time_last_server_message)
+
+// 		// 	if (matched) {
+// 		// 		is_matched = true;
+// 		// 		processing_server_message(sender, msg, message_json)
+// 		// 		break;
+// 		// 	} else {
+
+// 		// 		raw_messages[j] = undefined
+// 		// 	}
+// 		// }
+// 	}
+// 	raw_messages = raw_messages.filter(msg => msg != undefined)
+// 	processing_server_message(sender, raw_messages.join("\n"), message_json)
+// }
+
+>>>>>>> 500fdf5 (Add manage quotes)
 function processing_server_message(sender, message, message_json) {
 	let wait_cmd;
 	let now_cmd;
@@ -1469,6 +1599,7 @@ bot.on('playerJoined', (player) => {
 
 // })
 
+<<<<<<< HEAD
 bot.on('entitySpawn', (entity) => {
 	// console.log(entity.name, entity.displayName)
 	if (entity.displayName && entity.displayName.includes("Thrown")) {
@@ -1499,6 +1630,8 @@ bot.on('entityGone', (entity) => {
 	}
 	}, 10)
 })
+=======
+>>>>>>> 500fdf5 (Add manage quotes)
 
 function module_connect(module_recipient, module_sender, json_cmd, access_lvl) {
 	console.log(module_recipient, module_sender, json_cmd)
@@ -1626,7 +1759,11 @@ setInterval(check_return_casino, 1000)
 setInterval(check_return_bank, 5000)
 setInterval(check_return_tg, 1000)
 
+<<<<<<< HEAD
 let tp_end = setInterval(() => {
+=======
+ let tp_end = setInterval(() => {
+>>>>>>> 500fdf5 (Add manage quotes)
  	if (!location_bot || !location_bot.includes("Локация Край")) bot.chat("/swarp end")}, 5000)
 
 setInterval(check_loc_bot, 3000)
@@ -1640,7 +1777,11 @@ setInterval(() =>  {
 		bot.chat("/bal")
 	}
 }, 10000)
+<<<<<<< HEAD
 setInterval(() => cmds.push("/tca check"), 5000)
+=======
+setInterval(() => cmds.push("/tca check"), 15000)
+>>>>>>> 500fdf5 (Add manage quotes)
 
 
 setInterval(update_all_players, 10000)
