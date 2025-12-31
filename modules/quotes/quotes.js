@@ -303,7 +303,7 @@ function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) 
 						    if (next_quote) {
 						        send_processing_quotes_message(tg_id, [next_quote], next_quote.id);
 						    } else {
-						        send_message_tg(tg_id, "Цитаты не найдены.");
+						        answ = "Цитаты не найдены."
 						    }
 						    return;
 						} else if (args.length === 0) {
