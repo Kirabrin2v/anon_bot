@@ -261,7 +261,7 @@ function send_processing_quotes_message(tg_id, prepared_quotes, last_quote_id, p
 function get_next_quote(prepared_quotes, current_id) {
     if (!prepared_quotes || prepared_quotes.length === 0) return null;
 
-    const current_index = prepared_quotes.findIndex(q => Number(q.id) === Number(current_id));
+    const current_index = prepared_quotes.findIndex(q => Number(q.ID) === Number(current_id));
     const next_index = (current_index + 1) % prepared_quotes.length;
 
     console.log("current_index:", current_index, "next_index:", next_index, "ids:", prepared_quotes.map(q => q.id));
