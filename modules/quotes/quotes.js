@@ -223,8 +223,10 @@ function format_prepared_quote_text(quote) {
 function send_processing_quotes_message(tg_id, prepared_quotes, last_quote_id, page = 1) {
     if (prepared_quotes.length === 0) {
         actions.push({
-            type: "answ",
-            content: { message: "Новых цитат для модерации нет.", send_in_private_message: true }
+            type: "module_request",
+		        module_recipient: "telegram",
+		        module_sender: module_name,
+            content: { message: "Новых цитат для модерации нет.", type_content: "message", old_data: { tg_id } }
         });
         return;
     }
