@@ -214,9 +214,9 @@ function get_prepared_quotes_paginated(page = 1, per_page = 1) {
 function format_prepared_quote_text(quote) {
     const date = new Date(Number(quote.date_offer)).toLocaleString("ru-RU");
     return (
-        `*Автор:* ${quote.author}\n` +
-        `*Дата предложения:* ${date}\n\n` +
-        `_"${quote.citation}"_`
+        `Автор: ${quote.author}\n` +
+        `Дата предложения: ${date}\n\n` +
+        `"${quote.citation}"`
     );
 }
 
@@ -258,6 +258,18 @@ function send_processing_quotes_message(tg_id, prepared_quotes, last_quote_id, p
     });
 }
 
+function get_next_quote(prepared_quotes, current_id) {
+    if (!prepared_quotes || prepared_quotes.length === 0) return null;
+
+    // Найти индекс текущей цитаты по ID
+    const current_index = prepared_quotes.findIndex(q => q.id === current_id);
+    
+    // Если не нашли, начинаем с первой
+    const next_index = (current_index + 1) % prepared_quotes.length;
+    
+    return prepared_quotes[next_index];
+}
+
 function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) {
     try {
         if (json_cmd.type == "request") {
@@ -284,11 +296,17 @@ function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) 
                     answ = status.is_ok ? "Цитата успешно отклонена" : `Ошибка: ${status.message_error}`;
                 }
             } else if (args[0] === "next") {
-                const page = Number(args[3]) || 1;
-                const prepared = get_prepared_quotes_paginated(page);
-                send_processing_quotes_message(tg_id, prepared.quotes, null, page);
-                return;
-            } else if (args.length === 0) {
+						    const current_id = Number(args[1]); // id текущей цитаты
+						    const prepared = get_prepared_quotes(); // функция, возвращающая все подготовленные цитаты
+						    const next_quote = get_next_quote(prepared, current_id);
+
+						    if (next_quote) {
+						        send_processing_quotes_message(tg_id, [next_quote], next_quote.id);
+						    } else {
+						        send_message_tg(tg_id, "Цитаты не найдены.");
+						    }
+						    return;
+						} else if (args.length === 0) {
                 const page = 1;
                 const prepared = get_prepared_quotes_paginated(page);
                 send_processing_quotes_message(tg_id, prepared.quotes, null, page);
