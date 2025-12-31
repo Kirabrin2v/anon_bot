@@ -297,7 +297,7 @@ function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) 
                 }
             } else if (args[0] === "next") {
 						    const current_id = Number(args[1]); // id текущей цитаты
-						    const prepared = get_prepared_quotes(); // функция, возвращающая все подготовленные цитаты
+						    const prepared = get_prepared_quotes(status=-1); // функция, возвращающая все подготовленные цитаты
 						    const next_quote = get_next_quote(prepared, current_id);
 
 						    if (next_quote) {
