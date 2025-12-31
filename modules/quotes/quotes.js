@@ -226,7 +226,7 @@ function send_processing_quotes_message(tg_id, prepared_quotes, last_quote_id, p
             type: "module_request",
 		        module_recipient: "telegram",
 		        module_sender: module_name,
-            content: { message: "Новых цитат для модерации нет.", type_content: "message", old_data: { tg_id } }
+            content: { type: "answ", message: "Новых цитат для модерации нет.", type_content: "message", old_data: { tg_id } }
         });
         return;
     }
