@@ -131,7 +131,7 @@ function get_prepared_quotes(status = 0, author, date_offer, id) {
     
     const whereClause = conditions.join(' AND ')
     const selectPrompt = `
-        SELECT ID, citation, author
+        SELECT ID, citation, author, date_offer
         FROM prepare_quotes
         WHERE ${whereClause}
     `
@@ -261,14 +261,14 @@ function send_processing_quotes_message(tg_id, prepared_quotes, last_quote_id, p
 function get_next_quote(prepared_quotes, current_id) {
     if (!prepared_quotes || prepared_quotes.length === 0) return null;
 
-    // Найти индекс текущей цитаты по ID
-    const current_index = prepared_quotes.findIndex(q => q.id === current_id);
-    
-    // Если не нашли, начинаем с первой
+    const current_index = prepared_quotes.findIndex(q => Number(q.id) === Number(current_id));
     const next_index = (current_index + 1) % prepared_quotes.length;
-    
+
+    console.log("current_index:", current_index, "next_index:", next_index, "ids:", prepared_quotes.map(q => q.id));
+
     return prepared_quotes[next_index];
 }
+
 
 function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) {
     try {
