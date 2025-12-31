@@ -302,10 +302,11 @@ function module_dialogue(module_recipient, module_sender, json_cmd, access_lvl) 
 
 						    if (next_quote) {
 						        send_processing_quotes_message(tg_id, [next_quote], next_quote.id);
+						        return;
 						    } else {
 						        answ = "Цитаты не найдены."
 						    }
-						    return;
+						    
 						} else if (args.length === 0) {
                 const page = 1;
                 const prepared = get_prepared_quotes_paginated(page);
