@@ -180,7 +180,7 @@ function payment_processing(nick, amount, currency, reason, price_TCA) {
 			amount = amount * price_TCA; 
 		}
 		if (wait_pay[nick]) {
-			if (wait_pay[nick] == amount) {
+			if (wait_pay[nick]["bet"] == amount) {
 
 				let mode_casino = wait_pay[nick]["mode_casino"]
 				let bet = wait_pay[nick]["bet"]
