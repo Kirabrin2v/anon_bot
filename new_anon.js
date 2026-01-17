@@ -1,6 +1,8 @@
 const mineflayer = require("mineflayer");
 const maps = require("mineflayer-maps");
 
+globalThis.BASE_DIR = __dirname;
+
 const ConfigParser = require('configparser');
 const config= new ConfigParser();
 config.read("txt/config.ini")
@@ -8,6 +10,8 @@ config.read("txt/config.ini")
 const express = require("express");
 
 const bot_username = "anon_bot";
+globalThis.bot_username = bot_username
+
 const bot = mineflayer.createBot({
     host: "mnrt.teslacraft.org",
     port: "25565",
@@ -116,13 +120,13 @@ class ModuleManager {
 			})
 
 		} else {
-			console.log(`Модуля ${module_name} не существует`)
+			// console.log(`Модуля ${module_name} не существует`)
 		}
 		return new Proxy({}, {
 			get(target, prop) {
 				// Если кто-то попытается вызвать любую функцию на несуществующем модуле
 				return (...args) => {
-					console.warn(`[${initiator || "system"}] Попытка вызвать метод "${prop}" у незагруженного модуля "${module_name}" с аргументами:`, args)
+					// console.warn(`[${initiator || "system"}] Попытка вызвать метод "${prop}" у незагруженного модуля "${module_name}" с аргументами:`, args)
 					return undefined
 				}
 			}
@@ -132,9 +136,13 @@ class ModuleManager {
 
 // const text = require("./modules/text/text.js")
 
+const { get_players_and_distance, get_players_on_loc } = require("./utils/entities.js")
+
 const modules = new ModuleManager()
 modules.load_modules([
 	["./modules/text/text.js"],
+
+	["./modules/snowballs/snowballs.js", {"bot": bot}],
 
 	["./modules/choice/choice.js"],
 
@@ -180,69 +188,16 @@ modules.load_modules([
 			interval_send_cmds: interval_send_cmds
 	}],
 
-	["./modules/telegram/telegram.js"],
+	// ["./modules/telegram/telegram.js"],
 
 ])
 
 modules.load_modules([
 	["./modules/site_connect/site_connect.js", {"structures": CommandManager.modules_structure}]
 ])
-// console.log(modules.modules)
-// const players_stats = require("./modules/players_stats/stats.js")
 
-// const bank = require("./modules/bank/bank.js")
-
-// const casino = require("./modules/casino/casino.js")
-
-// const combine_nicks = require("./modules/combine_nicks/combine.js")
-
-// const SAGO = require("./modules/SAGO/SAGO.js")
-
-// const cooldown = require("./modules/cooldown/cooldown.js")
-
-// const logging = require("./modules/logging/logging.js")
-
-// const quotes = require("./modules/quotes/quotes.js")
-
-// const party = require("./modules/party/party.js")
-
-// const lurking = require("./modules/lurking/lurking.js")
-
-// const alias = require("./modules/alias/alias.js")
-
-// const who = require("./modules/who/who.js")
-
-// const chance = require("./modules/chance/chance.js")
-
-// const quiz = require("./modules/quiz/quiz.js")
-
-// const flags_info = require("./modules/flags/flags.js")
-
-// const skinnaper = require("./modules/skinnaper/skinnaper.js")
-
-// const move = require("./modules/move/move.js")
-// move.initialize({
-// 	bot: bot
-// })
 
 var timer_check_surv;
-
-// const interval_send_cmds = 900;
-// const interval_check_surv = 5000;
-// const manage_cash = require("./modules/cash/manage_cash.js")
-// manage_cash.initialize({
-// 	bot_username: bot_username,
-// 	interval_check_surv: interval_check_surv,
-// 	interval_send_cmds: interval_send_cmds
-// })
-// const tg = require("./modules/telegram/telegram.js")
-
-// const module_names = {"bank": bank, "cash": manage_cash, "casino": casino, "combine_nicks": combine_nicks, 
-// 					"cooldown": cooldown, "loggng": logging, "lurking": lurking, "party": party, "stats": players_stats,
-// 					"quotes": quotes, "SAGO": SAGO, "telegram": tg, "text": text, "alias": alias, "skinnaper": skinnaper, "move": move, "quiz": quiz}
-
-// const cmd_processing = {"flags": flags_info, "шанс": chance, "викторина": quiz, "кто": who, "nick": alias, "bank": bank, "скрести": combine_nicks, "casino": casino, "grief": SAGO, "stats": players_stats,
-// 					"цитата": quotes, "party": party, "skinnaper": skinnaper, "ручуп3": move}
 
 const seniors = ["Herobrin2v"]
 const masters = ["DeX_Xth", "Herobrin2v"]
@@ -267,73 +222,40 @@ const tesla_ranks = [undefined, "Рядовой", "Ефрейтор", "Мл. С�
 
 var location_bot;
 
-const reg_bal_survings = new RegExp(String.raw`^Ваш баланс сурвингов: \$([0-9,]{1,10}\.[0-9]{0,2})`)
-const reg_bal_TCA = new RegExp(String.raw`^Баланс баллов TCA: ([0-9]{1,5})`)
+const {
+	reg_bal_survings,
+	reg_bal_TCA,
 
-const reg_nickname = String.raw`([А-яA-Za-z0-9~!@#$^*\-_=+ёЁ]{1,16})`;
-const reg_message = String.raw`(.{1,256})`;
-const reg_me_send = new RegExp(`^\\[${reg_nickname} -> Мне\\] ${reg_message}`)
-const reg_i_send = new RegExp(`^\\[Я -> ${reg_nickname}\\] ${reg_message}`)
+	reg_nickname,
+	reg_message,
+	reg_me_send,
+	reg_i_send,
 
-const reg_encrypted_ip = String.raw`[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}`;
-const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ\n ` +
-"Статус: (.*)\n " +
-"Звание: (?:\\[([А-яA-z\. ]*)\\].*){0,1}\n" +
-"(?: Клан:   (.*)\n){0,1}\n " +
-"Забанен:   (.*)\n " +
-"Имеет мут: (.*)\n\n " +
-"Регистрация: (.*) \\(Мск\\)\n " +
-"Был в сети:  (.*) \\(Мск\\)\n" +
-"(?: Местонахождение: (.*)\n){0,1} " +
-"История: ([0-9]{1,4}) бан.*\n         " +
-"([0-9]{1,4}) кик.*\n         " +
-"([0-9]{1,4}) мут.*\n         " +
-"([0-9]{1,4}) варн.*\n" +
-"(?: Последние предупреждения:\n(?:  (.*)\n){0,1}" +
-"(?:  (.*)\n){0,1}" +
-"(?:  (.*)\n){0,1}){0,1}" +
-`ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ`)
+	reg_encrypted_ip,
+	reg_lookup,
 
-const reg_vic_anagrams = String.raw`\[Викторина\] Расшифруйте первым анаграмму (.*) , чтобы выиграть!`
-const reg_vic_fast = String.raw`\[Викторина\] Напечатайте первым "(.*)", чтобы выиграть!`
-const reg_vic_example = String.raw`\[Викторина\] Решите первым пример (.*), чтобы выиграть!`
-const reg_vic_quest = String.raw`\[Викторина\] (.*)`
+	reg_vic_anagrams,
+	reg_vic_fast,
+	reg_vic_example,
+	reg_vic_quest,
+	reg_vic_question,
+	reg_vic_answ,
+	reg_tryme_info,
+	
+	reg_seen,
 
-const reg_vic_question = new RegExp("^\\[Викторина\\] Для ответа используйте команду /Answ <Ответ>\n" +
-									`(?:(?:${reg_vic_anagrams})|(?:${reg_vic_fast})|(?:${reg_vic_example})|(?:${reg_vic_quest}))`)
+	reg_survings_send,
+	reg_TCA_send,
+	reg_log_line,
+	reg_tca_accept,
+	reg_survings_accept,
 
-const reg_vic_answ = new RegExp("^[Викторина] Для ответа используйте команду /Answ <Ответ>\n" +
-								"[Викторина] Время для ответа закончилось. Правильный ответ: (.*)")
+	reg_warn,
+	reg_ban,
+	reg_mute,
+	reg_kick
 
-const reg_tryme_info = new RegExp("^\\*{61}\n" + 
-String.raw`Всего вопросов: [0-9]*\n` +
-String.raw`Ответов: (True|False)\n` +
-String.raw`Категория: (Custom|Easy|Normal|Medium|Hard|Default)\n` +
-String.raw`Прошло времени до ответа: ([0-9]{1,3}\.[0-9]{1,2}) sec\n` +
-String.raw`До следущего вопроса: [0-9]{1,3}\.[0-9]{1,2} sec\n` +
-String.raw`Номер вопроса: ([0-9]|none)\n` +
-String.raw`Вопрос: (.*)\n` +
-"\\*{61}")
-
-const reg_seen = new RegExp(`^${reg_nickname} (Онлайн|Офлайн) в течение ((?:(?:[0-9]* дн\\. )?[0-9]{2}:[0-9]{2}(?::[0-9]{2})?)|(?:[0-9]{1,2} с))\\n` + 
-	`Сервер (.*)\\. Координаты: Мир [^ ,.]*, (\\-?[0-9]+), (\\-?[0-9]+), (\\-?[0-9]+)`)
-
-const reg_survings_send = new RegExp(`^\\$([0-9,]*\\.[0-9]*) отправлено игроку ${reg_nickname}`)
-const reg_TCA_send = new RegExp(`^Вы перевели ([0-9]*) балл(?:а||ов){1,2} TCA игроку ${reg_nickname}`)
-
-const reg_log_line = String.raw`\- ([0-9]{2}\.[0-9]{2}\.[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}) (\+|\-)([0-9]{1,5}) TCA \(([0-9]{1,5}) TCA\) Передача баллов (?:от игрока|игроку) ${reg_nickname}`
-const reg_tca_accept = new RegExp(`^Лог последних операций с баллами TCA:\n` +
-								(reg_log_line + "\n").repeat(15).slice(0, -1)
-								)
-
-const reg_survings_accept = new RegExp(`^${reg_nickname} отправил Вам \\$([0-9,]*\\.[0-9]*)\n` +
-										"Причина: (.*)")
-//const reg_survings_reason = "^Причина: (.*)"
-
-const reg_warn = new RegExp(`^${reg_nickname} был предупреждён блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
-const reg_ban = new RegExp(`^${reg_nickname} был забанен на (.*) блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
-const reg_mute = new RegExp(`^Выдан временный мут игроку ${reg_nickname} на (.*) блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
-const reg_kick = new RegExp(`^${reg_nickname} был кикнут с сервера блюстителем ${reg_nickname}\\.\nПричина: (.*)`)
+} = require("./regex.js")
 
 regexes = [
 	reg_bal_survings,
@@ -545,32 +467,6 @@ function update_all_players() {
 	if (!location_bot || !location_bot.includes("Классическое выживание")) return;
 	all_players = bot.players
 	modules.call_module("lurking").update_players_list(Object.keys(all_players))
-}
-
-function get_players_on_loc() {
-	let players = Object.keys(bot.players)
-	let players_on_loc = players.filter((nick) => {
-		return bot.players[nick] && bot.players[nick].displayName.text != ''
-	})
-	return players_on_loc
-}
-
-function get_players_and_distance(start_point=bot.entity.position, max_distance=512, ignore_bot=true) {
-
-	let players = Object.entries(bot.players)
-	let players_and_distances = players.map(([nick, info]) => {
-		let username = info.username;
-		let entity = info.entity;
-		if (username.match(reg_nickname) && entity && (!ignore_bot || username != bot_username)) {
-			let distance = Number(start_point.distanceTo(entity.position).toFixed(2));
-			if (distance <= max_distance) {
-				return [username, distance];
-			}
-		}
-	})
-	players_and_distances = players_and_distances.filter((value) => value !== undefined)
-	players_and_distances = players_and_distances.sort((player1, player2) => player1[1] - player2[1])
-	return players_and_distances
 }
 
 async function actions_processing(actions, module_name, update_action) {
@@ -848,7 +744,7 @@ bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
 		var block_position = oldBlock.position;
 
 		if (oldBlock.name == "air" && newBlock.name == "bed") {
-			var nearby_players = get_players_and_distance(start_point=block_position);
+			var nearby_players = get_players_and_distance(bot, start_point=block_position);
 			let criminal_nick, distance;
 			for (let i = 0; i < nearby_players.length; i++) {
 				[criminal_nick, distance] = nearby_players[i];
@@ -927,7 +823,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 		}
 		modules.call_module("telegram").server_message_processing(sender, message, raw_message, new Date())
 
-		let players_on_loc = get_players_on_loc()
+		let players_on_loc = get_players_on_loc(bot)
 
 
 		let flags = []
@@ -1475,12 +1371,10 @@ bot.on('playerJoined', (player) => {
 bot.on('entitySpawn', (entity) => {
 	// console.log(entity.name, entity.displayName)
 	if (entity.displayName && entity.displayName.includes("Thrown")) {
-		let object_id = entity.id
+		
 		
 	}
-	if (entity.name == "snowball" && false) {
-		modules.call_module("")
-	} else if (entity.type == "player") {
+	if (entity.type == "player") {
 		const nick = entity.username
 		if (bot.players[nick]) {
 			const url = bot.players[nick].skinData.url
@@ -1490,17 +1384,6 @@ bot.on('entitySpawn', (entity) => {
 		}
 
 	}
-})
-
-bot.on('entityGone', (entity) => {
-	setTimeout(() => {
-
-	if (entity.displayName && entity.displayName.includes("Thrown")) {
-		let object_id = entity.id
-		console.log(`Летящий объект с id=${object_id} пропал на координатах: ${entity.position}`)
-		console.log("Игроки рядом:", get_players_and_distance(start_point=entity.position, max_distance=2, ignore_bot=false))
-	}
-	}, 10)
 })
 
 
@@ -1605,6 +1488,13 @@ function check_return_choice() {
 	actions_processing(actions)
 }
 
+function check_return_snowballs() {
+	let actions = modules.call_module("снежки").get_actions()
+	actions_processing(actions)
+}
+
+setInterval(check_return_snowballs, 1000)
+
 setInterval(check_return_choice, 500)
 
 setInterval(check_return_detector, 500)
@@ -1639,6 +1529,15 @@ setInterval(check_loc_bot, 3000)
 
 setInterval(send_answs, 2000)
 setInterval(send_cmds, interval_send_cmds)
+
+setTimeout(() => {
+	setInterval(() => {
+		answs.push({
+			message: "Новый год! Время веселья! А за хорошие попадания снежками в игроков я дам щедрую награду! Подробнее сmd снежки"
+		})
+	}, 10800000)
+}, 30000)
+
 
 setInterval(() => cmds.push("/tca log"), 10000)
 setInterval(() =>  {
