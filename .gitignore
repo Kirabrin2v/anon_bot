@@ -9,6 +9,7 @@ modules/detector
 modules/logging/logs.db
 modules/lurking
 modules/players_stats/players_stats.db
+modules/snowballs/snowballs.db
 modules/quiz/*.json
 modules/quiz/*.txt
 modules/quotes/quotes.db
