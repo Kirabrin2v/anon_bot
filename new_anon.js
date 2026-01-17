@@ -188,7 +188,7 @@ modules.load_modules([
 			interval_send_cmds: interval_send_cmds
 	}],
 
-	// ["./modules/telegram/telegram.js"],
+	["./modules/telegram/telegram.js"],
 
 ])
 
