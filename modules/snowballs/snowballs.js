@@ -373,7 +373,7 @@ function initialize(constants) {
                     distance,          // фактическая дистанция попадания
                     target_velocity: target_player.entity.velocity,   // Vec3 или число (скорость)
                 })
-                console.log("Награда:", reward)
+                // console.log("Награда:", reward)
                 add_balance(data.shooter, reward)
 
                 const balance = get_balance(data.shooter)
