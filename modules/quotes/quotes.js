@@ -73,7 +73,7 @@ const db = new sqlite(path.join(__dirname, "quotes.db"));
 const path_rep = path.join(__dirname, "quotes_rep.json")
 var quotes_rep = JSON.parse(fs.readFileSync(path_rep, "utf-8"))
 
-const quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
+let quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
 const placeholder_quote = {"author": "anon_bot", "citation": "1000010010110000110000"}
 quotes.unshift(placeholder_quote)
 
@@ -100,6 +100,7 @@ function add_prepared_quotes_to_bd() {
                                               WHERE ID == ?`)
             deleteMessage.run(ID)
         })
+	quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
     } catch (error) {
         actions.push({type: "error",
                       content: {date_time: new Date(),
@@ -180,6 +181,8 @@ function create_quote(citation, author) {
                                       (citation, author)
                                       VALUES (?, ?)`)
     insertMessage.run(citation, author)
+    quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
+
 }
 
 function delete_prepared_quote(ID) {
