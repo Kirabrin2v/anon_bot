@@ -198,7 +198,7 @@ function update_stats(nickname, key, new_value, action="equare") {
 		insertMessage.run(new_value, nickname)
 		let rank = get_stats(nickname, "rank")
 		let donate = get_stats(nickname, "donate")
-		if (key == "donate" && rank != Object.keys(ranks).length && donate >= price_donate[rank]) {
+		if (key == "donate" && rank > 0 && rank != Object.keys(ranks).length && donate >= price_donate[rank]) {
 			var i;
 			for (i = 0; donate >= price_donate[i]; i++) {}
 			console.log(`UPDATE RANK ${nickname} ${rank} -> ${i}`)
