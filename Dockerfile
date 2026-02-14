@@ -22,5 +22,6 @@ RUN chmod +x scripts/init-quiz.sh && ./scripts/init-quiz.sh
 RUN chmod +x scripts/init-quotes.sh && ./scripts/init-quotes.sh
 RUN chmod +x scripts/init-SAGO.sh && ./scripts/init-SAGO.sh
 RUN chmod +x scripts/init-config.sh && ./scripts/init-config.sh
+RUN chmod +x scripts/init-gpt.sh && ./scripts/init-gpt.sh
 
 CMD ["forever", "new_anon.js"]
