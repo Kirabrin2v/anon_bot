@@ -17,7 +17,7 @@ const phrases = {}
 phrases["grief"] = JSON.parse(config.get("phrases", "grief"))
 phrases["grief_none_player"] = JSON.parse(config.get("phrases", "grief_none_player"))
 
-const module_name = "SAGO"
+const module_name = "grief"
 const help = "Логи установленных кроватей"
 
 const structure = {
