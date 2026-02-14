@@ -1559,7 +1559,7 @@ setInterval(() =>  {
 	if (location_bot && location_bot.includes("Классическое выживание")) {
 		bot.chat("/bal")
 	}
-}, 10000)
+}, 4000)
 
 setInterval(() => cmds.push("/tca check"), 15000)
 
