@@ -142,6 +142,8 @@ const modules = new ModuleManager()
 modules.load_modules([
 	["./modules/text/text.js"],
 
+	["./modules/gpt/gpt.js"],
+
 	["./modules/snowballs/snowballs.js", {"bot": bot}],
 
 	["./modules/choice/choice.js"],
@@ -907,7 +909,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 
 						const cooldown_info = modules.call_module("cooldown").check_cooldown(sender, cmd, args)
 						if (seniors.includes(sender) || cooldown_info["is_ok"]) {
-						  let actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args);
+						  let actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args, valid_command.unused_args);
 
 						  let update_action = {
 						    type: "answ",
