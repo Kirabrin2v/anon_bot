@@ -1,27 +1,45 @@
-node_modules
-img/*
+# Node.js
+node_modules/
+
+# Логи и временные файлы
 *.log
-**/*.zip
+*.zip
+*.tar
+
+# Игровые данные и базы
+*.db
+*.db-journal
+*.ini
+
+# Конфиги с чувствительными данными
 txt/config.ini
 modules/gpt/config.ini
+modules/SAGO/permanent_memory.ini
+
+# Данные пользователей и статистика
 modules/bank/users_data.db
 modules/cash/money.db
-modules/detector
 modules/logging/logs.db
-modules/lurking
 modules/players_stats/players_stats.db
 modules/snowballs/snowballs.db
+modules/quotes/quotes.db
+
+# JSON/текстовые данные, которые генерируются или изменяются в runtime
 modules/quiz/*.json
 modules/quiz/*.txt
-modules/quotes/quotes.db
 modules/quotes/quotes_rep.json
-modules/SAGO/placed_beds.db
-modules/SAGO/permanent_memory.ini
-modules/skinnaper/skins/*
-modules/telegram
-modules/test
-*.tar
-old_version
+
+# Папки с временными или сгенерированными файлами
+img/
+modules/detector/
+modules/lurking/
+modules/skinnaper/skins/
+modules/telegram/
+modules/test/
+old_version/
+anon/
+
+# Любые медиа
 *.jpg
 *.txt
-anon/
+
