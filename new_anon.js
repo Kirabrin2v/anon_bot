@@ -907,13 +907,26 @@ bot.on('messagestr', (message, sender, message_json) => {
 
 						const cooldown_info = modules.call_module("cooldown").check_cooldown(sender, cmd, args)
 						if (seniors.includes(sender) || cooldown_info["is_ok"]) {
-							let actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args)
-							let update_action = {type: "answ", content: {"chat_send": chat_send, "send_in_private_message": send_in_private_message}}
-							console.log(actions)
-							actions_processing(actions, undefined, update_action)
+						  let actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args);
+
+						  let update_action = {
+						    type: "answ",
+						    content: {
+						      chat_send: chat_send,
+						      send_in_private_message: send_in_private_message
+						    }
+						  };
+
+						  console.log(actions);
+
+						  Promise.resolve(actions)
+						    .then(resolvedActions => {
+						      actions_processing(resolvedActions, undefined, update_action);
+						    })
+						    .catch(console.error);
 
 						} else {
-							actions_processing(cooldown_info)
+						  actions_processing(cooldown_info);
 						}
 
 					} else if (rank_sender > 0) {
