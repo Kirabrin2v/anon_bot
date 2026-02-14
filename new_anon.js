@@ -769,7 +769,7 @@ bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
 			if (rank == 5) rank = 0;
 			if (!rank) rank = 0;
 
-			let actions = modules.call_module("SAGO").placed_bed_processing(criminal_nick, rank, block_position)
+			let actions = modules.call_module("grief").placed_bed_processing(criminal_nick, rank, block_position)
 			actions_processing(actions)
 		}
 
