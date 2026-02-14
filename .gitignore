@@ -3,6 +3,7 @@ img/*
 *.log
 **/*.zip
 txt/config.ini
+modules/gpt/config.ini
 modules/bank/users_data.db
 modules/cash/money.db
 modules/detector
