@@ -823,7 +823,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 			rank_sender = 0;
 			
 		}
-		modules.call_module("telegram").server_message_processing(sender, message, raw_message, new Date())
+		modules.call_module("telegram").player_message_processing(sender, message, raw_message, new Date())
 
 		let players_on_loc = get_players_on_loc(bot)
 
@@ -1203,6 +1203,17 @@ function processing_server_message(sender, message, message_json) {
 			reason = is_mute[4]
 		}
 		console.log(violator, guardian)
+		punishment_data = {
+			is_kick: is_kick,
+			is_ban: is_ban,
+			is_warn: is_warn,
+			is_mute: is_mute,
+			violator: violator,
+			guardian: guardian,
+			reason: reason,
+			period: period
+		}
+		modules.call_module("telegram").server_message_processing(message, "punishment", new Date(), punishment_data)
 		let actions = modules.call_module("casino").end_casino_violator(violator, guardian)
 		actions_processing(actions)
 
