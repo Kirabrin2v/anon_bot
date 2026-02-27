@@ -1556,15 +1556,6 @@ setInterval(check_loc_bot, 3000)
 setInterval(send_answs, 2000)
 setInterval(send_cmds, interval_send_cmds)
 
-setTimeout(() => {
-	setInterval(() => {
-		answs.push({
-			message: "Новый год! Время веселья! А за хорошие попадания снежками в игроков я дам щедрую награду! Подробнее сmd снежки"
-		})
-	}, 10800000)
-}, 30000)
-
-
 setInterval(() => cmds.push("/tca log"), 10000)
 setInterval(() =>  {
 	if (location_bot && location_bot.includes("Классическое выживание")) {
