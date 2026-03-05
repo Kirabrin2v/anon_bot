@@ -9,7 +9,7 @@ config.read("txt/config.ini")
 
 const express = require("express");
 
-const bot_username = "anon_bot";
+const bot_username = "temp_bot";
 globalThis.bot_username = bot_username
 
 const bot = mineflayer.createBot({
@@ -803,7 +803,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 			message = message.split(": ").slice(1).join(": ")
 			
 			if (type_chat != "Пати-чат" && type_chat != "Лк" && type_chat != "Гл") {
-				type_chat = undefined;
+				type_chat = "Клан-чат";
 			}
 			
 		}
@@ -823,7 +823,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 			rank_sender = 0;
 			
 		}
-		modules.call_module("telegram").player_message_processing(sender, message, raw_message, new Date())
+		modules.call_module("telegram").player_message_processing(type_chat, sender, message, raw_message, new Date())
 
 		let players_on_loc = get_players_on_loc(bot)
 
