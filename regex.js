@@ -6,6 +6,8 @@ const reg_message = String.raw`(.{1,256})`;
 const reg_me_send = new RegExp(`^\\[${reg_nickname} -> Мне\\] ${reg_message}`)
 const reg_i_send = new RegExp(`^\\[Я -> ${reg_nickname}\\] ${reg_message}`)
 
+const reg_near = new RegExp(`^Окружающие игроки: ((?:(?:${reg_nickname}\\([0-9]{1,4}m\\)(?:, )?)+)|(?:ничего))$`)
+
 const reg_encrypted_ip = String.raw`[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}`;
 const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ\n ` +
 "Статус: (.*)\n " +
@@ -74,6 +76,8 @@ module.exports = {
 	reg_message,
 	reg_me_send,
 	reg_i_send,
+
+	reg_near,
 
 	reg_encrypted_ip,
 	reg_lookup,
