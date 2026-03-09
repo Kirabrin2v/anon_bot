@@ -9,7 +9,7 @@ config.read("txt/config.ini")
 
 const express = require("express");
 
-const bot_username = "temp_bot";
+const bot_username = "anon_bot";
 globalThis.bot_username = bot_username
 
 const bot = mineflayer.createBot({
@@ -232,6 +232,8 @@ const {
 	reg_message,
 	reg_me_send,
 	reg_i_send,
+
+	reg_near,
 
 	reg_encrypted_ip,
 	reg_lookup,
@@ -1047,6 +1049,8 @@ function processing_server_message(sender, message, message_json) {
 
 	const lookup = message.match(reg_lookup)
 
+	const near = message.match(reg_near)
+
 	const bal_TCA = message.match(reg_bal_TCA)
 	const bal_survings = message.match(reg_bal_survings)
 
@@ -1097,6 +1101,11 @@ function processing_server_message(sender, message, message_json) {
 		// 	lurking.processing_seen(nick, status, position, server)
 		// }
 
+	} else if (near) {
+		now_cmd = "near"
+
+		const nick_and_distances = near[1] // [nick1(Nm), nick2(Nm), ...] ИЛИ ничего
+		
 	} else if (survings_accept) {
 		let nick = survings_accept[1]
 		let donate_sum = Number(survings_accept[2].replaceAll(",", ""))
@@ -1561,7 +1570,7 @@ setInterval(() =>  {
 	if (location_bot && location_bot.includes("Классическое выживание")) {
 		bot.chat("/bal")
 	}
-}, 4000)
+}, 3000)
 
 setInterval(() => cmds.push("/tca check"), 15000)
 
