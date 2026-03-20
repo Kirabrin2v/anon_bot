@@ -6,6 +6,8 @@
     "mathjs": "^15.1.0",
     "mineflayer": "^4.33.0",
     "mineflayer-maps": "^2.0.2",
-    "node-telegram-bot-api": "^0.67.0"
+    "node-telegram-bot-api": "^0.67.0",
+    "socks": "^2.8.7",
+    "socks-proxy-agent": "^9.0.0"
   }
 }

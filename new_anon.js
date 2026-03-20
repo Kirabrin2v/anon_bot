@@ -1,4 +1,5 @@
 const mineflayer = require("mineflayer");
+const { SocksClient } = require('socks')
 const maps = require("mineflayer-maps");
 
 globalThis.BASE_DIR = __dirname;
@@ -9,9 +10,16 @@ config.read("txt/config.ini")
 
 const express = require("express");
 
-const bot_username = "anon_bot";
+const bot_username = config.get("VARIABLES", "active_nick");
 globalThis.bot_username = bot_username
 
+const proxy = {
+	host: config.get("PROXY", "host"),
+	port: Number(config.get("PROXY", "port")),
+	type: 5,
+	userId: config.get("PROXY", "login"),
+	password: config.get("PROXY", "password")
+}
 const bot = mineflayer.createBot({
     host: "mnrt.teslacraft.org",
     port: "25565",
@@ -19,7 +27,21 @@ const bot = mineflayer.createBot({
     maps_saveToFile: false,
     version: "1.12.2",
     hideErrors: true,
-    username: bot_username});
+    username: bot_username,
+    connect: async (client) => {
+	    const info = await SocksClient.createConnection({
+	      proxy: proxy,
+	      command: 'connect',
+	      destination: {
+	        host: 'mnrt.teslacraft.org',
+	        port: 25565
+	      }
+	    })
+
+	    client.setSocket(info.socket)
+	    client.emit('connect')
+	  }
+});
 bot.loadPlugin(maps.inject)
 
 const price_TCA = config.get("VARIABLES", "price_TCA")
