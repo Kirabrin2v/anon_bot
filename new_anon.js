@@ -716,6 +716,9 @@ function send_answs() {
 				}
 
 				let alias;
+
+				let recipient = random_choice(modules.call_module("stats").get_players()) // 1 april event
+	            
 	            if (modules.call_module("stats").get_stats(sender)) {
 	            	alias = modules.call_module("stats").get_stats(sender, "name")
 	            }

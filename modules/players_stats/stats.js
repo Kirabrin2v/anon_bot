@@ -140,13 +140,21 @@ function get_stats(nickname, key) {
 }
 
 function get_tops(type_stat) {
-    let select_mesasge = db.prepare(`SELECT nickname, ${type_stat}
+    let select_message = db.prepare(`SELECT nickname, ${type_stat}
           FROM stats
           WHERE ? != 0 AND ? IS NOT NULL
           ORDER BY ${type_stat} DESC`)
-    let top_stat = select_mesasge.all(type_stat, type_stat).map(elem => [elem.nickname, elem[type_stat]])
+    let top_stat = select_message.all(type_stat, type_stat).map(elem => [elem.nickname, elem[type_stat]])
     return top_stat;
 
+}
+
+function get_players() {
+	const select_message = db.prepare(`SELECT nickname
+																			FROM stats
+																			WHERE rank > 0`)
+	const nicks = select_message.all().map(elem => elem.nickname)
+	return nicks;
 }
 
 function add_player(nickname) {
@@ -357,4 +365,4 @@ function get_actions() {
 	return actions.splice(0)
 }
 
-module.exports = {module_name, cmd_processing, payment_processing, get_stats, get_actions, update_stats, help, structure}
+module.exports = {module_name, cmd_processing, payment_processing, get_stats, get_players, get_actions, update_stats, help, structure}
