@@ -30,6 +30,10 @@ class BaseModule {
         this.ModuleManager = ModuleManager;
     }
 
+    set_command_engine(CommandEngine) {
+        this.CommandEngine = CommandEngine;
+    }
+
     diagnostic_eval(eval_expression) {
         try {
             return eval(eval_expression)

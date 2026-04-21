@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const CommandEngine = require("./command_engine.js")
 const bus = require("./event_bus");
 
@@ -19,18 +22,41 @@ class ModuleManager {
         })
 
 	}
-	async load_modules(modules_info) {
-		const load_promises = modules_info.map(async (module_info) => {
-			const path = module_info[0]
-			let parameters, mod;
+
+	find_modules(startDir) {
+	    const result = [];
+
+	    const entries = fs.readdirSync(startDir, { withFileTypes: true });
+
+	    for (const entry of entries) {
+	        if (!entry.isDirectory()) {
+	        	continue;
+	        }
+
+	        const folderName = entry.name;
+	        const folderPath = path.join(startDir, folderName);
+
+	        const expectedFile = path.join(folderPath, `${folderName}.js`);
+
+	        if (fs.existsSync(expectedFile)) {
+	            result.push(expectedFile);
+	        }
+	    }
+
+	    return result;
+	}
+
+	async load_modules(paths) {
+		const load_promises = paths.map(async (path) => {
+			let mod;
 			try {
-				parameters = module_info[1]
 				const Module = require(path)
-				mod = new Module(parameters)
+				mod = new Module()
 				//console.log("реквайр", mod)
 				mod.set_module_manager(this)
+				mod.set_command_engine(CommandEngine)
 				if (mod.initialize) {
-					mod.initialize(parameters)
+					mod.initialize()
 				}
 				if (mod.structure && !mod.only_tg) {
 					CommandManager.modules_structure[mod.module_name] = mod.structure
@@ -114,6 +140,7 @@ class ModuleManager {
 
 
 module.exports = { 
+	ModuleManagerConstuctor: ModuleManager,
 	ModuleManager: new ModuleManager(),
 	CommandManager
 }

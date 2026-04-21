@@ -53,6 +53,25 @@ const COLORS = {
     bgBrightWhite: "\x1b[107m"
 }
 
+function slugify(text) {
+  const toLower = text.toLowerCase();
+  const transliterate = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e',
+    'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k',
+    'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r',
+    'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '',
+    'э': 'e', 'ю': 'yu', 'я': 'ya',
+  };
+  const slug = toLower.replace(/[а-яё]/g, char => transliterate[char])
+                    .replace(/[^a-z0-9-]/g, '-') // замена на тире
+                    .replace(/-+/g, '-') // удаление лишних тире
+                    .replace(/^-+|-+$/g, '') // удаление начальных и конечных тире
+                    .trim();
+
+  return slug;
+}
+
 function stats_split_into_pages(stat_top, nums_in_page=nums_in_page_def, num_page=num_page_def, begin_text=begin_text_def, separator=separator_def) {
 	let answ, is_ok;
 

@@ -1,5 +1,6 @@
 globalThis.BASE_DIR = __dirname;
 
+const path = require("path");
 const { SocksClient } = require('socks')
 
 const ConfigParser = require('configparser');
@@ -903,54 +904,61 @@ bot.on('entitySpawn', (entity) => {
 	}
 })
 
-modules.load_modules([
-	["./modules/players_stats/stats.js"],
 
-	["./modules/gpt/gpt.js"],
+modules.load_modules(
+	modules.find_modules(
+		path.join(__dirname, "modules")
+	)
+)
 
-	["./modules/snowballs/snowballs.js"],
+// modules.load_modules([
+// 	["./modules/stats/stats.js"],
 
-	["./modules/choice/choice.js"],
+// 	["./modules/gpt/gpt.js"],
 
-	["./modules/detector/detector.js"],
+// 	["./modules/snowballs/snowballs.js"],
 
-	["./modules/bank/bank.js"],
+// 	["./modules/choice/choice.js"],
 
-	["./modules/casino/casino.js"],
+// 	["./modules/detector/detector.js"],
 
-	["./modules/combine_nicks/combine.js"],
+// 	["./modules/bank/bank.js"],
 
-	["./modules/SAGO/SAGO.js"],
+// 	["./modules/casino/casino.js"],
 
-	["./modules/cooldown/cooldown.js"],
+// 	["./modules/combine_nicks/combine_nicks.js"],
 
-	["./modules/logging/logging.js"],
+// 	["./modules/SAGO/SAGO.js"],
 
-	["./modules/quotes/quotes.js"],
+// 	["./modules/cooldown/cooldown.js"],
 
-	["./modules/party/party.js"],
+// 	["./modules/logging/logging.js"],
 
-	["./modules/tracker/tracker.js"],
+// 	["./modules/quotes/quotes.js"],
 
-	["./modules/alias/alias.js"],
+// 	["./modules/party/party.js"],
 
-	["./modules/who/who.js"],
+// 	["./modules/tracker/tracker.js"],
 
-	["./modules/chance/chance.js"],
+// 	["./modules/alias/alias.js"],
 
-	["./modules/quiz/quiz.js"],
+// 	["./modules/who/who.js"],
 
-	["./modules/flags/flags.js"],
+// 	["./modules/chance/chance.js"],
 
-	["./modules/skinnaper/skinnaper.js"],
+// 	["./modules/quiz/quiz.js"],
 
-	["./modules/move/move.js"],
+// 	["./modules/flags/flags.js"],
 
-	["./modules/cash/manage_cash.js"],
+// 	["./modules/skinnaper/skinnaper.js"],
 
-	["./modules/telegram/telegram.js"],
+// 	["./modules/move/move.js"],
 
-])
+// 	["./modules/cash/cash.js"],
+
+// 	["./modules/telegram/telegram.js"],
+
+// ])
 
 // modules.load_modules([
 // 	["./modules/site_connect/site_connect.js", {"structures": CommandManager.modules_structure}]
