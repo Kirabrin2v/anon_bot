@@ -1,8 +1,6 @@
 globalThis.BASE_DIR = __dirname;
 
-const mineflayer = require("mineflayer");
 const { SocksClient } = require('socks')
-const maps = require("mineflayer-maps");
 
 const ConfigParser = require('configparser');
 const config = new ConfigParser();
@@ -19,20 +17,12 @@ const {
 	reg_bal_survings,
 	reg_bal_TCA,
 
-	reg_nickname,
-	reg_message,
 	reg_me_send,
-	reg_i_send,
 
 	reg_near,
 
-	reg_encrypted_ip,
 	reg_lookup,
 
-	reg_vic_anagrams,
-	reg_vic_fast,
-	reg_vic_example,
-	reg_vic_quest,
 	reg_vic_question,
 	reg_vic_answ,
 	reg_tryme_info,
@@ -52,7 +42,12 @@ const {
 
 } = require("./regex.js")
 
-const CommandManager = require("./command_engine.js")
+const { stats_split_into_pages } = require("./utils/text.js")
+
+const { ModuleManager, CommandManager } = require("./module_manager.js")
+const bus = require("./event_bus.js");
+
+const { init, get_bot } = require('./init')
 
 // Константы
 const bot_username = config.get("VARIABLES", "active_nick");
@@ -69,7 +64,7 @@ const proxy = {
 const host = config.get("VARIABLES", "host")
 const port = Number(config.get("VARIABLES", "port"))
 
-const bot = mineflayer.createBot({
+init({
     host: host,
     port: port,
     maps_outputDir: "img/",
@@ -90,8 +85,10 @@ const bot = mineflayer.createBot({
 	    client.setSocket(info.socket)
 	    client.emit('connect')
 	  }
-});
-bot.loadPlugin(maps.inject)
+})
+const bot = get_bot();
+
+const modules = ModuleManager;
 
 const seniors = JSON.parse(config.get("VARIABLES", "seniors")) // Полный доступ
 const masters = JSON.parse(config.get("VARIABLES", "masters")) // Доступны команды из master_cmds
@@ -100,10 +97,8 @@ const masters_cmds = JSON.parse(config.get("VARIABLES", "master_cmds"))
 const ignore_cmds = JSON.parse(config.get("VARIABLES", "ignore_cmds")) // Не логировать ответ от этих команд
 
 const tesla_ranks = JSON.parse(config.get("TESLA", "ranks"))
-const price_TCA = Number(config.get("TESLA", "price_TCA"))
 
 const interval_send_cmds = config.get("VARIABLES", "interval_send_cmds")
-const interval_check_surv = config.get("VARIABLES", "interval_check_surv")
 
 const bot_password = config.get(bot_username, "bot_password")
 const bot_pin = config.get(bot_username, "bot_pin")
@@ -143,19 +138,15 @@ const app = express();
 
 
 // Переменные. Изменяются во время выполнения
-var timer_check_surv;
+let bot_bal_survings = 0;
+let bot_bal_TCA = 0;
 
-var bot_bal_survings = 0;
-var bot_bal_TCA = 0;
+const answs = [];
+let cmds = [];
 
-var answs = [];
-var cmds = [];
+let all_players = {};
 
-var all_players = {};
-
-var time_last_send_cmd = {}
-
-var location_bot;
+let location_bot;
 
 let time_last_server_message = 0
 let combine_server_message = [] // Объединение одного логического сообщения, разбитого на разные строки
@@ -166,106 +157,18 @@ let now_reg_index = 0;
 let now_reg;
 
 
-class ModuleManager {
-	constructor () {
-		this.modules = {}
-
-	}
-	async load_modules(modules_info) {
-		const load_promises = modules_info.map(async (module_info) => {
-			const path = module_info[0]
-			let parameters, mod;
-			try {
-				parameters = module_info[1]
-				mod = require(path)
-				//console.log("реквайр", mod)
-				if (mod.initialize) {
-					mod.initialize(parameters)
-				}
-				if (mod.structure) {
-					CommandManager.modules_structure[mod.module_name] = mod.structure
-					CommandManager.modules_structure[mod.module_name]._description = mod.help
-				}
-				this.modules[mod.module_name] = mod
-				console.log(`${mod.module_name} успешно импортирован\n`)
-			
-			} catch (error) {
-				if (!mod) mod = {}
-				console.log(`При импортировании модуля '${path}' возникла ошибка: ${error}`)
-				actions_processing({
-									type: "error",
-									content: {
-										date_time: new Date(),
-										module_name: mod.module_name || path,
-										error: error,
-									}
-								})
-			}
-		})
-		await Promise.all(load_promises)
-	}
-	call_module(module_name, initiator) {
-		const mod = this.modules[module_name]
-		if (mod) {
-			return new Proxy(mod, {
-				get(target, prop) {
-					const value = target[prop]
-
-					if (typeof value === 'function') {
-						return (...args) => {
-							try {
-								return value(...args)
-							} catch (error) {
-								actions_processing({
-									type: "error",
-									content: {
-										date_time: new Date(),
-										module_name: module_name,
-										error: error,
-										args: args,
-										sender: initiator
-									}
-								})
-								console.error(`[${initiator}] Ошибка при вызове ${prop} из модуля ${module_name}:`, error)
-							}
-						}
-					} else {
-						return value // просто значение, если не функция
-					}
-				}
-			})
-
-		} else {
-			// console.log(`Модуля ${module_name} не существует`)
-		}
-		return new Proxy({}, {
-			get(target, prop) {
-				// Если кто-то попытается вызвать любую функцию на несуществующем модуле
-				return (...args) => {
-					// console.warn(`[${initiator || "system"}] Попытка вызвать метод "${prop}" у незагруженного модуля "${module_name}" с аргументами:`, args)
-					return undefined
-				}
-			}
-		})
-	}
-}
-const modules = new ModuleManager()
-
-
 function module_connect(module_recipient, module_sender, json_cmd, access_lvl) {
 	console.log(module_recipient, module_sender, json_cmd)
-	if (typeof module_recipient == "string") {
+	if (typeof module_recipient === "string") {
 		module_recipient = modules.modules[module_recipient]
 	} 
 
-	if (typeof module_sender == "string") {
+	if (typeof module_sender === "string") {
 		module_sender = modules.modules[module_sender]
 	} 
 
-	if (typeof module_recipient == "object" && typeof module_sender == "object") {
-		const actions = module_recipient.module_dialogue(module_recipient, module_sender, json_cmd, access_lvl)
-		actions_processing(actions)
-	
+	if (typeof module_recipient === "object" && (typeof module_sender === "object" || module_sender === undefined)) {
+		module_recipient.module_dialogue(module_recipient, module_sender, json_cmd, access_lvl)
 	} else {
 		console.log("Модуль не найден", module_recipient, module_sender)
 	}
@@ -312,10 +215,10 @@ function parseArgs(inputString) {
 }
 
 function check_loc_bot() {
-	let tablist = bot.tablist.header.text.split("\n")
+	const tablist = bot.tablist.header.text.split("\n")
 	if (tablist.length >= 3) {
-		let new_location_bot = tablist[2].split("» §b§l")[1].split(" §e§l«")[0];
-		if (new_location_bot != location_bot) {
+		const new_location_bot = tablist[2].split("» §b§l")[1].split(" §e§l«")[0];
+		if (new_location_bot !== location_bot) {
 			if (location_bot) {
 				console.log(`Бот переместился с ${location_bot} на ${new_location_bot}`)
 				if (!location_bot.includes("Классическое выживание") && new_location_bot.includes("Классическое выживание")) {
@@ -328,11 +231,10 @@ function check_loc_bot() {
 			} else {
 				location_bot = new_location_bot;
 				console.log(`Бот появился на локации ${new_location_bot}`)
-				modules.call_module("telegram").start()
 			}
-		} else {
-			location__bot = tablist.join(" ");
 		}
+	} else {
+		location_bot = tablist.join(" ");
 	}
 }
 
@@ -342,7 +244,7 @@ function merge_with_inherited(target, source) { // Объединение осн
         Object.keys(obj).forEach(prop => {
             if (!(prop in target)) {
                 target[prop] = source[prop]; // Берём из самого объекта, не из прототипа
-            } else if (typeof target[prop] == "object" && typeof source[prop] == "object") {
+            } else if (typeof target[prop] === "object" && typeof source[prop] === "object") {
             	target[prop] = merge_with_inherited(target[prop], source[prop])
             }
         });
@@ -353,42 +255,38 @@ function merge_with_inherited(target, source) { // Объединение осн
 
 
 function check_access(cmd, args, lvl, module_cmd_access) {
-	if (lvl == undefined || lvl < 0) return false;
+	if (lvl === undefined || lvl < 0) {return false;}
 
 	let access_object = module_cmd_access[cmd]
-	if (access_object) access_object = access_object[lvl]
+	if (access_object) {access_object = access_object[lvl]}
 
-	if (!access_object) return true;
+	if (!access_object) {return true;}
 
-	let source_objects = module_cmd_access[cmd].slice(0, lvl)
+	const source_objects = module_cmd_access[cmd].slice(0, lvl)
 	source_objects.reverse()
 	for (let i=0; i < source_objects.length; i++) {
 		access_object = merge_with_inherited(access_object, source_objects[i])
 	}
 	
-	if (args.length == 0 && !access_object[""]) return false;
+	if (args.length === 0 && !access_object[""]) {return false;}
 
 	let index_args = 0
 
-	while (typeof access_object != "string") {
-		if (args.length == index_args) return true;
+	while (typeof access_object !== "string") {
+		if (args.length === index_args) {return true;}
 		access_object = access_object[args[index_args]]
 		index_args++;
-		if (!access_object) return false;
+		if (!access_object) {return false;}
 
 	}
-	if (access_object == "access_before" && args.length == index_args) return true;
-	if (access_object == "end") return true;
+	if (access_object === "access_before" && args.length === index_args) {return true;}
+	if (access_object === "end") {return true;}
 	return false;
 	
 }
 
-function random_number (min_num, max_num) {
+function random_number(min_num, max_num) {
 	return Math.floor(Math.random() * (max_num - min_num + 1)) + min_num;
-}
-
-function random_choice(array) {
-	return array[Math.floor(Math.random() * array.length)]
 }
 
 function count(array, value) {
@@ -399,9 +297,9 @@ function count(array, value) {
 
 function generate_help_message(num_page) {
 	const help_list = Object.entries(modules.modules)
-		.filter((elem) => elem[1].cmd_processing)
+		.filter((elem) => modules.modules_structure[elem[0]] && elem[1].cmd_processing)
 		.map((elem) => [elem[0], elem[1].help])
-	const info =  modules.call_module("text").stats_split_into_pages(help_list, 3, num_page, "Информация о командах: ")
+	const info =  stats_split_into_pages(help_list, 3, num_page, "Информация о командах: ")
 	if (info) {
 		return info["answ"]
 	} else {
@@ -423,36 +321,36 @@ function check_allow_cmd(cmd, args) {
 }
 
 function update_all_players() {
-	if (!location_bot || !location_bot.includes("Классическое выживание")) return;
+	if (!location_bot || !location_bot.includes("Классическое выживание")) {return;}
 	all_players = bot.players
-	modules.call_module("lurking").update_players_list(Object.keys(all_players))
+	modules.call_module("tracker").update_players_list(Object.keys(all_players))
 }
 
 async function actions_processing(actions, module_name, update_action) {
-	if (!actions) return;
+	if (!actions) {return;}
 	if (!actions.length) {
 		actions = [actions]
 	}
 	actions.forEach(action => {
-		let type = action.type;
-		let content = action.content;
+		const type = action.type;
+		const content = action.content;
 
-		if (update_action && type == update_action.type) {
-			for (key in update_action.content) {
-				if (key == "send_in_private_message" && !update_action.content[key]) continue;
+		if (update_action && type === update_action.type) {
+			for (const key in update_action.content) {
+				if (key === "send_in_private_message" && !update_action.content[key]) {continue;}
 				content[key] = update_action.content[key]
 			}
 		}
-		if (type == "answ") {
-			if (!content.message) return;
+		if (type === "answ") {
+			if (!content.message) {return;}
 			answs.push(content)
-		} else if (type == "cmd") {
+		} else if (type === "cmd") {
 			cmds.push(content)
-		} else if (type == "survings") {
+		} else if (type === "survings") {
 			send_pay(content.nick, content.amount, content.reason)
-		} else if (type == "TCA") {
+		} else if (type === "TCA") {
 			send_TCA(content.nick, content.amount)
-		} else if (type == "error") {
+		} else if (type === "error") {
 			const error = content.error
 			const recipient = content.sender
 			console.log(content)
@@ -461,24 +359,43 @@ async function actions_processing(actions, module_name, update_action) {
 				actions_processing({"type": "answ", "content": {"recipient": recipient, "message": `Во время выполнения команды из ${content.module_name} произошла ошибка`}})
 			}
 
-		} else if (type == "new_survings") {
+		} else if (type === "new_survings") {
 			payment_processing(content.payer, content.amount, "survings", content.reason)
-		} else if (type == "new_TCA") {
+		} else if (type === "new_TCA") {
 			payment_processing(content.payer, content.amount, "TCA")
 		
-		} else if (type == "update_stats")  {
+		} else if (type === "update_stats")  {
 			console.log("update_stats", content)
 			modules.call_module("stats").update_stats(content.nickname, content.key, content.value, content.type)
 
-		} else if (type == "waiting_data") {
+		} else if (type === "waiting_data") {
 			queue_waiting_data["private_message"].push({module_name: module_name,
 														
 														})
-		} else if (type == "module_request") {
+		} else if (type === "module_request") {
 			module_connect(action.module_recipient, action.module_sender, content, action.access_lvl)
-		} else if (type == "wait_data") {
+		} else if (type === "wait_data") {
 
 			queue_waiting_data[content.type].push({"time_create": new Date().getTime(), "module_name": action.module_name, "content": content})
+		} else if (type === "js") {
+			let is_ok = true;
+			let message_error;
+			try {
+				eval(content.js)
+			} catch (error) {
+				is_ok = false;
+				message_error = error.toString();
+			}
+
+			const new_content = {
+				type: "answ",
+				type_content: "message",
+				name: "execute_js",
+				old_data: content,
+				is_ok,
+				message_error: JSON.stringify(message_error)
+			}
+			module_connect(action.module_name, undefined, new_content)
 		}
 	})
 }
@@ -489,7 +406,7 @@ function processing_server_message(sender, message, message_json) {
 	let values = {}
 	let count_args = 1;
 	// console.log("Серверное сообщение", [message], new Date().getTime() - time_last_server_message)
-	if (queue_waiting_data["cmd"].length != 0) {
+	if (queue_waiting_data["cmd"].length !== 0) {
 		wait_cmd = queue_waiting_data["cmd"][0].cmd
 		//wait_data_processing("cmd", {"server_answ": message})
 	}
@@ -520,7 +437,7 @@ function processing_server_message(sender, message, message_json) {
 
 	const tca_send = message.match(reg_TCA_send)
 	const survings_send = message.match(reg_survings_send)
-	if (message != "" && !seen && !tca_accept && !bal_survings && !bal_TCA && !message.includes("Лог последних операций с баллами TCA:") && !message.match(reg_log_line)) {
+	if (message !== "" && !seen && !tca_accept && !bal_survings && !bal_TCA && !message.includes("Лог последних операций с баллами TCA:") && !message.match(reg_log_line)) {
 		modules.call_module("logging").add_msg_to_server_logs(new Date(), sender, message, JSON.stringify(message_json))
 		console.log([message], sender)
 	}
@@ -530,7 +447,7 @@ function processing_server_message(sender, message, message_json) {
 		bot.chat(`/login ${bot_password}`)
 		password_enter = true;
 
-	} else if (message == "[TeslaCraft] Уже выполняется другая телепортация.") {
+	} else if (message === "[TeslaCraft] Уже выполняется другая телепортация.") {
 		bot.chat("/hub" + random_number(1, 8))
 
 	} else if (seen) {
@@ -548,11 +465,13 @@ function processing_server_message(sender, message, message_json) {
 		now_cmd = "near"
 
 		const nick_and_distances = near[1] // [nick1(Nm), nick2(Nm), ...] ИЛИ "ничего"
+
+		values = {nick_and_distances: nick_and_distances}
 		
 	} else if (survings_accept) {
-		let nick = survings_accept[1]
-		let donate_sum = Number(survings_accept[2].replaceAll(",", ""))
-		let reason = survings_accept[3]
+		const nick = survings_accept[1]
+		const donate_sum = Number(survings_accept[2].replaceAll(",", ""))
+		const reason = survings_accept[3]
 		console.log(nick, donate_sum, reason)
 		modules.call_module("manage_cash").survings_accept(nick, donate_sum,reason)
 
@@ -567,19 +486,19 @@ function processing_server_message(sender, message, message_json) {
 	} else if (survings_send) {
 		now_cmd = "pay"
 
-		let cash = Number(survings_send[1].replaceAll(",", ""))
-		let nick = survings_send[2]
+		const cash = Number(survings_send[1].replaceAll(",", ""))
+		const nick = survings_send[2]
 		modules.call_module("manage_cash").confirm_send_money(new Date(), nick, "survings", cash)
 
 	}  else if (tca_accept) {
 		now_cmd = "tca log"
 		count_args = 2
-		let tca_logs = []
+		const tca_logs = []
 		for (let i=0; i < 15; i++) {
-			let date_time = tca_accept[i*5 + 1]
-			let [day, month, year] = date_time.split(" ")[0].split(".")
-			let [hours, minutes, seconds] = date_time.split(" ")[1].split(":")
-			let date = new Date()
+			const date_time = tca_accept[i*5 + 1]
+			const [day, month, year] = date_time.split(" ")[0].split(".")
+			const [hours, minutes, seconds] = date_time.split(" ")[1].split(":")
+			const date = new Date()
 			date.setYear(year)
 			date.setMonth(month)
 			date.setDate(day)
@@ -587,12 +506,12 @@ function processing_server_message(sender, message, message_json) {
 			date.setMinutes(minutes)
 			date.setSeconds(seconds)
 			
-			let action = tca_accept[i*5 + 2]
-			let amount = Number(tca_accept[i*5 + 3])
-			let balance_TCA = Number(tca_accept[i*5 + 4])
-			let nickname = tca_accept[i*5 + 5]
+			const action = tca_accept[i*5 + 2]
+			const amount = Number(tca_accept[i*5 + 3])
+			const _balance_TCA = Number(tca_accept[i*5 + 4])
+			const nickname = tca_accept[i*5 + 5]
 			let payer, payee;
-			if (action == "+") {
+			if (action === "+") {
 				payer = nickname;
 				payee = bot_username;
 
@@ -623,8 +542,8 @@ function processing_server_message(sender, message, message_json) {
 		// }
 		
 		bot_bal_survings = Number(bal_survings[1].replace(/,/g, ""))
-		let new_survings = modules.call_module("manage_cash").update_survings(bot_bal_survings, new Date().getTime())
-		if (!new_survings || !new_survings["is_ok"]) return;
+		const new_survings = modules.call_module("manage_cash").update_survings(bot_bal_survings, new Date().getTime())
+		if (!new_survings || !new_survings["is_ok"]) {return;}
 
 		// console.log("Баланс обновлён, текущий баланс:", bot_bal_survings)
 		modules.call_module("casino").update_survings(bot_bal_survings)
@@ -655,7 +574,7 @@ function processing_server_message(sender, message, message_json) {
 			reason = is_mute[4]
 		}
 		console.log(violator, guardian)
-		punishment_data = {
+		const punishment_data = {
 			is_kick: is_kick,
 			is_ban: is_ban,
 			is_warn: is_warn,
@@ -666,41 +585,56 @@ function processing_server_message(sender, message, message_json) {
 			period: period
 		}
 		modules.call_module("telegram").server_message_processing(message, "punishment", new Date(), punishment_data)
-		let actions = modules.call_module("casino").end_casino_violator(violator, guardian)
+		bot.emit("new_punishment", {
+			message,
+			punishment_data,
+			date_time: new Date()
+		})
+		const actions = modules.call_module("casino").end_casino_violator(violator, guardian)
 		actions_processing(actions)
 
 	} else if (lookup) {
 		now_cmd = "lookup"
 
-		let nickname, online, rank, clan, active_ban, active_mute, date_reg, date_last_online, location_player,
-		count_bans, count_kicks, count_mutes, count_warns, last_warn_1, last_warn_2, last_warn_3
-		nickname = lookup[1]
-		online = lookup[2] == "Онлайн"
-		rank = tesla_ranks.indexOf(lookup[3])
-		clan = lookup[4]
-		active_ban = lookup[5]
-		active_mute  = lookup[6]
-		date_reg = lookup[7]
-		date_last_online = lookup[8]
-		location_player = lookup[9]
-		count_bans = lookup[10]
-		count_kicks = lookup[11]
-		count_mutes = lookup[12]
-		count_warns = lookup[13]
-		last_warn_1 = lookup[14]
-		last_warn_2 = lookup[15]
-		last_warn_3 = lookup[16]
+		const nickname = lookup[1]
+		const online = lookup[2] === "Онлайн"
+		const rank = tesla_ranks.indexOf(lookup[3])
+		const clan = lookup[4]
+		const active_ban = lookup[5]
+		const active_mute  = lookup[6]
+		const date_reg = lookup[7]
+		const date_last_online = lookup[8]
+		const location_player = lookup[9]
+		const count_bans = lookup[10]
+		const count_kicks = lookup[11]
+		const count_mutes = lookup[12]
+		const count_warns = lookup[13]
+		const last_warn_1 = lookup[14]
+		const last_warn_2 = lookup[15]
+		const last_warn_3 = lookup[16]
 		
-		let lookup_data = {'nickname': nickname, 'online': online, 'rank': rank, 'clan': clan, 'active_ban': active_ban,
-		'active_mute': active_mute, 'date_reg': date_reg, 'date_last_online': date_last_online,
-		'location_player': location_player, 'count_bans': count_bans, 'count_kicks': count_kicks, 'count_mutes': count_mutes,
-		'count_warns': count_warns, 'last_warns': [last_warn_1, last_warn_2, last_warn_3]}
+		const _lookup_data = {
+			nickname,
+			online,
+			rank,
+			clan,
+			active_ban,
+			active_mute,
+			date_reg,
+			date_last_online,
+			location_player,
+			count_bans,
+			count_kicks,
+			count_mutes,
+			count_warns,
+			last_warns: [last_warn_1, last_warn_2, last_warn_3]
+		}
 
 	} else if (tryme_info) {
 		now_cmd = "tryme info"
 		count_args = 2
 
-		const already_answered = tryme_info[1] == "True"
+		const already_answered = tryme_info[1] === "True"
 		const category_difficulty = tryme_info[2]
 		const time_to_next_quest = tryme_info[3]
 		const number_quest = Number(tryme_info[4])
@@ -743,7 +677,7 @@ function processing_server_message(sender, message, message_json) {
 	}
 	if (wait_cmd) {
 		let confirmed = false;
-		if (now_cmd == wait_cmd.trim().split(" ").slice(0, count_args).join(" ").replace("/", "")) {
+		if (now_cmd === wait_cmd.trim().split(" ").slice(0, count_args).join(" ").replace("/", "")) {
 			confirmed = true;
 		}
 		wait_data_processing("cmd", {server_answ: message, values: values, is_confirmed: confirmed})
@@ -760,8 +694,8 @@ function wait_data_processing(type, content) {
 			queue_waiting_data[type].splice(i, 1)
 			continue;
 		}
-		if (type == "message") {
-			if (data.content.sender == content.sender) {
+		if (type === "message") {
+			if (data.content.sender === content.sender) {
 				const in_private_message = data.content.private_message
 				const pattern = data.content.pattern
 				const message = content.message
@@ -779,7 +713,7 @@ function wait_data_processing(type, content) {
 					}
 				}
 			}
-		} else if (type == "cmd") {
+		} else if (type === "cmd") {
 			const module_object = modules.modules[data.module_sender]
 			if (module_object) {
 				module_object.server_answ_processing(data.cmd, content.server_answ, content.values, data.identifier, content.is_confirmed)
@@ -791,15 +725,15 @@ function wait_data_processing(type, content) {
 }
 
 function payment_processing(nick, cash, currency, reason) {
-	console.log(`Перевод ${cash} ${currency} от ${nick} с причиной ${reason}`)
-	if (modules.call_module("casino").payment_processing(nick, cash, currency, reason, price_TCA)["used"]) {
-		return;
-	} else if (modules.call_module("bank").payment_processing(nick, cash, currency, reason, price_TCA)["used"]) {
-		return;
-	} else if (modules.call_module("stats").payment_processing(nick, cash, currency, reason, price_TCA)["used"]) {
-		return;
+	console.log(`Перевод123 ${cash} ${currency} от ${nick} с причиной ${reason}`)
+	if (modules.call_module("casino").payment_processing(nick, cash, currency, reason)["used"]) {
+		
+	} else if (modules.call_module("bank").payment_processing(nick, cash, currency, reason)["used"]) {
+		
+	} else if (modules.call_module("stats").payment_processing(nick, cash, currency, reason)["used"]) {
+		
 	} else {
-		if (currency == "TCA") {
+		if (currency === "TCA") {
 			send_TCA(nick, cash)
 		} else {
 			send_pay(nick, cash, "Платёж почему-то не обработался. Повторите попытку")
@@ -830,9 +764,9 @@ function send_cmds() {
 		return;
 	}
 	if (cmds.length > 0) {
-		let cmd_object = cmds.shift()
+		const cmd_object = cmds.shift()
 		let cmd;
-		if (typeof cmd_object == "object") {
+		if (typeof cmd_object === "object") {
 			cmd = cmd_object.cmd
 		} else {
 			cmd = cmd_object
@@ -840,16 +774,16 @@ function send_cmds() {
 
 		if (count(cmds, cmd_object) > 5) {
 			console.log("Очищено", cmd_object, count(cmds, cmd_object))
-			cmds = cmds.filter((value) => value != cmd_object)
+			cmds = cmds.filter((value) => value !== cmd_object)
 		}
 
 		if (!ignore_cmds.includes(cmd.split(" ").slice(0, ).join(" ")) && !ignore_cmds.includes(cmd.split(" ")[0])) {
 			console.log("\033[36m" + cmd + "\033[0m")
 			//add_msg_to_bd(nickname=bot_username, type_chat = 'Скрипт', message=cmd)
 		}
-		cmd = cmd
-		if (cmd.length > 255) return;
-		//if (!cmd.match(/^\/[ 0-9A-zА-яёЁ!@#$%^&*\-_+=]{1,255}$/)) return;
+
+		if (cmd.length > 255) {return;}
+		//if (!cmd.match(/^\/[ 0-9A-zА-яёЁ!@#$%^&*\-_+=]{1,255}$/)) {return;}
 
 		bot.chat(cmd.trim())
 		if (cmd_object.module_sender) {
@@ -859,18 +793,18 @@ function send_cmds() {
 }
 
 function send_answs() {
-	if (!location_bot) return;
+	if (!location_bot) {return;}
 	if (answs.length > 0) {
-		let answ = answs.shift()
+		const answ = answs.shift()
 		let message;
-		if (typeof answ == "object") {
-			let recipient = answ.recipient;
+		if (typeof answ === "object") {
+			const recipient = answ.recipient;
 			let sender = answ.sender;
 			if (sender === undefined) {
 				sender = recipient;
 			}
-			let message = answ.message;
-			if (!message || message == "") return;
+			message = answ.message;
+			if (!message || message === "") {return;}
 
 			let send_in_private_message = answ.send_in_private_message;
 			if (send_in_private_message === undefined) {
@@ -888,8 +822,8 @@ function send_answs() {
 				chat_send = ""
 			}
 
-			let spec_symbols = answ.spec_symbols;
-			let prefix = answ.prefix;
+			const spec_symbols = answ.spec_symbols;
+			const prefix = answ.prefix;
 
 			if (prefix) {
 				message = `[${prefix}] ${message}`
@@ -902,7 +836,7 @@ function send_answs() {
 
 			if (recipient) {
 
-				if (message[0] == "/") {
+				if (message[0] === "/") {
 					message = message.replace("/", "\\")
 				}
 				if (spec_symbols) {
@@ -921,7 +855,7 @@ function send_answs() {
 	            if (modules.call_module("stats").get_stats(sender)) {
 	            	alias = modules.call_module("stats").get_stats(sender, "name")
 	            }
-			    if (!alias || alias == null) {
+			    if (!alias || alias === null) {
 				    alias = recipient;
 			    }	    
 			    message = `${alias}, ${message}`
@@ -947,10 +881,9 @@ function send_answs() {
 }
 
 
-bot.on('windowOpen', function wnd (window, info) {
-	let title = window.title
-	let slots = window.slots
-	if (title == '"§4§l§nВведите Ваш пин-пароль"' && !pin_enter && !location_bot) {
+bot.on('windowOpen', function wnd (window, _info) {
+	const title = window.title
+	if (title === '"§4§l§nВведите Ваш пин-пароль"' && !pin_enter && !location_bot) {
 		bot.chat(bot_pin)
 		pin_enter = true;
 		console.log("Пин-код введён")
@@ -959,7 +892,7 @@ bot.on('windowOpen', function wnd (window, info) {
 })
 
 bot.on('entitySpawn', (entity) => {
-	if (entity.type == "player") {
+	if (entity.type === "player") {
 		const nick = entity.username
 		if (bot.players[nick]) {
 			const url = bot.players[nick].skinData.url
@@ -970,20 +903,16 @@ bot.on('entitySpawn', (entity) => {
 	}
 })
 
-// const text = require("./modules/text/text.js")
-
 modules.load_modules([
-	["./modules/text/text.js"],
+	["./modules/players_stats/stats.js"],
 
 	["./modules/gpt/gpt.js"],
 
-	["./modules/snowballs/snowballs.js", {"bot": bot}],
+	["./modules/snowballs/snowballs.js"],
 
 	["./modules/choice/choice.js"],
 
 	["./modules/detector/detector.js"],
-
-	["./modules/players_stats/stats.js"],
 
 	["./modules/bank/bank.js"],
 
@@ -1001,7 +930,7 @@ modules.load_modules([
 
 	["./modules/party/party.js"],
 
-	["./modules/lurking/lurking.js"],
+	["./modules/tracker/tracker.js"],
 
 	["./modules/alias/alias.js"],
 
@@ -1015,39 +944,29 @@ modules.load_modules([
 
 	["./modules/skinnaper/skinnaper.js"],
 
-	["./modules/move/move.js", {"bot": bot}],
+	["./modules/move/move.js"],
 
-	["./modules/cash/manage_cash.js", {
-			bot_username: bot_username,
-			interval_check_surv: interval_check_surv,
-			interval_send_cmds: interval_send_cmds
-	}],
+	["./modules/cash/manage_cash.js"],
 
 	["./modules/telegram/telegram.js"],
 
 ])
 
-modules.load_modules([
-	["./modules/site_connect/site_connect.js", {"structures": CommandManager.modules_structure}]
-])
+// modules.load_modules([
+// 	["./modules/site_connect/site_connect.js", {"structures": CommandManager.modules_structure}]
+// ])
 
 
 if (run_local_server) {
 	app.use(express.json()); // Чтобы парсить JSON
 	app.post("/keyboard_event", (req, res) => {
-	    if (false) return;
-
-
 	    const data = req.body;
 	    const key = data["key"]
 	    const action = data["action"]
-	    modules.call_module("ручуп").control_state_with_keyboard(key, action=="down")
+	    modules.call_module("ручуп").control_state_with_keyboard(key, action === "down")
 	    res.send({ status: "OK"});
 	})
 	app.post("/mouse_event", (req, res) => {
-		if (false) return;
-
-		
 	    const data = req.body;
 	    const delta_x = data["delta_x"]
 	    const delta_y = data["delta_y"]
@@ -1060,19 +979,19 @@ if (run_local_server) {
 }
 
 bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
-	if (["flowing_water", "flowing_lava"].includes(oldBlock.name) || ["flowing_water", "flowing_lava"].includes(newBlock.name)) return;
-	if (oldBlock.name == "air" || newBlock.name == "air") {
-		if (oldBlock.name == newBlock.name) return;
-		var block_position = oldBlock.position;
+	if (["flowing_water", "flowing_lava"].includes(oldBlock.name) || ["flowing_water", "flowing_lava"].includes(newBlock.name)) {return;}
+	if (oldBlock.name === "air" || newBlock.name === "air") {
+		if (oldBlock.name === newBlock.name) {return;}
+		const block_position = oldBlock.position;
 
-		if (oldBlock.name == "air" && newBlock.name == "bed") {
-			var nearby_players = get_players_and_distance(bot, start_point=block_position);
+		if (oldBlock.name === "air" && newBlock.name === "bed") {
+			const nearby_players = get_players_and_distance(bot, block_position);
 			let criminal_nick, distance;
 			for (let i = 0; i < nearby_players.length; i++) {
 				[criminal_nick, distance] = nearby_players[i];
 				if (bot.players[criminal_nick] && bot.players[criminal_nick].entity &&  
-					(bot.players[criminal_nick].entity.equipment[0] && bot.players[criminal_nick].entity.equipment[0].name == "bed" ||
-					 bot.players[criminal_nick].entity.equipment[1] && bot.players[criminal_nick].entity.equipment[1].name == "bed")) {
+					(bot.players[criminal_nick].entity.equipment[0] && bot.players[criminal_nick].entity.equipment[0].name === "bed" ||
+					 bot.players[criminal_nick].entity.equipment[1] && bot.players[criminal_nick].entity.equipment[1].name === "bed")) {
 					break;
 				
 				} else {
@@ -1086,37 +1005,45 @@ bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
 			}
 
 			let rank = modules.call_module("stats").get_stats(criminal_nick, "rank")
-			if (rank == 5) rank = 0;
-			if (!rank) rank = 0;
+			if (rank === 5) {rank = 0;}
+			if (!rank) {rank = 0;}
 
-			let actions = modules.call_module("grief").placed_bed_processing(criminal_nick, rank, block_position)
-			actions_processing(actions)
+			modules.call_module("grief").placed_bed_processing(criminal_nick, rank, block_position)
 		}
 	}
 })
 
 bot.on('messagestr', (message, sender, message_json) => {
-	if (!message || !sender) return;
+	if (!message || !sender) {return;}
 
-	if (sender == "chat") {
+	if (sender === "chat") {
 		const raw_message = message;
-		let private_message = message.match(reg_me_send);
+		const private_message = message.match(reg_me_send);
+		let type_chat;
 		if (private_message) {
 			sender = private_message[1]
 			message = private_message[2]
-			var type_chat = "Приват";
+			type_chat = "Приват";
 
 		} else {
-			var type_chat = message.split("]")[0].split("[")[1]
+			type_chat = message.split("]")[0].split("[")[1]
 			sender = message.split(":")[0].split(" ").at(-1)
 			message = message.split(": ").slice(1).join(": ")
 			
-			if (type_chat != "Пати-чат" && type_chat != "Лк" && type_chat != "Гл") {
+			if (type_chat !== "Пати-чат" && type_chat !== "Лк" && type_chat !== "Гл") {
 				type_chat = "Клан-чат";
 			}
 			
 		}
-		if (!message || !sender) return;
+		if (!message || !sender) {return;}
+
+		bus.emit("new_player_message", {
+			type_chat,
+			sender,
+			message,
+			raw_message,
+			date_time: new Date()
+		})
 
 		wait_data_processing("message", {"type_chat": type_chat, "message": message, "sender": sender, "private_message": Boolean(private_message)})
 		modules.call_module("logging").add_msg_to_players_logs(new Date(), location_bot, type_chat, sender, message, raw_message, JSON.stringify(message_json.json))
@@ -1125,6 +1052,7 @@ bot.on('messagestr', (message, sender, message_json) => {
  		console.log(`[${type_chat}]` + "\033[32m " + sender + ":\033[33m " + message + "\033[0m")
 
 		let rank_sender = modules.call_module("stats").get_stats(sender, "rank")
+		console.log("РАНК", rank_sender)
 		if (seniors.includes(sender)) {
 			rank_sender = 6;
 		}
@@ -1132,12 +1060,11 @@ bot.on('messagestr', (message, sender, message_json) => {
 			rank_sender = 0;
 			
 		}
-		modules.call_module("telegram").player_message_processing(type_chat, sender, message, raw_message, new Date())
 
-		let players_on_loc = get_players_on_loc(bot)
+		const players_on_loc = get_players_on_loc(bot)
 
 
-		let flags = []
+		const flags = []
 		message = message.replace(/[c|C][m|M][d|D]/, "cmd")
 		let cmd;
 		let args = []
@@ -1146,30 +1073,30 @@ bot.on('messagestr', (message, sender, message_json) => {
 		let cmd_parameters;
 
 		if (message.toLowerCase().includes("cmd ")) {
-			let flags_match = message.split("cmd ")[0].matchAll(/-([^ -]*)(?: |$)/g)
-			let count_flags = 0;
+			const flags_match = message.split("cmd ")[0].matchAll(/-([^ -]*)(?: |$)/g)
+			const count_flags = 0;
 			for (let flag of flags_match) {
 				flag = flag[1].toLowerCase()
 				console.log("Флаг",flag)
-				if (flag == "cc") {
+				if (flag === "cc") {
 					chat_send = "/cc "
 
-				} else if (flag == "pc") {
+				} else if (flag === "pc") {
 					chat_send = "/pc "
 
-				} else if (flag == "p") {
+				} else if (flag === "p") {
 					send_in_private_message = true;
 
-				} else if (flag == "l") {
+				} else if (flag === "l") {
 					chat_send = ""
 
-				} else if (flag == "g" && (seniors.includes(sender) || rank_sender >= 6)) {
+				} else if (flag === "g" && (seniors.includes(sender) || rank_sender >= 6)) {
 
 					chat_send = "!"
 				} else {
 					flags.push(flag)
 				}
-				if (count_flags == 5) {
+				if (count_flags === 5) {
 					break;
 				}
 			}
@@ -1183,11 +1110,11 @@ bot.on('messagestr', (message, sender, message_json) => {
 			cmd_parameters = {"cmd": cmd, "rank_sender": rank_sender, "players_on_loc": players_on_loc, "seniors": seniors, "location_bot": location_bot}
 		}
 		
-		if (cmd && (rank_sender != 0 || cmd == "bank")) {
+		if (cmd && (rank_sender !== 0 || cmd === "bank")) {
 			console.log(`cmd ${cmd} args ${args}`)
-			if (cmd == "help") {
+			if (cmd === "help") {
 				let answ;
-				if (args[0] == "help") {
+				if (args[0] === "help") {
 					answ = "Возможные аргументы: [номер страницы]"
 				}
 				else {
@@ -1203,12 +1130,12 @@ bot.on('messagestr', (message, sender, message_json) => {
 
 				answs.push({"recipient": sender, "message": answ})
 
-			} else if (cmd == "test") {
+			} else if (cmd === "test") {
 				const brin = bot.players["Herobrin2v"].entity
 				setInterval(() => console.log(brin.yaw, brin.pitch), 1000)
 
-			} else if (modules.modules[cmd]) {
-				module_object = modules.call_module(cmd, sender)
+			} else if (modules.modules_structure[cmd]) {
+				const module_object = modules.call_module(cmd, sender)
 				console.log(cmd, args, rank_sender, module_object.cmd_access)
 				const valid_command = CommandManager.validate_command(module_object.module_name, args)
 				if (valid_command["is_ok"]) {
@@ -1217,10 +1144,10 @@ bot.on('messagestr', (message, sender, message_json) => {
 						!module_object.cmd_access && rank_sender > 0) {
 
 						const cooldown_info = modules.call_module("cooldown").check_cooldown(sender, cmd, args)
-						if (seniors.includes(sender) || cooldown_info["is_ok"]) {
-						  let actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args, valid_command.unused_args);
+						if (!cooldown_info || seniors.includes(sender) || cooldown_info["is_ok"]) {
+						  const actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args, valid_command.unused_args);
 
-						  let update_action = {
+						  const update_action = {
 						    type: "answ",
 						    content: {
 						      chat_send: chat_send,
@@ -1252,7 +1179,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 				bot.chat(`${cmd} ${args.join(" ")}`)
 
 			} else if (seniors.includes(sender)) {
-				if (cmd == "js") {
+				if (cmd === "js") {
 					try {
 						eval(args.join(" "))
 					} catch (error) {
@@ -1260,7 +1187,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 					}
 				} else {
 					bot.chat(`${cmd} ${args.join(" ")}`.trim())
-					return;
+					
 				}
 			} else {
 				answs.push({"recipient": sender, "message": "Команда не найдена"})
@@ -1274,17 +1201,17 @@ bot.on('messagestr', (message, sender, message_json) => {
 		}
 
 		reset_wait_next_message = setTimeout(() => {
-			if (combine_server_message.length == 0) return;
+			if (combine_server_message.length === 0) {return;}
 			processing_server_message(sender, combine_server_message.join("\n"), message_json)
 			combine_server_message = []
 		}, 80)
 
-		if (delta_time < 70 || combine_server_message.length == 0) {
+		if (delta_time < 70 || combine_server_message.length === 0) {
 			if (now_reg) {
-				reg_lines = now_reg.source.split("\n")
-				reg_line = regex_lines[now_reg_index]
+				const reg_lines = now_reg.source.split("\n")
+				const reg_line = reg_lines[now_reg_index]
 				if (message.match(reg_line)) {
-					if (now_reg_index+1 == reg_lines.length) {
+					if (now_reg_index+1 === reg_lines.length) {
 						processing_server_message(sender, combine_server_message.join("\n"), message_json)
 						combine_server_message = []
 						now_reg = undefined;
@@ -1302,13 +1229,13 @@ bot.on('messagestr', (message, sender, message_json) => {
 			} else {
 				let is_matched = false;
 				for (let i = 0; i < regexes.length; i++) {
-					regex_lines = regexes[i].source.split("\n")
-					let reg_line = regex_lines[0]
+					const reg_lines = regexes[i].source.split("\n")
+					const reg_line = reg_lines[0]
 					if (message.match(reg_line)) {
-						if (combine_server_message.length != 0) {
+						if (combine_server_message.length !== 0) {
 							processing_server_message(sender, combine_server_message.join("\n"), message_json)
 						}
-						if (regex_lines.length == 1) {
+						if (reg_lines.length === 1) {
 							processing_server_message(sender, message, message_json)
 						} else {
 							combine_server_message.push(message)
@@ -1323,7 +1250,7 @@ bot.on('messagestr', (message, sender, message_json) => {
 				}
 			}
 
-			return;
+			
 
 		} else {
 			combine_server_message.push(message)
@@ -1340,129 +1267,25 @@ bot.on('end', function kicked(reason) {
 })
 
 bot.on('playerJoined', (player) => {
-	if (!location_bot || !location_bot.includes("Классическое выживание")) return;
-	modules.call_module("detector").player_joined_event(player.username)
+	if (!location_bot || !location_bot.includes("Классическое выживание")) {return;}
+	
+	bus.emit("player_joined", {
+		nickname: player.username,
+		date_time: new Date()
+	})
 })
 
 
-function check_return_tg () {
-	let action = modules.call_module("telegram").get_action();
-	if (!action) return;
-	try {
-		let type = action.type;
-		let content = action.content;
-		if (type == "js") {
-			let callback = eval(content)
-			modules.call_module("telegram").send_message(`Команда ${content} выполнена. Callback: ${JSON.stringify(callback)}`)
-		} else {
-			actions_processing(action)
-		}
-
-	} catch (err) {
-		modules.call_module("telegram").send_message(`Во время выполнения действия ${action.type} возникла ошибка: ${err}`)
-	}
-	
-}
-
-function check_return_casino () {
-	let actions = modules.call_module("casino").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_bank () {
-	let actions = modules.call_module("bank").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_cash() {
-	let actions = modules.call_module("manage_cash").get_actions()
-	actions_processing(actions)
-	
-}
-
-function check_return_quotes() {
-	let actions = modules.call_module("цитата").get_actions()
-
-	actions_processing(actions)
-}
-
-function check_return_stats() {
-	let actions = modules.call_module("stats").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_lurking() {
-	let actions = modules.call_module("lurking").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_alias() {
-	let actions = modules.call_module("alias").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_quiz() {
-	let actions = modules.call_module("викторина").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_skinnaper() {
-	let actions = modules.call_module("skinnaper").get_actions()
-	// console.log(actions)
-	actions_processing(actions)
-}
-
-function check_return_move() {
-	let actions = modules.call_module("ручуп").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_detector() {
-	let actions = modules.call_module("detector").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_choice() {
-	let actions = modules.call_module("выбери").get_actions()
-	actions_processing(actions)
-}
-
-function check_return_snowballs() {
-	let actions = modules.call_module("снежки").get_actions()
-	actions_processing(actions)
-}
-
-setInterval(check_return_snowballs, 1000)
-
-setInterval(check_return_choice, 500)
-
-setInterval(check_return_detector, 500)
-
-setInterval(check_return_move, 500)
-
-setInterval(check_return_skinnaper, 500)
-
-setInterval(check_return_quiz, 500)
-
-setInterval(check_return_alias, 500)
-
-setInterval(check_return_lurking, 500)
-
-setInterval(check_return_stats, 500)
-
-setInterval(check_return_quotes, 500)
-
-setInterval(check_return_cash, 500)
-
-setInterval(check_return_casino, 1000)
-
-setInterval(check_return_bank, 5000)
-setInterval(check_return_tg, 1000)
+bus.on("new_actions", (event) => {
+	console.log("New actions", event.actions)
+	actions_processing(event.actions)
+})
 
 
-let tp_end = setInterval(() => {
+setInterval(() => {
 
- 	if (!location_bot || !location_bot.includes("Локация Край")) bot.chat("/swarp end")}, 5000)
+ 	if (!location_bot || !location_bot.includes("Локация Край")) {bot.chat("/swarp end")}
+ }, 5000)
 
 setInterval(check_loc_bot, 3000)
 

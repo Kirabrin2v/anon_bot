@@ -1,6 +1,6 @@
 const reg_nickname = String.raw`([А-яA-Za-z0-9~!@#$^*\-_=+ёЁ]{1,16})`;
 
-let modules_structure = {"casino": structure = {
+const modules_structure = {"casino": structure = {
 	ставка: {
 		версия: {
 			_type: "int",
@@ -21,7 +21,7 @@ function validate_command(module_name, inputArgs) {
 
   const usedArgs = new Set();
   let currentStructure = modules_structure[module_name];
-  let path = [];
+  const path = [];
   let i = 0;
 
   while (i < inputArgs.length) {
@@ -52,7 +52,7 @@ function validate_command(module_name, inputArgs) {
     let matchedKey = null;
 
     for (const key in currentStructure) {
-      if (key.startsWith('_')) continue;
+      if (key.startsWith('_')) {continue;}
       const node = currentStructure[key];
       if (node._type && checkType(node._type, arg) || (node._optional)) {
         matchedKey = key;
@@ -113,11 +113,11 @@ function validate_command(module_name, inputArgs) {
 
 
 function checkType(expectedType, value) {
-  if (expectedType === 'int') return Number.isInteger(Number(value));
-  if (expectedType === 'string' || expectedType === 'text') return typeof value === 'string';
-  if (expectedType === 'float') return !isNaN(parseFloat(value));
-  if (expectedType === 'nick') return value.match(reg_nickname);
-  if (expectedType === 'bool') return value === true || value === false;
+  if (expectedType === 'int') {return Number.isInteger(Number(value));}
+  if (expectedType === 'string' || expectedType === 'text') {return typeof value === 'string';}
+  if (expectedType === 'float') {return !isNaN(parseFloat(value));}
+  if (expectedType === 'nick') {return value.match(reg_nickname);}
+  if (expectedType === 'bool') {return value === true || value === false;}
   return false; // кастомные типы можно обрабатывать тут
 }
 
@@ -143,10 +143,10 @@ function generateHelpMessage(module_name, usedArgs) {
   const options = Object.entries(current)
     .filter(([key]) => !key.startsWith('_'))
     .map(([key, value]) => {
-      if (typeof value !== 'object') return key;
+      if (typeof value !== 'object') {return key;}
 
       const isBranch = !('_type' in value);
-      if (isBranch) return key;
+      if (isBranch) {return key;}
 
       let desc = `[${key} <${value._type}>`;
       if (value._default !== undefined) {

@@ -32,7 +32,7 @@ modules/quotes/quotes_rep.json
 # Папки с временными или сгенерированными файлами
 img/
 modules/detector/
-modules/lurking/
+modules/tracker/
 modules/skinnaper/skins/
 modules/telegram/
 modules/test/

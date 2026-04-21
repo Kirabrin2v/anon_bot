@@ -11,7 +11,7 @@ const reg_near = new RegExp(`^Окружающие игроки: ((?:(?:${reg_ni
 const reg_encrypted_ip = String.raw`[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}`;
 const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ\n ` +
 "Статус: (.*)\n " +
-"Звание: (?:\\[([А-яA-z\. ]*)\\].*){0,1}\n" +
+"Звание: (?:\\[([А-яA-z. ]*)\\].*){0,1}\n" +
 "(?: Клан:   (.*)\n){0,1}\n " +
 "Забанен:   (.*)\n " +
 "Имеет мут: (.*)\n\n " +
@@ -27,13 +27,14 @@ const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypte
 "(?:  (.*)\n){0,1}){0,1}" +
 `ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ`)
 
-const reg_vic_anagrams = String.raw`\[Викторина\] Расшифруйте первым анаграмму (.*) , чтобы выиграть!`
-const reg_vic_fast = String.raw`\[Викторина\] Напечатайте первым "(.*)", чтобы выиграть!`
-const reg_vic_example = String.raw`\[Викторина\] Решите первым пример (.*), чтобы выиграть!`
-const reg_vic_quest = String.raw`\[Викторина\] (.*)`
+const reg_vic_prefix = String.raw`\[Викторина\] `
+const reg_vic_anagrams = new RegExp("Расшифруйте первым анаграмму (.*) , чтобы выиграть!")
+const reg_vic_fast = new RegExp("Напечатайте первым \"(.*)\", чтобы выиграть!")
+const reg_vic_example = new RegExp("Решите первым пример (.*), чтобы выиграть!")
+const reg_vic_quest = new RegExp("(.*)")
 
 const reg_vic_question = new RegExp("^\\[Викторина\\] Для ответа используйте команду /Answ <Ответ>\n" +
-									`(?:(?:${reg_vic_anagrams})|(?:${reg_vic_fast})|(?:${reg_vic_example})|(?:${reg_vic_quest}))`)
+									`(?:(?:${reg_vic_prefix}${reg_vic_anagrams})|(?:${reg_vic_prefix}${reg_vic_fast})|(?:${reg_vic_prefix}${reg_vic_example})|(?:${reg_vic_prefix}${reg_vic_quest}))`)
 
 const reg_vic_answ = new RegExp("^[Викторина] Для ответа используйте команду /Answ <Ответ>\n" +
 								"[Викторина] Время для ответа закончилось. Правильный ответ: (.*)")

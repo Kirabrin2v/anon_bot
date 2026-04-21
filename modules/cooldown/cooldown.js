@@ -1,19 +1,26 @@
-const module_name = "cooldown"
+const path = require("path")
 
 const cooldowns = require('./cooldowns');
+const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
-// Объект для хранения времени последнего использования команды с аргументами для каждого пользователя
-const userCooldowns = {};
+const MODULE_NAME = "cooldown"
 
-function check_cooldown(sender, cmd, args) {
-	try {
 
+class CooldownModule extends BaseModule {
+	constructor () {
+		super(MODULE_NAME)
+
+		// Объект для хранения времени последнего использования команды с аргументами для каждого пользователя
+	    this.userCooldowns = {};
+	}
+
+	check_cooldown(sender, cmd, args) {
 	    const cmdCooldowns = cooldowns[cmd]
 	    if (!cmdCooldowns) {
 	        return { is_ok: true }; // Если команда не найдена в настройках, кулдауна нет
 	    }
-	 	var cooldownTime, lastUsedTime, userCooldownKey;
-	    if (args.length == 0) {
+	 	let cooldownTime, userCooldownKey;
+	    if (args.length === 0) {
 	    	userCooldownKey = `${cmd}_${cmd}`;
 	    	cooldownTime = cmdCooldowns[cmd]
 	    	if (!cooldownTime) {
@@ -23,7 +30,7 @@ function check_cooldown(sender, cmd, args) {
 	    } else {
 		    let lastArgWithCooldown = null;
 
-		    if (args.length == 0) {
+		    if (args.length === 0) {
 		    	lastArgWithCooldown = cmd
 		    } 
 		    
@@ -47,7 +54,7 @@ function check_cooldown(sender, cmd, args) {
 
 		    cooldownTime = cmdCooldowns[lastArgWithCooldown];
 		    //console.log(cooldownTime)
-		    if (cooldownTime[0] == "*") {
+		    if (cooldownTime[0] === "*") {
 		    	lastArgWithCooldown = cooldownTime.replace("*", "");
 		    	cooldownTime = cmdCooldowns[lastArgWithCooldown];
 		    	//console.log(cooldownTime)
@@ -57,11 +64,11 @@ function check_cooldown(sender, cmd, args) {
 
 	    }
 	    // Инициализируем объект для пользователя, если его ещё нет
-	    if (!userCooldowns[sender]) {
-	        userCooldowns[sender] = {};
+	    if (!this.userCooldowns[sender]) {
+	        this.userCooldowns[sender] = {};
 	    }
 
-	    lastUsedTime = userCooldowns[sender][userCooldownKey] || 0;
+	    const lastUsedTime = this.userCooldowns[sender][userCooldownKey] || 0;
 
 	    const currentTime = Math.floor(Date.now() / 1000);
 	    if (currentTime - lastUsedTime < cooldownTime) {
@@ -76,12 +83,11 @@ function check_cooldown(sender, cmd, args) {
 	    }
 
 	    // Обновляем время последнего использования для пользователя
-	    userCooldowns[sender][userCooldownKey] = currentTime;
+	    this.userCooldowns[sender][userCooldownKey] = currentTime;
 	    return { is_ok: true };
-	} catch (error) {
-		return {"type": "error", "content": {"date_time": new Date(), "module_name": module_name, "error": error, "args": [cmd, args]}}
 	}
 }
 
-module.exports = {module_name, check_cooldown}
+
+module.exports = CooldownModule
 

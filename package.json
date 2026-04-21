@@ -3,11 +3,41 @@
     "better-sqlite3": "^12.6.0",
     "configparser": "^0.3.10",
     "express": "^5.2.1",
+    "globals": "^17.5.0",
     "mathjs": "^15.1.0",
     "mineflayer": "^4.33.0",
     "mineflayer-maps": "^2.0.2",
+    "mitt": "^3.0.1",
     "node-telegram-bot-api": "^0.67.0",
     "socks": "^2.8.7",
     "socks-proxy-agent": "^9.0.0"
-  }
+  },
+  "name": "new_anon",
+  "version": "1.0.0",
+  "description": "**anon_bot** — это Minecraft-бот, написанный на Node.js с использованием библиотеки Mineflayer.   Он обладает расширяемой модульной архитектурой, легко запускается через Docker и настраивается всего за несколько шагов.",
+  "main": "new_anon.js",
+  "directories": {
+    "test": "tests"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kirabrin2v/anon_bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Kirabrin2v/anon_bot/issues"
+  },
+  "homepage": "https://github.com/Kirabrin2v/anon_bot#readme"
 }

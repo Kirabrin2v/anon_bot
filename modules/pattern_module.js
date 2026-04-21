@@ -1,35 +1,21 @@
-const module_name = ""
-const help = ""
+const path = require("path");
+const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
-const structure = {}
+const MODULE_NAME = ""
+const HELP = ""
+const STRUCTURE = {
 
-let actions = [] 
+}
 
-function cmd_processing(sender, args, cmd_parameters, valid_args) {
-	args = valid_args
-	let answ;
 
-	if (answ) {
-		return {
-			type: "answ",
-			content: {
-				message: answ,
-				recipient: sender
-			}
-		}
+class Module extends BaseModule {
+	constructor () {
+        super(MODULE_NAME, HELP, STRUCTURE)
+    }
+
+	_process(sender, args, parameters, valid_args, unused_args) {
+		
 	}
 }
 
-function diagnostic_eval (eval_expression) {
-	try {
-		return eval(eval_expression)
-	} catch (error) {
-		return error
-	}
-}
-
-function get_actions() {
-	return actions.splice(0)
-}
-
-module.exports = {module_name, get_actions, cmd_processing, diagnostic_eval, structure, help}
+module.exports = Module

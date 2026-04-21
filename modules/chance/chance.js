@@ -1,16 +1,18 @@
-const module_name = "шанс"
-const help = "Показывает вероятность события"
+const ConfigParser = require('configparser');
+const path = require("path")
 
-const structure = {
+const { random_choice, random_number } = require(path.join(BASE_DIR, "utils", "random.js"))
+const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+
+const MODULE_NAME = "шанс"
+const HELP = "Показывает вероятность события"
+
+const STRUCTURE = {
 	описание: {
 		_type: "text",
 		_description: "Описание ситуации, шанс для которой нужно вычислить"
 	}
 }
-
-const ConfigParser = require('configparser');
-
-const path = require("path")
 
 const config = new ConfigParser();
 config.read(path.join(__dirname, "config.ini"))
@@ -18,50 +20,21 @@ config.read(path.join(__dirname, "config.ini"))
 const phrases = {}
 phrases["шанс"] = JSON.parse(config.get("phrases", "шанс"))
 
-function random_choice(array) {
-	return array[Math.floor(Math.random() * array.length)]
-}
+class ChanceModule extends BaseModule {
+	constructor () {
+        super(MODULE_NAME, HELP, STRUCTURE)
+    }
 
-function random_number (min_num, max_num) {
-	return Math.floor(Math.random() * (max_num - min_num + 1)) + min_num;
-}
+    _process(sender, args) {
+		const phrase = random_choice(phrases["шанс"])
+		const answ = `${phrase}, шанс ${args.join(" ")} - ${random_number(0, 101)}%`
 
-function cmd_processing(sender, args) {
-	try {
-		if (args.length == 0 || args[0] == "help") {
-			answ = "Возможные аргументы: [*Описание события, вероятность которого нужно определить*]"
-			return {type: "answ",
-					content: {
-						message: answ,
-						recipient: sender
-					}}
-		} else {
-			let phrase = random_choice(phrases["шанс"])
-			answ = `${phrase}, шанс ${args.join(" ")} - ${random_number(0, 101)}%`
+		return {
+			message: answ,
+			send_in_private_message: false
 		}
-		return {type: "answ",
-				content: {
-					recipient: sender,
-					message: answ,
-					send_in_private_message: false}}
-
-	} catch (error) {
-		return {type: "error",
-			content: {
-				date_time: new Date(),
-				module_name: module_name,
-				error: error,
-				args: args, 
-				sender: sender}}
 	}
 }
 
-function diagnostic_eval (eval_expression) {
-	try {
-		return eval(eval_expression)
-	} catch (error) {
-		return error
-	}
-}
 
-module.exports = {module_name, cmd_processing, diagnostic_eval, help, structure}
+module.exports = ChanceModule

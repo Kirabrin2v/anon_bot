@@ -15,7 +15,7 @@ function slugify(text) {
     'э': 'e', 'ю': 'yu', 'я': 'ya',
   };
   const slug = toLower.replace(/[а-яё]/g, char => transliterate[char])
-                    .replace(/[^a-z0-9\-]/g, '-') // замена на тире
+                    .replace(/[^a-z0-9-]/g, '-') // замена на тире
                     .replace(/-+/g, '-') // удаление лишних тире
                     .replace(/^-+|-+$/g, '') // удаление начальных и конечных тире
                     .trim();
@@ -24,8 +24,8 @@ function slugify(text) {
 }
 
 function dict_to_list(structures) {
-	let list_commands = []
-	for (let module_name in structures) {
+	const list_commands = []
+	for (const module_name in structures) {
 		list_commands.push({
 			command: slugify(module_name),
 			short_description: structures[module_name]._description,
