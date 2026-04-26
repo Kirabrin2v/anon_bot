@@ -1281,7 +1281,7 @@ bot.on('playerJoined', (player) => {
 
 
 bus.on("new_actions", (event) => {
-	console.log("New actions", event.actions)
+	// console.log("New actions", event.actions)
 	actions_processing(event.actions)
 })
 

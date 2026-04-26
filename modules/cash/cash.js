@@ -14,7 +14,7 @@ const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const MODULE_NAME = "manage_cash"
 const INTERVAL_CHECK_ACTIONS = 0
 
-const bot_username = global_config.get("VARIABLES", "bot_username")
+const bot_username = global_config.get("VARIABLES", "active_nick")
 const interval_check_surv = Number(global_config.get("VARIABLES", "interval_check_surv"))
 
 
@@ -54,7 +54,6 @@ class CashModule extends BaseModule {
 		})
 
 		bus.on("update_bal_survings_raw", (obj) => {
-			console.log("update_bal_survings_raw")
 			this.update_survings(
 				obj.amount,
 				obj.date_time
