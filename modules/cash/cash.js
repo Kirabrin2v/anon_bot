@@ -9,6 +9,7 @@ global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
 const { COLORS, date_to_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const MODULE_NAME = "manage_cash"
 const INTERVAL_CHECK_ACTIONS = 0
@@ -33,6 +34,48 @@ class CashModule extends BaseModule {
 		this.wait_confirm_surv = []
 
 		this.last_balance_TCA;
+
+		bus.on("sended_survings", (obj) => {
+			this.confirm_send_money(
+				obj.date_time,
+				obj.nickname,
+				"survings",
+				obj.amount
+			)
+		})
+
+		bus.on("sended_tca", (obj) => {
+			this.confirm_send_money(
+				obj.date_time,
+				obj.nickname,
+				"TCA",
+				obj.amount
+			)
+		})
+
+		bus.on("update_bal_survings_raw", (obj) => {
+			console.log("update_bal_survings_raw")
+			this.update_survings(
+				obj.amount,
+				obj.date_time
+			)
+		})
+
+		bus.on("update_bal_tca_raw", (obj) => {
+			this.update_tca(obj.amount)
+		})
+
+		bus.on("survings_accept_raw", (obj) => {
+			this.survings_accept(
+				obj.nickname,
+				obj.amount,
+				obj.reason
+			)
+		})
+
+		bus.on("tca_accept_raw", (obj) => {
+			this.tca_accept(obj.tca_logs)
+		})
     }
 
     add_pay_to_bd(payer, payee, amount, currency, date_time, reason) {
@@ -197,6 +240,13 @@ class CashModule extends BaseModule {
 
 				this.processing_wait_survings(this.bal_survings, count_survings, date_now)
 				this.bal_survings = count_survings;
+				bus.emit(
+					"update_bal_survings",
+					{
+						date_time: new Date(),
+						amount: count_survings
+					}
+				)
 				return {"is_ok": true}
 			} else {
 				return {"is_ok": false, "message_error": "Команда /bal прописана не по расписанию"}
@@ -212,6 +262,17 @@ class CashModule extends BaseModule {
 				}
 			})
 		}
+	}
+
+	update_tca(count_tca) {
+		this.bal_tca = count_tca
+		bus.emit(
+			"update_bal_tca",
+			{
+				date_time: new Date(),
+				amount: count_tca
+			}
+		)
 	}
 }
 

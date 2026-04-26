@@ -5,6 +5,7 @@ const sqlite = require("better-sqlite3");
 const { stats_split_into_pages } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { random_choice } = require(path.join(BASE_DIR, "utils", "random.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"));
 
 const MODULE_NAME = "grief"
 const HELP = "Логи установленных кроватей"
@@ -52,6 +53,18 @@ class GriefModule extends BaseModule {
 	    this.last_triggered_nick;
 		this.timer_send_alert_grief = 0;
 		this.NUMS_IN_PAGE = 5;
+
+
+		bus.on("block_placed", (obj) => {
+			const block = obj.block
+			if (block.name === "bed") {
+				const nick = obj.nick
+				let rank = this.ModuleManager.call_module("stats").get_stats(nick, "rank")
+				if (rank === 5) {rank = 0;}
+				if (!rank) {rank = 0;}
+				this.placed_bed_processing(nick, rank, obj.old_block.position)
+			}
+		})
     }
 
     add_block_to_bd(nickname, position) {
@@ -81,62 +94,49 @@ class GriefModule extends BaseModule {
 	}
 
 	placed_bed_processing(nick, rank, position) {
-		try {
-			let answ;
-			const now = Date.now();
-			console.log("Кровать установлена:", nick, rank, position)
-			if (!this.last_placed_bed || (this.last_placed_bed.nick === nick && (now - this.last_placed_bed.time  < 1000)))  {return;}
-			console.log(now - this.last_placed_bed.time);
+		let answ;
+		const now = Date.now();
+		console.log("Кровать установлена:", nick, rank, position)
+		if (!this.last_placed_bed || (this.last_placed_bed.nick === nick && (now - this.last_placed_bed.time  < 1000)))  {return;}
 
-			this.add_block_to_bd(nick, position)
+		this.add_block_to_bd(nick, position)
 
-			this.last_placed_bed = {"nick": nick, "time": new Date().getTime()}
+		this.last_placed_bed = {"nick": nick, "time": new Date().getTime()}
 
-			const [x, y, z] = [position.x, position.y, position.z];
+		const [x, y, z] = [position.x, position.y, position.z];
 
-			if (rank <= 2 && (this.timer_send_alert_grief < now ||
-			 (this.last_triggered_nick && nick && this.last_triggered_nick !== nick && this.timer_send_alert_grief - 120000 < now))) {
-				this.timer_send_alert_grief = now + 240000;
-				if (nick) {
-					if (rank === 0 && !grief_alert.includes(nick)) {
-						grief_alert.push(nick)
-						console.log(grief_alert)
-						permanent_memory.set("informed_users", "grief_alert", JSON.stringify(grief_alert))
-						permanent_memory.write(path.join(__dirname, "permanent_memory.ini"))	
-						const answ = "Если Вы используете кровати для разрушения, то имейте в виду: 1) Гриферство в Эндер-мире наказуемо баном. 2)В каждую постройку была вложена частичка души такого же человека, как и Вы. Сообщение сгенерировано автоматически."
-						 
-						this.actions.push({
-							type: "answ", 
-							content: {
-								recipient: nick, 
-								message: answ, 
-								send_in_private_message: true
-							}
-						})
-					}
-					this.last_triggered_nick = nick;
-					answ = `${nick}(${x}, ${y}, ${z}), ${random_choice(phrases["grief"])}`;
-				} else {
-					answ = `(${x}, ${y}, ${z}). ${random_choice(phrases["grief_none_player"])}`;
+		if (rank <= 2 && (this.timer_send_alert_grief < now ||
+		 (this.last_triggered_nick && nick && this.last_triggered_nick !== nick && this.timer_send_alert_grief - 120000 < now))) {
+			this.timer_send_alert_grief = now + 240000;
+			if (nick) {
+				if (rank === 0 && !grief_alert.includes(nick)) {
+					grief_alert.push(nick)
+					console.log(grief_alert)
+					permanent_memory.set("informed_users", "grief_alert", JSON.stringify(grief_alert))
+					permanent_memory.write(path.join(__dirname, "permanent_memory.ini"))	
+					const answ = "Если Вы используете кровати для разрушения, то имейте в виду: 1) Гриферство в Эндер-мире наказуемо баном. 2)В каждую постройку была вложена частичка души такого же человека, как и Вы. Сообщение сгенерировано автоматически."
+					 
+					this.actions.push({
+						type: "answ", 
+						content: {
+							recipient: nick, 
+							message: answ, 
+							send_in_private_message: true
+						}
+					})
 				}
-				this.answs.push({
-					type: "answ", 
-					content: {
-						message: answ, 
-						prefix: "САГО"
-					}
-				})
+				this.last_triggered_nick = nick;
+				answ = `${nick}(${x}, ${y}, ${z}), ${random_choice(phrases["grief"])}`;
+			} else {
+				answ = `(${x}, ${y}, ${z}). ${random_choice(phrases["grief_none_player"])}`;
 			}
-		} catch (error) {
-			return {
-				type: "error",
-				content:{
-					date_time: new Date(),
-					module_name: this.module_name, 
-					error: error, 
-					args: [nick, rank, position]
+			this.actions.push({
+				type: "answ", 
+				content: {
+					message: answ, 
+					prefix: "[САГО]"
 				}
-			}
+			})
 		}
 	}
 
@@ -182,7 +182,7 @@ class GriefModule extends BaseModule {
 				const date_text = `${start_date} - ${end_date}`
 				return {
 					message: split_into_pages["answ"],
-					prefix: date_text + " ant.fld"
+					prefix: `[${date_text} ant.fld]`
 				}
 			} else {
 				return split_into_pages["answ"]

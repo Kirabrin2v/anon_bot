@@ -4,6 +4,7 @@ const fs = require("fs")
 
 const { COLORS } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const {
 	reg_vic_anagrams,
@@ -35,6 +36,13 @@ class QuizModule extends BaseModule {
 				this.last_question = {"question": undefined, "answ": undefined}
 
 				this.users_wait_answ = []
+
+				bus.on("server_quiz_question", (obj) => {
+					this.quiz_processing(
+						obj.question,
+						obj.type_question
+					)
+				})
     }
 
     get_answ(question, type_question) {

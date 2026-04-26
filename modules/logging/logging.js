@@ -4,6 +4,7 @@ const path = require("path");
 const db = new sqlite(path.join(__dirname, "logs.db"));
 const { date_to_text } = require(path.join(BASE_DIR,  "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const MODULE_NAME = "logging"
 
@@ -13,6 +14,38 @@ const MODULE_NAME = "logging"
 class LoggingModule extends BaseModule {
 	constructor () {
 		super(MODULE_NAME)
+
+		bus.on("player_message", (obj) => {
+			this.add_msg_to_players_logs(
+				obj.date_time,
+				obj.location_bot,
+				obj.type_chat,
+				obj.sender,
+				obj.message,
+				obj.raw_message,
+				obj.message_json
+			)
+		})
+
+		bus.on("server_message", (obj) => {
+			this.add_msg_to_server_logs(
+				obj.date_time,
+				obj.sender,
+				obj.message,
+				obj.message_json
+			)
+		})
+
+		bus.on("error", (obj) => {
+			this.add_error_to_logs(
+				obj.date_time,
+				obj.module_name,
+				obj.short_error,
+				obj.full_error,
+				obj.args,
+				obj.sender
+			)
+		})
 	}
 
 	get_count_players_messages(nickname) {

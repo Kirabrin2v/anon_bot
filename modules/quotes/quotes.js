@@ -384,6 +384,18 @@ class QuotesModule extends BaseModule {
         return quotes.filter((quote) => quote.author.toLowerCase() === author.toLowerCase())
     }
 
+    get_total_rating_by_author(author) {
+        const selectMessage = db.prepare(`
+            SELECT SUM(l.add_number) as total
+            FROM logs l
+            JOIN quotes q ON q.ID = l.ID_quote
+            WHERE LOWER(q.author) = LOWER(?)
+        `);
+
+        const result = selectMessage.get(author);
+        return result.total || 0;
+    }
+
     send_quote(ID) {
         console.log(ID, quotes[ID])
         const quote_info = quotes[ID]

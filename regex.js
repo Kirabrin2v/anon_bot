@@ -1,10 +1,90 @@
+const path = require("path");
+const ConfigParser = require('configparser');
+
+
+class ChatSchema {
+  constructor(nickname_reg, message_reg) {
+    this.patterns = {
+      me_send:  new RegExp(String.raw`^\[${nickname_reg} -> Мне\] ${message_reg}`),
+      i_send:   new RegExp(String.raw`^\[Я -> ${nickname_reg}\] ${message_reg}`),
+
+      // [тип] [?] [клан] [звание] ник: сообщение  — клан и звание опциональны
+      standard: new RegExp(
+        String.raw`^\[([^\]]+)\] ` +           // тип чата
+        String.raw`(?:\[[^\]]*\] )*` +          // [?] и прочие необязательные теги
+        String.raw`(?:\[([^\]]+)\] )?` +         // клан (опционально)
+        String.raw`(?:\[([^\]]+)\] )?` +         // звание (опционально)
+        String.raw`${nickname_reg}: ` +          // ник
+        String.raw`${message_reg}`               // сообщение
+      )
+    }
+
+    this.CLAN_CHATS = ["Лк", "Гл"]
+    this.KNOWN_CHATS = ["Пати-чат", "Лк", "Гл"]
+  }
+
+  parse(raw_message) {
+    let m;
+
+    m = raw_message.match(this.patterns.me_send)
+    if (m) {return { type_chat: "Приват", sender: m[1], recipient: bot_username,  message: m[2] }}
+
+    m = raw_message.match(this.patterns.i_send)
+    if (m) {return { type_chat: "Приват", sender: bot_username,  recipient: m[1], message: m[2] }}
+
+    m = raw_message.match(this.patterns.standard)
+    if (m) {
+      const type_chat = this.KNOWN_CHATS.includes(m[1]) ? m[1] : "Клан-чат"
+      const has_clan  = this.CLAN_CHATS.includes(type_chat)
+
+      return {
+        type_chat,
+        clan:    has_clan ? (m[2] ?? null) : null,
+        rank:    has_clan ? (m[3] ?? null) : null,
+        sender:  m[4],
+        message: m[5]
+      }
+    }
+
+    return null
+  }
+
+  search(messages, filters) {
+    return messages
+      .map(raw => ({ raw, parsed: this.parse(raw) }))
+      .filter(({ parsed }) =>
+        parsed && Object.entries(filters).every(([k, v]) => parsed[k] === v)
+      )
+  }
+}
+
+
+const config = new ConfigParser();
+config.read(path.join(BASE_DIR, "txt", "config.ini"))
+
+const bot_username = config.get("VARIABLES", "active_nick");
+
 const reg_bal_survings = new RegExp(String.raw`^Ваш баланс сурвингов: \$([0-9,]{1,10}\.[0-9]{0,2})`)
 const reg_bal_TCA = new RegExp(String.raw`^Баланс баллов TCA: ([0-9]{1,5})`)
 
 const reg_nickname = String.raw`([А-яA-Za-z0-9~!@#$^*\-_=+ёЁ]{1,16})`;
+const reg_full_nickname = new RegExp(`^${reg_nickname}$`);
 const reg_message = String.raw`(.{1,256})`;
 const reg_me_send = new RegExp(`^\\[${reg_nickname} -> Мне\\] ${reg_message}`)
 const reg_i_send = new RegExp(`^\\[Я -> ${reg_nickname}\\] ${reg_message}`)
+
+const chatSchema = new ChatSchema(reg_nickname, reg_message)
+
+const reg_spawnmob_help = new RegExp(`^
+Справка:
+Команда: \\/SpawnMob <Кол-во> <Моб>\\[:НД\\] \\[Наездник\\[:НД\\]...\\]
+Возможные мобы:
+armor_stand, bat, blaze, boat, cave_spider, chest_minecart, chicken, cow, creeper, donkey, elder_guardian, ender_crystal, ender_dragon, enderman, endermite, evocation_illager, furnace_minecart, ghast, giant, guardian, hopper_minecart, horse, husk, illusion_illager, iron_golem, llama, magma_cube, minecart, mooshroom, mule, ocelot, parrot, pig, polar_bear, rabbit, sheep, shulker, silverfish, skeleton, skeleton_horse, slime, snowman, spider, squid, stray, tnt_minecart, vex, villager, vindication_illager, witch, wither, wither_skeleton, wolf, zombie, zombie_horse, zombie_pigman, zombie_villager
+Узнать возможные НД моба можно командой \\/SpawnMob 1 <Моб>:\\s*
+\\(Поставив пробел между названиями мобов, они будут заспавнены друг на друге\\)$`
+);
+const reg_spawnmob_region_error = new RegExp(`Вы можете спавнить мобов только в своём регионе`)
+const reg_spawnmob_rank_error = new RegExp(`Необходимо иметь звание, как минимум, полковник`)
 
 const reg_near = new RegExp(`^Окружающие игроки: ((?:(?:${reg_nickname}\\([0-9]{1,4}m\\)(?:, )?)+)|(?:ничего))$`)
 
@@ -74,6 +154,7 @@ module.exports = {
 	reg_bal_TCA,
 
 	reg_nickname,
+  reg_full_nickname,
 	reg_message,
 	reg_me_send,
 	reg_i_send,
@@ -102,5 +183,11 @@ module.exports = {
 	reg_warn,
 	reg_ban,
 	reg_mute,
-	reg_kick
+	reg_kick,
+
+  reg_spawnmob_help,
+  reg_spawnmob_region_error,
+  reg_spawnmob_rank_error,
+
+	chatSchema
 }

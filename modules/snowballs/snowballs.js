@@ -6,7 +6,6 @@ const Vec3 = require("vec3");
 const { get_bot } = require(path.join(BASE_DIR, 'init.js'))
 const { stats_split_into_pages } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { random_choice } = require(path.join(BASE_DIR, 'utils', 'random.js'))
-const { get_players_and_distance }  = require(path.join(BASE_DIR, "utils", "entities.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
 const MODULE_NAME = "снежки";
@@ -297,7 +296,7 @@ class SnowballsModule extends BaseModule {
 
                     const startPointPos = this.estimateSnowballStartPos(entity);
 
-                    const shooter_and_dist = get_players_and_distance(
+                    const shooter_and_dist = this.ModuleManager.call_module("entities").get_players_and_distance(
                         bot,
                         startPointPos,
                         2.0,
@@ -345,7 +344,7 @@ class SnowballsModule extends BaseModule {
                     pos = pos.plus(vel)
                 }
 
-                const near_player = get_players_and_distance(bot, pos, 2, false)[0]
+                const near_player = this.ModuleManager.call_module("entities").get_players_and_distance(bot, pos, 2, false)[0]
 
                 let target_player;
                 if (near_player) {

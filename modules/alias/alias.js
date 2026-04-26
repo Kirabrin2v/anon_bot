@@ -1,7 +1,7 @@
 const ConfigParser = require('configparser');
 const path = require("path");
 
-const { reg_nickname } = require(path.join(BASE_DIR, "regex.js"))
+const { reg_full_nickname } = require(path.join(BASE_DIR, "regex.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
 const MODULE_NAME = "alias"
@@ -65,7 +65,7 @@ class AliasModule extends BaseModule {
 				if (informed_users.includes(sender)) {
 					this.set_new_nick(sender, nick)
 				} else {
-					if (nick.match(reg_nickname)) {
+					if (nick.match(reg_full_nickname)) {
 						answ = phrases["warn_use_cmd"]
 						wait_confirm_set_nick[sender] = nick
 						this.actions.push({

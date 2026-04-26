@@ -3,10 +3,11 @@ const sqlite = require("better-sqlite3");
 const path = require("path");
 
 const text = require(path.join(__dirname,  '../text/text.js'))
-const logging = require(path.join(__dirname, "../logging/logging.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const { random_choice } = require(path.join(BASE_DIR, "utils", "random.js"))
+const { substitute_text } = require(path.join(BASE_DIR, "utils", "text.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
-//const quotes = require(path.join(__dirname), "../quotes/quotes.js")
 const ConfigParser = require("configparser")
 const config = new ConfigParser();
 config.read(path.join(__dirname, "config.ini"))
@@ -87,60 +88,71 @@ const ranks = {1: "Подопытный", 2: "Стажёр", 3: "Исследо�
 const price_donate = [0, 40000, 100000, 500000, 1000000]
 
 
-function cash_player(stat) {
-	players_stats[stat.nickname] = {"rank": stat.rank, "messages": 0,//logging.get_count_players_messages(stat.nickname),
-															"cmds": stat.cmds, "donate": stat.donate, "casino": stat.casino,
-															"name": stat.name, "credit": stat.name, "warns": stat.warns, 
-															//"rating_quotes": get_rating_quote[stat.nickname],
-															 "echo": stat.echo, "twinks": JSON.parse(stat.twinks)}
-}
-
-const players_stats = {}
-const all_elements = db.prepare(`SELECT * FROM stats`).all();
-all_elements.forEach(elem => cash_player(elem))
-
-function substitute_text(pattern, values) {
-	return pattern.replace(/\{([^}]+)\}/g, (match, key) => values[key]);
-	
-}
-
-function random_choice(array) {
-	return array[Math.floor(Math.random() * array.length)]
-}
-
-function stats_to_text(key, value) {
-	if (key === "rank") {
-		key = "Звание";
-		value = ranks[value]
-	} else if (key === "messages") {
-		key = "Сообщения";
-	} else if (key === "cmds") {
-		key = "Команды"; 
-	} else if (key === "donate") {
-		key = "Задоначено";
-		value = new Intl.NumberFormat('ru-RU').format(value) + "$";
-	} else if (key === "casino") {
-		key = "Выигрыш в казино";
-		value = new Intl.NumberFormat('ru-RU').format(value) + "$";
-	} else if (key === "name") {
-		key = "Псевдоним";
-	} else if (key === "rating_quotes") {
-	 	key = "Рейтинг цитат"
-	 	if (!value) {
-	 		value = "Цитат нет"
-	 	}
-	 } else {
-		key = undefined;
-	}
-
-
-	return [key, value];
-}
-
-
 class StatsModule extends BaseModule {
 	constructor () {
 		super(MODULE_NAME, HELP, STRUCTURE, INTERVAL_CHECK_ACTIONS)
+
+		this.players_stats = {}
+
+		bus.on("update_stats", (obj) => {
+			this.update_stats(
+				obj.nickname,
+				obj.key,
+				obj.value,
+				obj.type
+			)
+		})
+	}
+
+	initialize() {
+		const all_elements = db.prepare(`SELECT * FROM stats`).all();
+		all_elements.forEach(elem => this.cash_player(elem))
+	}
+
+	cash_player(stat) {
+		this.players_stats[stat.nickname] = {
+			rank: stat.rank,
+			messages: this.ModuleManager.call_module("logging").get_count_players_messages(stat.nickname),
+			cmds: stat.cmds,
+			donate: stat.donate,
+			casino: stat.casino,
+			name: stat.name,
+			credit: stat.name,
+			warns: stat.warns, 
+			rating_quotes: this.ModuleManager.call_module("quotes").get_total_rating_by_author(stat.nickname),
+			echo: stat.echo,
+			twinks: JSON.parse(stat.twinks)
+		}
+	}
+
+
+	stats_to_text(key, value) {
+		if (key === "rank") {
+			key = "Звание";
+			value = ranks[value]
+		} else if (key === "messages") {
+			key = "Сообщения";
+		} else if (key === "cmds") {
+			key = "Команды"; 
+		} else if (key === "donate") {
+			key = "Задоначено";
+			value = new Intl.NumberFormat('ru-RU').format(value) + "$";
+		} else if (key === "casino") {
+			key = "Выигрыш в казино";
+			value = new Intl.NumberFormat('ru-RU').format(value) + "$";
+		} else if (key === "name") {
+			key = "Псевдоним";
+		} else if (key === "rating_quotes") {
+		 	key = "Рейтинг цитат"
+		 	if (!value) {
+		 		value = "Цитат нет"
+		 	}
+		 } else {
+			key = undefined;
+		}
+
+
+		return [key, value];
 	}
 
 	_process(sender, args, parameters, valid_args) {
@@ -162,7 +174,7 @@ class StatsModule extends BaseModule {
 				send_in_private_message = false;
 
 				answ = Object.entries(this.get_stats(nickname)).map(([key, value]) => {
-					[key, value] = stats_to_text(key, value)
+					[key, value] = this.stats_to_text(key, value)
 					if (key && value) {
 						return `${key}: ${value}`
 					}
@@ -240,7 +252,7 @@ class StatsModule extends BaseModule {
 		}
 	}
 
-	payment_processing(nick, cash, currency, reason, price_TCA) {
+	payment_processing(nick, cash, currency, reason) {
 		try {
 			if (currency === "TCA") {cash *= price_TCA;}
 			console.log(`Получено ${cash} сурвингов`)
@@ -268,11 +280,11 @@ class StatsModule extends BaseModule {
 	}
 
 	get_main_account(nickname) {
-		if (!players_stats[nickname]) {
+		if (!this.players_stats[nickname]) {
 			let marker_find = false;
 
-			for (const nick in players_stats) {
-				if (players_stats[nick] && players_stats[nick]["twinks"].includes(nickname)) {
+			for (const nick in this.players_stats) {
+				if (this.players_stats[nick] && this.players_stats[nick]["twinks"].includes(nickname)) {
 					marker_find = true;
 					break;
 				}
@@ -292,9 +304,9 @@ class StatsModule extends BaseModule {
 		if (!nickname) {return;}
 
 		if (!key) {
-			return players_stats[nickname]
+			return this.players_stats[nickname]
 		} else {
-			return players_stats[nickname][key]
+			return this.players_stats[nickname][key]
 		}
 	}
 
@@ -333,7 +345,7 @@ class StatsModule extends BaseModule {
 
 			const player = selectMessage.all(nickname)[0]
 
-			cash_player(player)
+			this.cash_player(player)
 
 			return {"is_ok": true}
 
@@ -355,7 +367,7 @@ class StatsModule extends BaseModule {
 				new_value = this.get_stats(nickname, key) + new_value
 			}
 
-			players_stats[nickname][key] = new_value
+			this.players_stats[nickname][key] = new_value
 
 			if (typeof new_value === "object") {
 				new_value = JSON.stringify(new_value)

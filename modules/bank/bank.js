@@ -3,6 +3,7 @@ const path = require("path")
 const db = new sqlite("modules/bank/users_data.db");
 
 const { BaseModule } = require(path.join(__dirname, "../base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const MODULE_NAME = "bank"
 const HELP = "1 счёт на несколько аккаунтов"
@@ -63,10 +64,18 @@ const informed_users = {"auth": [], "wrong_data": [], "add": [], "empty_data": [
 class BankModule extends BaseModule {
 	constructor () {
 		super(MODULE_NAME, HELP, STRUCTURE, INTERVAL_CHECK_ACTIONS)
-		this.bot_bal_TCA = 0;
-		this.bot_bal_survings = 0;
+		this.bal_tca = 0;
+		this.bal_survings = 0;
 		this.bank_auth = {}
 		this.bank_accounts = {}
+
+		bus.on("update_bal_survings", (obj) => {
+			this.bal_survings = obj.amount
+		})
+
+		bus.on("update_bal_tca", (obj) => {
+			this.bal_tca = obj.amount
+		})
 
 		db.prepare("SELECT * FROM bank").all().forEach((bank_info) => {
 			const name_bank = bank_info["name_bank"]
@@ -132,13 +141,13 @@ class BankModule extends BaseModule {
 		if (currency.includes("tca") || currency.includes("тса")) {
 			const count_TCA = this.bank_accounts[name_bank]["TCA"]
 			if (count_TCA >= amount) {
-				if (amount <= this.bot_bal_TCA) {
+				if (amount <= this.bal_tca) {
 					console.log(`Перевожу игроку ${nick} ${amount} TCA`)
 					this._update_bank(nick, name_bank, -amount, "TCA")
 					this.actions.push({"type": "TCA", "content": {"nick": nick, "amount": amount}})
 					
 				} else {
-					answ = `У бота на счету на данный момент недостаточно средств, чтобы выдать всю сумму. Текущий баланс бота: ${this.bot_bal_TCA} TCA`
+					answ = `У бота на счету на данный момент недостаточно средств, чтобы выдать всю сумму. Текущий баланс бота: ${this.bal_tca} TCA`
 				}
 
 			} else {
@@ -148,13 +157,13 @@ class BankModule extends BaseModule {
 		} else if (currency.includes("surv") || currency.includes("сурв")) {
 			const count_survings = this.bank_accounts[name_bank]["survings"]
 			if (count_survings >= amount) {
-				if (amount <= this.bot_bal_survings) {
+				if (amount <= this.bal_survings) {
 					console.log(`Перевожу игроку ${nick} ${amount} сурвингов`)
 					this._update_bank(nick, name_bank, -amount, "survings")
 					this.actions.push({"type": "survings", "content": {"nick": nick, "amount": amount, "reason": `Вы успешно сняли со счёта ${amount}$`}})
 
 				} else {
-					answ = `У бота на счету на данный момент недостаточно средств, чтобы выдать всю сумму. Текущий баланс бота: ${this.bot_bal_survings}$`
+					answ = `У бота на счету на данный момент недостаточно средств, чтобы выдать всю сумму. Текущий баланс бота: ${this.bal_survings}$`
 				}
 
 			} else {
@@ -347,15 +356,6 @@ class BankModule extends BaseModule {
 
 			this.bank_accounts[name_bank][currency] += amount
 		}
-
-
-	update_TCA(count_TCA) {
-		this.bot_bal_TCA = count_TCA;
-	}
-
-	update_survings(count_survings) {
-		this.bot_bal_survings = count_survings;
-	}
 }
 
 module.exports = BankModule

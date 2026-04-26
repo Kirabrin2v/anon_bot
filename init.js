@@ -8,6 +8,20 @@ function init(config) {
 
     bot = mineflayer.createBot(config)
     bot.loadPlugin(maps.inject)
+    bot.on('resourcePack', (url, hash) => {
+        console.log("Ресурспак")
+        bot.denyResourcePack()
+    })
+
+    bot.on('end', function kicked(reason) {
+        console.log("Закончил " + reason)
+        console.log(1)
+        process.exit(-1);
+    })
+
+    bot.on('kicked', (reason, loggedIn) => {
+        console.log(reason, loggedIn)
+    })
 
     return bot
 }

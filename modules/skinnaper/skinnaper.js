@@ -4,6 +4,7 @@ const path = require('path')
 
 const { date_to_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const MODULE_NAME = "skinnaper"
 const HELP = "Ворует скины"
@@ -24,6 +25,13 @@ const STRUCTURE = {
 class SkinnaperModule extends BaseModule {
 	constructor () {
         super(MODULE_NAME, HELP, STRUCTURE, INTERVAL_CHECK_ACTIONS)
+
+        bus.on("player_spawn", (obj) => {
+        	this.processing_skin_url(
+        		obj.player.username,
+        		obj.player.skinData.url
+    		)
+        })
     }
 
     downloadFile(url, path) {

@@ -34,7 +34,8 @@ img/
 modules/detector/
 modules/tracker/
 modules/skinnaper/skins/
-modules/telegram/
+modules/telegram/detector/
+modules/telegram/tracker/
 modules/test/
 old_version/
 anon/

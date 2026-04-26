@@ -1,4 +1,6 @@
-const reg_nickname = String.raw`^([А-яA-Za-z0-9~!@#$^*\-_=+ёЁ]{1,16})$`;
+const path = require("path")
+
+const { reg_full_nickname } = require(path.join(BASE_DIR, "regex.js"))
 
 class CommandEngine {
   constructor() {
@@ -21,6 +23,38 @@ class CommandEngine {
     if (required === undefined) {return true;}
     if (actual === undefined) {return false;}
     return actual >= required;
+  }
+
+  flattenArgs(args) {
+    const result = [];
+
+    for (const arg of args) {
+        switch (arg.type) {
+            case "flag":
+                result.push(arg.name);
+                break;
+
+            case "multiple":
+                if (Array.isArray(arg.value)) {
+                    result.push(...arg.value);
+                }
+                break;
+
+            case "text":
+                if (arg.value !== undefined && arg.value !== "") {
+                    result.push(arg.value);
+                }
+                break;
+
+            case "value":
+                if (arg.value !== undefined) {
+                    result.push(arg.value);
+                }
+                break;
+        }
+    }
+
+    return result;
   }
 
   validate_command(module_name, inputArgs, user_rank = undefined) {
@@ -66,6 +100,7 @@ class CommandEngine {
       let is_matched = arg in currentStructure && !currentStructure[arg]._type;
       if (!is_matched) {
         const keys = Object.keys(currentStructure)
+
         for (let i = 0; i < keys.length; i++) {
           const key = keys[i]
           if (currentStructure[key]._aliases && currentStructure[key]._aliases.includes(arg)) {
@@ -92,7 +127,7 @@ class CommandEngine {
         if (Object.prototype.hasOwnProperty.call(currentStructure, "_default")) {
           result.args.push({ name: arg, value: !currentStructure["_default"] });
         } else {
-          result.args.push({ name: arg, value: true })
+          result.args.push({ name: arg, value: true, type: "flag" })
         }
         usedArgs.add(arg);
         path.push(arg);
@@ -100,22 +135,7 @@ class CommandEngine {
         continue;
       }
 
-      // 2. СНАЧАЛА проверяем _type у текущего узла
-      if (currentStructure._type) {
-        if (this._checkType(currentStructure._type, arg)) {
-          result.args.push({
-            name: path[path.length - 1],
-            value: arg
-          });
-
-          usedArgs.add(arg);
-          i++;
-          continue;
-        } else {
-          break; // ❗ тип не прошёл — стоп парсинга
-        }
-      }
-      // 2.5 Проверка на составной аргумент (_multiple)
+      // 2 Проверка на составной аргумент (_multiple)
       for (const key in currentStructure) {
         if (key.startsWith('_')) {continue;}
 
@@ -147,7 +167,8 @@ class CommandEngine {
           // Записываем результат
           result.args.push({
             name: key,
-            value: values.length > 0 ? values : (node._default || [])
+            value: values.length > 0 ? values : (node._default || []),
+            type: "multiple"
           });
 
           // После multiple парсинг заканчивается
@@ -160,12 +181,13 @@ class CommandEngine {
 
         const node = currentStructure[key];
 
-        if (node._type === "string") {
+        if (node._type === "text") {
           const remaining = inputArgs.slice(i).join(" ");
 
           result.args.push({
             name: key,
-            value: remaining
+            value: remaining,
+            type: "text"
           });
 
           usedArgs.add(...inputArgs.slice(i));
@@ -215,7 +237,8 @@ class CommandEngine {
 
         result.args.push({
           name: matchedKey,
-          value: arg !== undefined ? arg : node._default
+          value: arg !== undefined ? arg : node._default,
+          type: "value"
         });
 
         currentStructure = node;
@@ -268,7 +291,7 @@ class CommandEngine {
     if (expectedType === 'int') {return Number.isInteger(Number(value));}
     if (expectedType === 'string' || expectedType === 'text') {return typeof value === 'string';}
     if (expectedType === 'float') {return !isNaN(parseFloat(value));}
-    if (expectedType === 'nick') {return value.match(reg_nickname);}
+    if (expectedType === 'nick') {return value.match(reg_full_nickname);}
     if (expectedType === 'bool') {return value === true || value === false;}
     return false; // кастомные типы можно обрабатывать тут
   }

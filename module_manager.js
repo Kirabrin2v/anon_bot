@@ -60,7 +60,9 @@ class ModuleManager {
 				}
 				if (mod.structure && !mod.only_tg) {
 					CommandManager.modules_structure[mod.module_name] = mod.structure
-					CommandManager.modules_structure[mod.module_name]._description = mod.help
+					if (!CommandManager.modules_structure[mod.module_name]) {
+						CommandManager.modules_structure[mod.module_name]._description = mod.help
+					}
 				}
 				this.modules[mod.module_name] = mod
 				if (mod.interval_check_actions !== undefined) {

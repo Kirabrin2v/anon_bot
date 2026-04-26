@@ -4,6 +4,7 @@ const path = require("path")
 const { random_choice, random_number } = require(path.join(BASE_DIR, "utils", "random.js"))
 const { substitute_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const MODULE_NAME = "casino"
 const HELP = "Казино, в котором можно как выиграть, так и проиграть миллионы!"
@@ -48,6 +49,17 @@ class CasinoModule extends BaseModule {
 		this.wait_pay = {}
 
 		this.bal_survings = 0;
+
+		bus.on("update_bal_survings", (obj) => {
+			this.bal_survings = obj.amount
+		})
+
+		bus.on("new_punishment", (obj) => {
+			this.end_casino_violator(
+				obj.punishment_data.violator,
+				obj.punishment_data.guardian
+			)
+		})
     }
 
 	casino_random_numbers() {
@@ -81,12 +93,13 @@ class CasinoModule extends BaseModule {
 			return;
 		}
 		if (win) {
-			let coef_win = this.check_valid_bet(nick)
+			let coef_win = this.use_coef_win(nick)
 			if (!coef_win) {
 				coef_win = 1;
 			}
 			const phrase = random_choice(phrases["win"])
 			const win_money = bet*0.9*coef_win
+			console.log("Выигрыш", bet, coef_win, win_money)
 			this.actions.push({
 				type: "survings",
 				content: {
@@ -258,11 +271,6 @@ class CasinoModule extends BaseModule {
 		}
 		return answ
 	}
-
-	update_survings(new_balance) {
-		this.bal_survings = new_balance;
-	}
-
 }
 
 module.exports = CasinoModule
