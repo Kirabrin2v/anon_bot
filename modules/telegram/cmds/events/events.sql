@@ -1,0 +1,24 @@
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "events" (
+	"ID"	INTEGER,
+	"event_date"	TEXT NOT NULL,
+	"event_name"	TEXT NOT NULL,
+	"organizers"	TEXT,
+	"description"	TEXT,
+	"is_active"	INTEEGR DEFAULT 1,
+	PRIMARY KEY("ID" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "logs_alert" (
+	"ID"	INTEGER,
+	"date_time"	TEXT NOT NULL,
+	"event_id"	INTEGER NOT NULL,
+	"tg_id"	INTEGER NOT NULL,
+	PRIMARY KEY("ID" AUTOINCREMENT)
+);
+CREATE TABLE IF NOT EXISTS "subscribers" (
+	"ID"	INTEGER,
+	"event_id"	INTEGER NOT NULL,
+	"tg_id"	INTEGER NOT NULL,
+	PRIMARY KEY("ID" AUTOINCREMENT)
+);
+COMMIT;

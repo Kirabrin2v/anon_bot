@@ -6,3 +6,9 @@ find ./modules -name '*.sql' | while read schema; do
     echo "Creating DB: $db_path"
     sqlite3 "$db_path" < "$schema"
 done
+
+find ./modules/telegram/cmds -name '*.sql' | while read schema; do
+    db_path="${schema%.sql}.db"
+    echo "Creating DB: $db_path"
+    sqlite3 "$db_path" < "$schema"
+done
