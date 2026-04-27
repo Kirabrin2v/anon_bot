@@ -34,7 +34,7 @@ class WhoModule extends BaseModule {
 		if (players_on_loc.length > 1) {
 			const username = random_choice(players_on_loc)
 			const phrase = random_choice(phrases["кто"])
-			answ = `${phrase}, ${args.join(" ")} - ${username}`
+			answ = `${phrase}, ${args[0].value} - ${username}`
 		} else {
 			answ = "Никто"
 		}

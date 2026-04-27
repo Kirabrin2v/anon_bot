@@ -244,31 +244,31 @@ class CasinoModule extends BaseModule {
 	_process(sender, args, parameters) {
 		let answ;
 		const rank = parameters.rank_sender
-		if (args.length === 0 || args[0] === "help") {
-			answ = `Возможные аргументы: [ставка в сурвингах(целое число без '$')] [версия казино]. ТСА нужно указывать в сурвингах по курсу 1:${price_TCA}`
-		} else {
-			const bet = Number(args[0])
+		const bet = args[0].value
 
-			let mode_casino = Number(args[1])
-			if (!mode_casino) {
-				mode_casino = 1
-			}
+		let mode_casino = args[1].value
+		if (!mode_casino) {
+			mode_casino = 1
+		}
 
-			const is_valid = this.check_valid_bet(sender, rank, bet, mode_casino)
-			if (is_valid["is_ok"]) {
-				if (mode_casino > 0 && mode_casino <= 3) {
-					this.wait_pay[sender] = {"bet": bet, "mode_casino": mode_casino}
-					const phrase = random_choice(phrases["wait_cash"])
-					answ = phrase
-
-				} else {
-					answ = "Вы неверно указали версию казино"
+		const is_valid = this.check_valid_bet(sender, rank, bet, mode_casino)
+		if (is_valid["is_ok"]) {
+			if (mode_casino > 0 && mode_casino <= 3) {
+				this.wait_pay[sender] = {
+					bet,
+					mode_casino
 				}
+				const phrase = random_choice(phrases["wait_cash"])
+				answ = phrase
 
 			} else {
-				answ = is_valid["message_error"]
+				answ = "Вы неверно указали версию казино"
 			}
+
+		} else {
+			answ = is_valid["message_error"]
 		}
+
 		return answ
 	}
 }

@@ -7,10 +7,13 @@ const MODULE_NAME = "ручуп"
 const HELP = "Управление ботом"
 const INTERVAL_CHECK_ACTIONS = 0
 const STRUCTURE = {
-	version: {
-		_type: "int",
-		_optional: true,
-		_description: "Способ управления ботом. Номер \"2\" - управление с помощью блоков шерсти"
+	1: {
+		_description: "Управление с помощью клавиатуры",
+		_optional: true
+	},
+	3: {
+		_description: "Управление ботом с помощью блоков шерсти",
+		_optional: true
 	}
 }
 
@@ -159,41 +162,34 @@ class MoveModule extends BaseModule {
 	_process(sender, args, cmd_parameters) {
 		const seniors = cmd_parameters.seniors
 		let answ;
-		if (args[0] === "help") {
-			answ = "Возможные аргументы: [версия ручупа]"
-		} else if (args.length === 0) {
+		if (args.length === 0) {
 			if (seniors.includes(sender)) {
-				args[0] = "1"
+				args.push({name: 1})
 			} else {
-				args[0] = "3"
+				args.push({name: 3})
 			}
 		}
-		if (args[0] === "3") {
-			if (args[1] === "help") {
-				answ = "Управление ботом с помощью блоков шерсти."
-
-			} else {
-				if (this.control_player.nick) {
-					if (sender === this.control_player.nick) {
-						this.clear_control_player()
-						answ = "Управление успешно выключено"
-					} else {
-						answ = `Вы не можете использовать это сейчас, т.к. ботом управляет ${this.control_player.nick}`
-					}
+		if (args[0].name === "3") {
+			if (this.control_player.nick) {
+				if (sender === this.control_player.nick) {
+					this.clear_control_player()
+					answ = "Управление успешно выключено"
 				} else {
-					this.control_player = {
-						nick: sender,
-						version: 3,
-						interval_check: setInterval(() => {
-							this.control_bot_with_blocks(sender)
-						}, 1)
-					}
-					answ = "Теперь Вы управляете ботом. Необходимые цвета шерсти: бирюзоывй(взгляд) оранжевый(←), лаймовый(↑), красный(↓), фиолетовый(→), зелёный(прыжок)"
-
+					answ = `Вы не можете использовать это сейчас, т.к. ботом управляет ${this.control_player.nick}`
 				}
+			} else {
+				this.control_player = {
+					nick: sender,
+					version: 3,
+					interval_check: setInterval(() => {
+						this.control_bot_with_blocks(sender)
+					}, 1)
+				}
+				answ = "Теперь Вы управляете ботом. Необходимые цвета шерсти: бирюзоывй(взгляд) оранжевый(←), лаймовый(↑), красный(↓), фиолетовый(→), зелёный(прыжок)"
+
 			}
 
-		} else if (args[0] === "1" && seniors.includes(sender)) {
+		} else if (args[0].name === "1" && seniors.includes(sender)) {
 			if (this.control_player.nick === sender) {
 				this.clear_control_player()
 				answ = "Управление успешно выключено"

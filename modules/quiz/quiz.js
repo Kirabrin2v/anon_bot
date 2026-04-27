@@ -132,7 +132,7 @@ class QuizModule extends BaseModule {
 		_process(sender, args) {
 			let answ;
 			let action = "last"
-			if (args[0] === "now") {
+			if (args[0].name === "now") {
 				action = "now"
 			}
 			if (action === "last") {

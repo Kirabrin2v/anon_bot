@@ -56,35 +56,25 @@ class AliasModule extends BaseModule {
 	_process(sender, args, parameters) {
 		const rank = parameters.rank_sender
 		let answ;
-		if (args.length === 0 || args[0] === "help") {
-			answ = "Возможные аргументы: [Ваш псевдоним]"
-
-		} else {
-			if (rank >= 2) {
-				const nick = args[0]
-				if (informed_users.includes(sender)) {
-					this.set_new_nick(sender, nick)
-				} else {
-					if (nick.match(reg_full_nickname)) {
-						answ = phrases["warn_use_cmd"]
-						wait_confirm_set_nick[sender] = nick
-						this.actions.push({
-							type: "wait_data",
-							module_name: this.module_name,
-							content: {
-								type: "message",
-								sender: sender
-							}
-						})
-					} else {
-						answ = "Ник должен быть меньше 17 символов и не содержать специальных символов"
-					}
-				}
+		if (rank >= 2) {
+			const nick = args[0].value
+			if (informed_users.includes(sender)) {
+				this.set_new_nick(sender, nick)
 			} else {
-				answ = "Смена ника доступна со звания Стажёр"
+				answ = phrases["warn_use_cmd"]
+				wait_confirm_set_nick[sender] = nick
+				this.actions.push({
+					type: "wait_data",
+					module_name: this.module_name,
+					content: {
+						type: "message",
+						sender: sender
+					}
+				})
 			}
+		} else {
+			answ = "Смена ника доступна со звания Стажёр"
 		}
-
 		if (answ) {
 			return answ
 		}	

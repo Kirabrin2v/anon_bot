@@ -73,9 +73,6 @@ const STRUCTURE = {
   }
 }
 
-let quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
-const placeholder_quote = {"author": "anon_bot", "citation": "1000010010110000110000"}
-quotes.unshift(placeholder_quote)
 
 
 class QuotesModule extends BaseModule {
@@ -83,6 +80,7 @@ class QuotesModule extends BaseModule {
         super(MODULE_NAME, HELP, STRUCTURE, INTERVAL_CHECK_ACTIONS)
         this.add_prepared_quotes_to_bd()
         this.INTERVAL_SEND_RANDOM_QUOTE = 12000
+        this.quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
 
         setInterval(() => {
                 this.send_random_quote()
@@ -110,7 +108,7 @@ class QuotesModule extends BaseModule {
                                                   WHERE ID == ?`)
                 deleteMessage.run(ID)
             })
-        quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
+        this.quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
         } catch (error) {
             this.actions.push({
                 type: "error",
@@ -191,7 +189,7 @@ class QuotesModule extends BaseModule {
                                           (citation, author)
                                           VALUES (?, ?)`)
         insertMessage.run(citation, author)
-        quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
+        this.quotes = db.prepare(`SELECT ID, citation, author, rating FROM quotes`).all()
 
     }
 
@@ -364,7 +362,7 @@ class QuotesModule extends BaseModule {
 
     generate_quotes_stats() {
         let stats = {}
-        quotes.map((quote) => {
+        this.quotes.map((quote) => {
             const nick = quote.author
             if (stats[nick]) {
                 stats[nick]["count_quotes"]++;
@@ -381,7 +379,7 @@ class QuotesModule extends BaseModule {
     }
 
     get_quotes_from_author(author) {
-        return quotes.filter((quote) => quote.author.toLowerCase() === author.toLowerCase())
+        return this.quotes.filter((quote) => quote.author.toLowerCase() === author.toLowerCase())
     }
 
     get_total_rating_by_author(author) {
@@ -397,8 +395,8 @@ class QuotesModule extends BaseModule {
     }
 
     send_quote(ID) {
-        console.log(ID, quotes[ID])
-        const quote_info = quotes[ID]
+        console.log(ID, this.quotes[ID])
+        const quote_info = this.quotes[ID]
         if (quote_info) {
             const author = quote_info["author"]
             const quote = quote_info["citation"]
@@ -424,7 +422,7 @@ class QuotesModule extends BaseModule {
     }
 
     send_random_quote() {
-        const weights = quotes.map(quote => {
+        const weights = this.quotes.map(quote => {
             if (!quote.rating && quote.rating !== 0) {return 0;}
             return Math.max(quote.rating, 1);
         });
@@ -433,16 +431,16 @@ class QuotesModule extends BaseModule {
         const randomValue = Math.random() * totalWeight;
 
         let cumulativeWeight = 0;
-        for (let i = 0; i < quotes.length; i++) {
+        for (let i = 0; i < this.quotes.length; i++) {
             cumulativeWeight += weights[i];
             if (randomValue <= cumulativeWeight) {
                 console.log([this])
                 this.send_quote(i)
-                return quotes[i];
+                return this.quotes[i];
             }
         }
         this.send_quote(0)
-        return quotes[0];
+        return this.quotes[0];
     }
 
     update_quotes_rep(ID, nickname, add_rep) {
@@ -506,68 +504,67 @@ class QuotesModule extends BaseModule {
         let answ;
         let send_in_private_message = false;
 
-        if (args[0] === "add") {
-            if (args[1]) {
-                const quote = args.slice(1).join(" ")
-                this.add_quote_to_bd(sender, quote)
-                answ = "Ваша цитата отправлена на проверку!"
-            } else {
-                answ = "Верный синтаксис: add [Ваша личная цитата цензурного содержания]"
-            }
+        if (args[0].name === "add") {
+            const quote = args[1].value
+            this.add_quote_to_bd(sender, quote)
+            answ = "Ваша цитата отправлена на проверку!"
 
-        } else if (args[0] === "rep") {
+        } else if (args[0].name === "rep") {
             const rank_sender = parameters.rank_sender
-            if (Number(args[1])) {
-                const ID = Number(args[1])
-                if (ID && ID > 0 && ID <= quotes.length) {
-                    if (args[2] === "+" || args[2] === "-") {
-                        if (!quotes_rep[sender] || !quotes_rep[sender][ID]) {
-                            const quote_info = quotes[ID]
-                            let author;
-                            if (quote_info) {author = quote_info["author"]}
-                            if (author && author !== sender) {
-                                let add_rep = rank_sender >= 2 && rank_sender <= 4 ? 2 : rank_sender > 4 ? 3 : 1
-                                if (args[2] === "-") {add_rep = -add_rep}
-                                quotes[ID]["rating"] += add_rep
-                                this.update_quotes_rep(ID, sender, add_rep)
-                                this.update_logs_quotes(ID, sender, add_rep)
-                                this.update_rating(ID)
-                                answ = "Рейтинг успешно изменён"
-                            } else {answ = "Вы не можете поставить рейтинг самому себе"}
-                        } else {answ = "Вы уже оставили свой голос для этой цитаты. Выберите другую или отмените голос для этой с помощью сmd цитата rep [ID] del"}
-                    } else if (args[2] === "del") {
-                        if (quotes_rep[sender] && quotes_rep[sender][ID]) {
-                            const add_rep = - quotes_rep[sender][ID]
-                            delete(quotes_rep[sender][ID])
-                            fs.writeFileSync(path_rep, JSON.stringify(quotes_rep))
+            const ID = args[1].value
+            if (ID > 0 && ID <= this.quotes.length) {
+                if (args[2].name === "+" || args[2].name === "-") {
+                    if (!quotes_rep[sender] || !quotes_rep[sender][ID]) {
+                        const quote_info = this.quotes[ID]
+                        let author;
+                        if (quote_info) {author = quote_info.author}
+                        if (author && author !== sender) {
+                            let add_rep = rank_sender >= 2 && rank_sender <= 4 ? 2 : rank_sender > 4 ? 3 : 1
+                            if (args[2].name === "-") {add_rep = -add_rep}
+                            this.quotes[ID]["rating"] += add_rep
+                            this.update_quotes_rep(ID, sender, add_rep)
                             this.update_logs_quotes(ID, sender, add_rep)
                             this.update_rating(ID)
-                            answ = "Голос успешно удалён"
-                        } else {answ = "Вы ещё не поставили оценку этой цитате"}
-                    } else {answ = "Вы должны указать, что вы хотите сделать с рейтингом выбранной цитаты. Повысить(+),  понизить(-) или отменить голос(del)"}
-                } else {answ = "Цитаты с данным айди не существует"}
-            } else {answ = "Верный синтаксис: [id цитаты] [+(повысить рейтинг), -(понизить рейтинг), del(отменить голос)]"}
+                            answ = "Рейтинг успешно изменён"
+                        
+                        } else {answ = "Вы не можете поставить рейтинг самому себе"}
+                    
+                    } else {answ = "Вы уже оставили свой голос для этой цитаты. Выберите другую или отмените голос для этой с помощью сmd цитата rep [ID] del"}
+                
+                } else if (args[2].name === "del") {
+                    if (quotes_rep[sender] && quotes_rep[sender][ID]) {
+                        const add_rep = - quotes_rep[sender][ID]
+                        delete(quotes_rep[sender][ID])
+                        fs.writeFileSync(path_rep, JSON.stringify(quotes_rep))
+                        this.update_logs_quotes(ID, sender, add_rep)
+                        this.update_rating(ID)
+                        answ = "Голос успешно удалён"
 
-        } else if (args[0] === "list") {
+                    } else {answ = "Вы ещё не поставили оценку этой цитате"}
+
+                } else {answ = "Вы должны указать, что вы хотите сделать с рейтингом выбранной цитаты. Повысить(+),  понизить(-) или отменить голос(del)"}
+
+            } else {answ = "Цитаты с данным айди не существует"}
+
+        } else if (args[0].name === "list") {
             send_in_private_message = true;
-            if (args.length === 1 || args[1] === "help") {answ = "Возможные аргументы: [by - цитаты конкретного человека; all - информация о всех цитатах]"}
-            else if (args[1] === "by") {
-                if (args.length === 2) {answ = "Возможные аргументы: [ник_игрока]. Покажет айди и начало цитат выбранного игрока"}
-                else {
-                    const nick = args[2]
-                    const num_page = args.length>3?Number(args[3]):1
-                    const quotes = this.generate_quotes_list(nick)
-                    if (quotes && quotes.length>0) {answ = stats_split_into_pages(quotes, 5, num_page, `Цитаты игрока ${nick}: `)["answ"]}
-                    else {answ = "У выбранного игрока нет цитат"}
-                }
-            } else if (args[1] === "all") {
-                const num_page = args.length>2?Number(args[2]):1
+            if (args[1].name === "by") {
+                const nick = args[2].value
+                const num_page = args.length>3?Number(args[3]):1
+                const quotes = this.generate_quotes_list(nick)
+                if (quotes && quotes.length>0) {
+                    answ = stats_split_into_pages(quotes, 5, num_page, `Цитаты игрока ${nick}: `)["answ"]
+                } else {answ = "У выбранного игрока нет цитат"}
+
+            } else if (args[1].name === "all") {
+                const num_page = args[2].value
                 const stats = this.generate_quotes_stats()
                 answ = stats_split_into_pages(stats, 3, num_page, "Тест: ")["answ"]
+
             } else {answ = "Возможные аргументы: [by, all]"}
 
-        } else if (args[0] === "by") {
-            const author = args[1]
+        } else if (args[0].name === "by") {
+            const author = args[1].value
             if (author) {
                 const quotes_by_author = this.get_quotes_from_author(author)
                 if (quotes_by_author.length>0) {
@@ -578,8 +575,8 @@ class QuotesModule extends BaseModule {
                 } else {answ = "У выбранного игрока нет цитат"}
             } else {answ = "Вы должны указать игрока, чтобы получить его цитату"}
 
-        } else if (args[0] === "id") {
-            const ID = Number(args[1])
+        } else if (args[0].name === "id") {
+            const ID = args[1].value
             if (ID) {
                 const info = this.send_quote(ID)
                 answ = info["is_ok"]? `Цитата игрока ${info["author"]}: "${info["quote"]}"`: info["message_error"]

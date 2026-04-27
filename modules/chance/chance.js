@@ -27,7 +27,7 @@ class ChanceModule extends BaseModule {
 
     _process(sender, args) {
 		const phrase = random_choice(phrases["шанс"])
-		const answ = `${phrase}, шанс ${args.join(" ")} - ${random_number(0, 101)}%`
+		const answ = `${phrase}, шанс ${args[0].value} - ${random_number(0, 101)}%`
 
 		return {
 			message: answ,

@@ -142,23 +142,19 @@ class GriefModule extends BaseModule {
 
 	_process(sender, args) {
 		let nick, num_page;
-		if (args[0] === "all") {
+		if (args[0].name === "all") {
 			nick = ""
 
 			if (args[1]) {
 				num_page = Number(args[1])
 			}
 
-		} else if (args[0] === "nick") {
-			nick = args[1]
+		} else if (args[0].name === "nick") {
+			nick = args[1].value
 			if (!nick) {
 				return "Вы не указали ник игрока"
 			}
-
-			if (args[2]) {
-				num_page = Number(args[2])
-			}
-
+			num_page = args[2].value
 		}
 
 		const beds = this.get_placed_beds(nick)

@@ -1156,7 +1156,7 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 
 						const cooldown_info = modules.call_module("cooldown").check_cooldown(sender, cmd, args)
 						if (!cooldown_info || seniors.includes(sender) || cooldown_info["is_ok"]) {
-						  const actions = module_object.cmd_processing(sender, args, cmd_parameters, valid_command.args, valid_command.unused_args);
+						  const actions = module_object.cmd_processing(sender, valid_command.args, cmd_parameters, valid_command.unused_args);
 
 						  const update_action = {
 						    type: "answ",

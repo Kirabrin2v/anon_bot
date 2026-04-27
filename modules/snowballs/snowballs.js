@@ -390,15 +390,12 @@ class SnowballsModule extends BaseModule {
     _process(sender, args) {
         let answ;
 
-        if (args[0] === "stats") {
+        if (args[0].name === "stats") {
             const stats = this.get_player_stats(sender)
             answ = `Снежков, достигшних цели: ${stats.hits_done}. Пойманных снежков: ${stats.hits_taken}`
 
-        } else if (args[0] === "list") {
-            let num_page = 1;
-            if (args[1]) {
-                num_page = Number(args[1])
-            }
+        } else if (args[0].name === "list") {
+            num_page = args[1].value
 
             const hits = this.get_hits({ limit: 50 });
 
@@ -409,11 +406,11 @@ class SnowballsModule extends BaseModule {
 
             answ = split_into_pages["answ"]
         
-        } else if (args[0] === "balance") {
+        } else if (args[0].name === "balance") {
             const balance = this.get_balance(sender)
             answ = `Ваш баланс: ${balance}$`
         
-        } else if (args[0] === "get") {
+        } else if (args[0].name === "get") {
             const balance = this.get_balance(sender)
             if (balance >= 100) {
                 this.send_reward(sender, balance, "Ваша награда")
@@ -421,7 +418,7 @@ class SnowballsModule extends BaseModule {
                 answ = `Вывод средств доступен от 100$. У Вас есть только ${balance}`
             }
 
-        } else if (args[0] === "info") {
+        } else if (args[0].name === "info") {
             answ = "За каждое попадание снежком в игрока пополняется внутренний баланс. От 1000$ автоматически выводится. Если пулять в новых игроков, платится больше."
         }
         if (answ) {

@@ -102,11 +102,11 @@ class BankModule extends BaseModule {
 	_process(sender, args, parameters) {
 		const rank = parameters.rank_sender
 		let answ;
-		if (args[0] === "создать") {
+		if (args[0].name === "создать") {
 			if (rank === 0) {return;}
-			const name_bank = args[1]
-			const main_password = args[2]
-			const visitor_password = args[3]
+			const name_bank = args[1].value
+			const main_password = args[2].value
+			const visitor_password = args[3].value
 
 			answ = this._create_new_account(sender, name_bank, main_password, visitor_password)
 		
@@ -224,85 +224,81 @@ class BankModule extends BaseModule {
 
 	_bank_processing(sender, args) {
 			let answ;
-			if (args) {
-				if (this.bank_auth[sender]) {
-					const is_main = this.bank_auth[sender]["is_main"]
-					if (args[0] === "auth") {
-						answ = `Вы уже авторизованы в счёте ${this.bank_auth[sender]["name_bank"]}. Чтобы авторизоваться в другом счёте, сначала выйдите из этого: сmd bank logout`
-					
-					} else if (args[0] === "снять") {
-						if (is_main) {
-							let amount = Number(args[1])
-							const currency = args[2]
-							if (amount) {
-								if (currency) {
-									if ((currency.includes("surv") || currency.includes("сурв"))) {
-										if (amount > 5000) {
-											amount = Number(amount.toFixed(1))
-											const name_bank = this.bank_auth[sender]["name_bank"]
-											answ = this._get_cash(sender, name_bank, amount, currency)
-										} else {
-											answ = "Минимальная сумма для вывода"
-										}
-									} else {
+			if (this.bank_auth[sender]) {
+				const is_main = this.bank_auth[sender]["is_main"]
+				if (args[0].name === "auth") {
+					answ = `Вы уже авторизованы в счёте ${this.bank_auth[sender]["name_bank"]}. Чтобы авторизоваться в другом счёте, сначала выйдите из этого: сmd bank logout`
+				
+				} else if (args[0].name === "снять") {
+					if (is_main) {
+						let amount = args[1].value
+						const currency = args[2].value
+						if (amount) {
+							if (currency) {
+								if ((currency.includes("surv") || currency.includes("сурв"))) {
+									if (amount > 5000) {
+										amount = Number(amount.toFixed(1))
 										const name_bank = this.bank_auth[sender]["name_bank"]
 										answ = this._get_cash(sender, name_bank, amount, currency)
+									} else {
+										answ = "Минимальная сумма для вывода"
 									}
-									
-									
 								} else {
-									answ = "Вы не указали валюту(сурвинги/TCA)"
+									const name_bank = this.bank_auth[sender]["name_bank"]
+									answ = this._get_cash(sender, name_bank, amount, currency)
 								}
-
+								
+								
 							} else {
-								answ = "Вы не указали количество и название валюты"
+								answ = "Вы не указали валюту(сурвинги/TCA)"
 							}
 
 						} else {
-							answ = "Вы в гостевом режиме, поэтому не имеете права на вывод денег"
+							answ = "Вы не указали количество и название валюты"
 						}
 
-					} else if (args[0] === "logout") {
-						delete this.bank_auth[sender]
-						answ = "Вы разлогинились. Повторно пройти авторизацию: сmd bank auth [название счёта] [пароль]"
-					
-					} else if (args[0] === "баланс") {
-						const name_bank = this.bank_auth[sender]["name_bank"]
-						const count_TCA = this.bank_accounts[name_bank]["TCA"]
-						const count_survings = this.bank_accounts[name_bank]["survings"]
-						answ = `Текущий баланс выбранного счёта: TCA: ${count_TCA}; Сурвингов: ${count_survings}`
-					
-					} else if (args[0] === "пополнить") {
-						answ = "Для пополнения баланса не нужно прописывать отдельную команду, т.к. вы уже авторизованы в этом счёте. В течение текущей сессии любой перевод TCA/сурвингов будет автоматически зачислен на счёт"
-					
 					} else {
-						answ = "Возможные аргументы: [снять, пополнить, баланс, logout, создать]"
+						answ = "Вы в гостевом режиме, поэтому не имеете права на вывод денег"
 					}
 
+				} else if (args[0].name === "logout") {
+					delete this.bank_auth[sender]
+					answ = "Вы разлогинились. Повторно пройти авторизацию: сmd bank auth [название счёта] [пароль]"
+				
+				} else if (args[0].name === "баланс") {
+					const name_bank = this.bank_auth[sender]["name_bank"]
+					const count_TCA = this.bank_accounts[name_bank]["TCA"]
+					const count_survings = this.bank_accounts[name_bank]["survings"]
+					answ = `Текущий баланс выбранного счёта: TCA: ${count_TCA}; Сурвингов: ${count_survings}`
+				
+				} else if (args[0].name === "пополнить") {
+					answ = "Для пополнения баланса не нужно прописывать отдельную команду, т.к. вы уже авторизованы в этом счёте. В течение текущей сессии любой перевод TCA/сурвингов будет автоматически зачислен на счёт"
+				
 				} else {
-					if (args[0] === "auth") {
-						const name_bank = args[1]
-						const password = args[2]
-						if (name_bank && password) {
-							answ = this._authorization(sender, name_bank, password)
-
-						} else {
-							informed_users["empty_data"].push(sender)
-							answ = "Верный синтаксис: сmd bank auth [название_счёта] [пароль]"
-
-						}
-
-					} else if (args[0] === "пополнить" && !informed_users["add"].includes(sender)) {
-						informed_users["add"].push(sender)
-						answ = "Для пополнения баланса Вам нужно сначала авторизоваться с помощью команды: сmd bank auth [название счёта] [пароль]. Данное сообщение больше отправляться не будет"
-
-					} else if (!informed_users["auth"].includes(sender)) {
-						answ = "Вы не авторизованы, сделайте это командой: сmd bank auth [название счёта] [пароль]. Данное сообщение отправляется только 1 раз."
-						informed_users["auth"].push(sender)
-					}
+					answ = "Возможные аргументы: [снять, пополнить, баланс, logout, создать]"
 				}
+
 			} else {
-				answ = "Возможные аргументы: [снять, пополнить, баланс, logout, создать]"
+				if (args[0].name === "auth") {
+					const name_bank = args[1].value
+					const password = args[2].value
+					if (name_bank && password) {
+						answ = this._authorization(sender, name_bank, password)
+
+					} else {
+						informed_users["empty_data"].push(sender)
+						answ = "Верный синтаксис: сmd bank auth [название_счёта] [пароль]"
+
+					}
+
+				} else if (args[0].name === "пополнить" && !informed_users["add"].includes(sender)) {
+					informed_users["add"].push(sender)
+					answ = "Для пополнения баланса Вам нужно сначала авторизоваться с помощью команды: сmd bank auth [название счёта] [пароль]. Данное сообщение больше отправляться не будет"
+
+				} else if (!informed_users["auth"].includes(sender)) {
+					answ = "Вы не авторизованы, сделайте это командой: сmd bank auth [название счёта] [пароль]. Данное сообщение отправляется только 1 раз."
+					informed_users["auth"].push(sender)
+				}
 			}
 			return answ
 	}

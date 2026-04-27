@@ -13,7 +13,7 @@ class Module extends BaseModule {
         super(MODULE_NAME, HELP, STRUCTURE)
     }
 
-	_process(sender, args, parameters, valid_args, unused_args) {
+	_process(sender, args, parameters, unused_args) {
 		
 	}
 }

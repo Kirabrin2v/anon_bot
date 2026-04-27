@@ -155,10 +155,10 @@ class StatsModule extends BaseModule {
 		return [key, value];
 	}
 
-	_process(sender, args, parameters, valid_args) {
+	_process(sender, args, parameters) {
 		const seniors = parameters.seniors
 		const rank = parameters.rank_sender
-		args = valid_args
+
 		let send_in_private_message = true;
 		let answ;
 

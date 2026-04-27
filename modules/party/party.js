@@ -15,18 +15,13 @@ class PartyModule extends BaseModule {
 
 	_process(sender, args) {
 		let answ;
-		if (args[0] === "help") {
-			answ = "Пропишите команду без аргуменов и бот пригласит Вас в пати"
-			return answ
-		} else {
-			const cmd = `/party invite ${sender}`
-			this.actions.push({
-				type: "cmd",
-				content: {
-					cmd
-				}
-			})
-		}
+		const cmd = `/party invite ${sender}`
+		this.actions.push({
+			type: "cmd",
+			content: {
+				cmd
+			}
+		})
 	}
 }
 

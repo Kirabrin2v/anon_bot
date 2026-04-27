@@ -14,7 +14,7 @@ const STRUCTURE = {
     _description: "Очищает историю"
   },
   request: {
-    _type: "string",
+    _type: "text",
     _description: "Ваш запрос к нейросети"
   }
 }
@@ -34,8 +34,7 @@ class GptModule extends BaseModule {
     this.dialogue_history = {}
   }
 
-  async _process(sender, args, cmd_parameters, valid_args, unused_args) {
-    args = valid_args;
+  async _process(sender, args, cmd_parameters) {
     const rank = cmd_parameters.rank_sender;
     let answ;
 
@@ -44,7 +43,7 @@ class GptModule extends BaseModule {
         this.dialogue_history[sender] = []
         answ = "История очищена"
       } else if (args[0].name === "request") {
-        const text = args[0].value + unused_args.join(" ")
+        const text = args[0].value
 
         answ = await this.send_request(sender, text);
       }

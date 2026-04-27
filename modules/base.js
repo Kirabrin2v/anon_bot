@@ -43,8 +43,8 @@ class BaseModule {
     }
 
     // Общий шаблон
-    async cmd_processing(sender, args, cmd_parameters, valid_args, unused_args) {
-        const result = await this._process(sender, args, cmd_parameters, valid_args, unused_args);
+    async cmd_processing(sender, args, cmd_parameters, unused_args) {
+        const result = await this._process(sender, args, cmd_parameters, unused_args);
 
         if (!result) {return;}
 
@@ -77,7 +77,7 @@ class BaseModule {
         };
     }
     // Метод для переопределения
-    _process(sender, args, cmd_parameters, valid_args, unused_args) {
+    _process(sender, args, cmd_parameters, unused_args) {
         return null;
     }
 
