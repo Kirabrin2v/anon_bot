@@ -395,8 +395,7 @@ class QuotesModule extends BaseModule {
     }
 
     send_quote(ID) {
-        console.log(ID, this.quotes[ID])
-        const quote_info = this.quotes[ID]
+        const quote_info = this.quotes.find(q => q.ID === ID)
         if (quote_info) {
             const author = quote_info["author"]
             const quote = quote_info["citation"]
@@ -515,13 +514,13 @@ class QuotesModule extends BaseModule {
             if (ID > 0 && ID <= this.quotes.length) {
                 if (args[2].name === "+" || args[2].name === "-") {
                     if (!quotes_rep[sender] || !quotes_rep[sender][ID]) {
-                        const quote_info = this.quotes[ID]
+                        const quote_info = this.quotes.find(q => q.ID === ID)
                         let author;
                         if (quote_info) {author = quote_info.author}
                         if (author && author !== sender) {
                             let add_rep = rank_sender >= 2 && rank_sender <= 4 ? 2 : rank_sender > 4 ? 3 : 1
                             if (args[2].name === "-") {add_rep = -add_rep}
-                            this.quotes[ID]["rating"] += add_rep
+                            quote_info["rating"] += add_rep
                             this.update_quotes_rep(ID, sender, add_rep)
                             this.update_logs_quotes(ID, sender, add_rep)
                             this.update_rating(ID)
