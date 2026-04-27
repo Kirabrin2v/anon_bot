@@ -21,6 +21,7 @@ class TelegramCommandEngine extends CommandEngine {
         user_rank = get_rank(tg_id, module_name)
       }
       const rank = get_rank()
+      console.log("TG Cmd Eninge", module_name, rank)
       const root = this.modules_structure[module_name];
 
       if (!root || typeof root !== "object") {continue;}
