@@ -97,22 +97,12 @@ class CommandEngine {
         return result;
       }
       // 1. Если аргумент — это имя ветки (без _type), переходим внутрь
-      let is_matched = arg in currentStructure && !currentStructure[arg]._type;
-      if (!is_matched) {
-        const keys = Object.keys(currentStructure)
+      const key = this._findKey(currentStructure, arg);
 
-        for (let i = 0; i < keys.length; i++) {
-          const key = keys[i]
-          if (currentStructure[key]._aliases && currentStructure[key]._aliases.includes(arg)) {
-            is_matched = true;
-            currentStructure = currentStructure[key];
-            break;
-          }
-        }
-      } else {
-        currentStructure = currentStructure[arg];
-      }
+      let is_matched = key && !currentStructure[key]._type;
+
       if (is_matched) {
+        currentStructure = currentStructure[key];
         if (currentStructure._need_rank !== undefined) {
           if (!this._checkRank(currentStructure._need_rank, user_rank)) {
             return {
@@ -125,12 +115,12 @@ class CommandEngine {
         }
         //const fullName = [...path, arg].join('.');
         if (Object.prototype.hasOwnProperty.call(currentStructure, "_default")) {
-          result.args.push({ name: arg, value: !currentStructure["_default"] });
+          result.args.push({ name: key, value: !currentStructure["_default"] });
         } else {
-          result.args.push({ name: arg, value: true, type: "flag" })
+          result.args.push({ name: key, value: true, type: "flag" })
         }
-        usedArgs.add(arg);
-        path.push(arg);
+        usedArgs.add(key);
+        path.push(key);
         i++;
         continue;
       }
