@@ -1036,7 +1036,7 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 	if (sender === "chat") {
 		// const raw_message = message;
 		const parsed = chatSchema.parse(raw_message)
-		console.log(raw_message)
+		console.log(raw_message, parsed)
 		if (!parsed) { /* неизвестный формат */ return }
 
 		const { type_chat, sender } = parsed

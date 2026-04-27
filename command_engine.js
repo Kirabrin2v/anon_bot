@@ -25,6 +25,13 @@ class CommandEngine {
     return actual >= required;
   }
 
+  _castType(expectedType, value) {
+    if (expectedType === 'int')   { return parseInt(value, 10); }
+    if (expectedType === 'float') { return parseFloat(value); }
+    if (expectedType === 'bool')  { return value === 'true' || value === true; }
+    return value;
+  }
+
   flattenArgs(args) {
     const result = [];
 
@@ -149,7 +156,7 @@ class CommandEngine {
               };
             }
 
-            values.push(val);
+            values.push(this._castType(node._type, val));
             usedArgs.add(val);
             localI++;
           }
@@ -227,7 +234,9 @@ class CommandEngine {
 
         result.args.push({
           name: matchedKey,
-          value: arg !== undefined ? arg : node._default,
+          value: arg !== undefined
+              ? this._castType(node._type, arg)  // ← добавить
+              : node._default,
           type: "value"
         });
 

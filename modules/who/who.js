@@ -28,7 +28,7 @@ class WhoModule extends BaseModule {
     }
 
 	_process(sender, args, parameters) {
-		const players_on_loc = this.ModuleManager.modules.call_module("entities").get_players(true)
+		const players_on_loc = this.ModuleManager.call_module("entities").get_players(true)
 		let answ;
 
 		if (players_on_loc.length > 1) {
@@ -38,7 +38,10 @@ class WhoModule extends BaseModule {
 		} else {
 			answ = "Никто"
 		}
-		return answ
+		return {
+			message: answ,
+			send_in_private_message: false
+		}
 	}    
 }
 
