@@ -75,13 +75,14 @@ const reg_i_send = new RegExp(`^\\[Я -> ${reg_nickname}\\] ${reg_message}`)
 
 const chatSchema = new ChatSchema(reg_nickname, reg_message)
 
-const reg_spawnmob_help = new RegExp(`^
-Справка:
-Команда: \\/SpawnMob <Кол-во> <Моб>\\[:НД\\] \\[Наездник\\[:НД\\]...\\]
-Возможные мобы:
-armor_stand, bat, blaze, boat, cave_spider, chest_minecart, chicken, cow, creeper, donkey, elder_guardian, ender_crystal, ender_dragon, enderman, endermite, evocation_illager, furnace_minecart, ghast, giant, guardian, hopper_minecart, horse, husk, illusion_illager, iron_golem, llama, magma_cube, minecart, mooshroom, mule, ocelot, parrot, pig, polar_bear, rabbit, sheep, shulker, silverfish, skeleton, skeleton_horse, slime, snowman, spider, squid, stray, tnt_minecart, vex, villager, vindication_illager, witch, wither, wither_skeleton, wolf, zombie, zombie_horse, zombie_pigman, zombie_villager
-Узнать возможные НД моба можно командой \\/SpawnMob 1 <Моб>:\\s*
-\\(Поставив пробел между названиями мобов, они будут заспавнены друг на друге\\)$`
+const reg_spawnmob_help = new RegExp(
+    `^    \\n` +
+    `Справка:\\n` +
+    `Команда: \\/SpawnMob <Кол-во> <Моб>\\[:НД\\] \\[Наездник\\[:НД\\]\\.\\.\\.\\]\\n` +
+    `Возможные мобы:\\n` +
+    `armor_stand, bat, blaze, boat, cave_spider, chest_minecart, chicken, cow, creeper, donkey, elder_guardian, ender_crystal, ender_dragon, enderman, endermite, evocation_illager, furnace_minecart, ghast, giant, guardian, hopper_minecart, horse, husk, illusion_illager, iron_golem, llama, magma_cube, minecart, mooshroom, mule, ocelot, parrot, pig, polar_bear, rabbit, sheep, shulker, silverfish, skeleton, skeleton_horse, slime, snowman, spider, squid, stray, tnt_minecart, vex, villager, vindication_illager, witch, wither, wither_skeleton, wolf, zombie, zombie_horse, zombie_pigman, zombie_villager\\n` +
+    `Узнать возможные НД моба можно командой \\/SpawnMob 1 <Моб>: .+\\n` +  // ← .+ вместо \\s*
+    `\\(Поставив пробел между названиями мобов, они будут заспавнены друг на друге\\)$`
 );
 const reg_spawnmob_region_error = new RegExp(`Вы можете спавнить мобов только в своём регионе`)
 const reg_spawnmob_rank_error = new RegExp(`Необходимо иметь звание, как минимум, полковник`)
