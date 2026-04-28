@@ -142,7 +142,7 @@ class TelegramCommandEngine extends CommandEngine {
                 if (indent === 0) { text += "\n"; }
 
             } else {
-                const argStr = `${key} <${child._type}>`;
+                const argStr = `${key}<${child._type}>`;
                 const line = [...path, argStr].join(" ");
                 text += `${connector}${line}`;
                 if (child._default !== undefined) {
