@@ -20,7 +20,6 @@ class BaseCmd {
     // Общий шаблон
     async cmd_processing(sender, args, cmd, msg_obj) {
         const rank = this.get_rank(sender, this.module_name)
-        console.log("Ранг", rank, [sender, this.module_name])
         const valid_command = this.CommandManager.validate_command(this.module_name, args, rank)
         if (valid_command["is_ok"]) {
             try {
@@ -37,6 +36,7 @@ class BaseCmd {
                 } else {
                     answ = result
                 }
+                if (!answ) {return;}
                 if (message_type === "text") {
                     this.module_obj.send_message_tg(sender, answ)
                 } else if (message_type === "document") {
@@ -67,7 +67,6 @@ class BaseCmd {
 
     get_rank(tg_id, module_name) {
         const access_lvls_module = this.module_obj.access_lvls[module_name]
-        console.log("access_lvls", this.module_obj.access_lvls)
         if (access_lvls_module) {
             for (let i=0; i < access_lvls_module.length; i++) {
                 if (access_lvls_module[i].includes(tg_id)) {

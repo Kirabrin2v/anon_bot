@@ -114,6 +114,7 @@ class ChatCmd extends BaseCmd {
     }
 
     chat_commands_processing(tg_id, message, cmd, msg_obj) {
+        console.log("Зашло в chat_commands_processing")
         const settings = this.module_obj.player_settings[tg_id]
         let prefix = `[${settings["nick"]}] `
         let answ, type_chat, server_cmd, recipient;
@@ -144,9 +145,9 @@ class ChatCmd extends BaseCmd {
                         "Для быстрого ответа на сообщение используйте возможности Телеграм: ",
                         "ПКМ по сообщению -> 'Ответить'.\n",
                         "/r запрещена из-за постоянной смены получателей."
-                    ]
+                    ].join(" ")
                 } else {
-                    return null;
+                    return "Я не понял, куда Вы хотите отправить сообщение";
                 }
             } else {
                 if (message[0] === "!") {
@@ -205,8 +206,10 @@ class ChatCmd extends BaseCmd {
             answ = "Сообщение отправлено!"
         }
         if (answ) {
+            console.log("Что-то отправилось", answ)
             return answ
         }
+        console.log("Ничего не отправилось")
         return "Что-то пошло не так. Ничего не отправилось"
     }
 

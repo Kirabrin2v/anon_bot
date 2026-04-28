@@ -21,7 +21,6 @@ class TelegramCommandEngine extends CommandEngine {
         user_rank = get_rank(tg_id, module_name)
       }
       const rank = get_rank()
-      console.log("TG Cmd Eninge", module_name, rank)
       const root = this.modules_structure[module_name];
 
       if (!root || typeof root !== "object") {continue;}
@@ -125,43 +124,52 @@ class TelegramCommandEngine extends CommandEngine {
     const walk = (node, path = [], indent = 0) => {
       const keys = Object.keys(node).filter(k => !k.startsWith("_"));
 
-      // Сначала выводим текущую команду (родителя)
-      if (path.length > 0 && node._description) {
-        const line = path.join(" ");
-        text += `${"  ".repeat(indent)}${line} — ${node._description}\n`;
-      }
-
       for (const key of keys) {
         const child = node[key];
 
+        const isRoot = indent === 0;
+        const prefix = isRoot ? "🔹 " : `${"  ".repeat(indent)}└ `;
+
         if (!child._type) {
           // Подкоманда
-          walk(child, [...path, key], indent + (path.length > 0 ? 1 : 0));
+          const line = [...path, key].join(" ");
+          const desc = child._description || "";
+
+          text += `${prefix}${line}\n`;
+          if (desc) {
+            text += `${"  ".repeat(indent + 1)}└ ${desc}\n`;
+          }
+
+          walk(child, [...path, key], indent + 1);
         } else {
           // Аргумент
           const argStr = `${key}<${child._type}>`;
-
-          // Сначала строка аргумента
           const line = [...path, argStr].join(" ");
           const desc = child._description || node._description || "";
 
-          text += `${"  ".repeat(indent + 1)}${line} — ${desc}\n`;
+          text += `${prefix}${line}\n`;
+          if (desc) {
+            text += `${"  ".repeat(indent + 1)}└ ${desc}\n`;
+          }
 
-          // Потом возможные подветки
+          // Подветки аргумента
           const subKeys = Object.keys(child).filter(k => !k.startsWith("_"));
           for (const subKey of subKeys) {
             const subNode = child[subKey];
-
             const subLine = [...path, argStr, subKey].join(" ");
             const subDesc = subNode._description || "";
 
-            text += `${"  ".repeat(indent + 2)}${subLine} — ${subDesc}\n`;
+            text += `${"  ".repeat(indent + 1)}└ ${subLine}\n`;
+            if (subDesc) {
+              text += `${"  ".repeat(indent + 2)}└ ${subDesc}\n`;
+            }
           }
+
+          text += "\n";
         }
       }
     };
 
-    // Верхний уровень
     Object.keys(root)
       .filter(k => !k.startsWith("_"))
       .forEach(key => {

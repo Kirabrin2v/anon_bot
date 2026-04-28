@@ -36,7 +36,8 @@ const STRUCTURE = {
         },
         _type: "int",
         _optional: true
-    }
+    },
+    _description: "Спавнит мобов"
   }
 };
 
