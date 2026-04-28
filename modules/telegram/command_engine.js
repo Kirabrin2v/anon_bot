@@ -118,67 +118,53 @@ class TelegramCommandEngine extends CommandEngine {
   // Полный help (если нет аргументов или help)
   _generateFullHelp(module_name) {
     const root = this.modules_structure[module_name];
-
-    let text = `Команда: /${module_name}\n\n`;
+    let text = `Команда: /${module_name}\n`;
+    if (root._description) {
+        text += `${root._description}\n`;
+    }
+    text += "\n";
 
     const walk = (node, path = [], indent = 0) => {
-      const keys = Object.keys(node).filter(k => !k.startsWith("_"));
+        const keys = Object.keys(node).filter(k => !k.startsWith("_"));
 
-      for (const key of keys) {
-        const child = node[key];
+        for (const key of keys) {
+            const child = node[key];
+            const pad = "  ".repeat(indent);
+            const connector = indent === 0 ? "🔹 " : `${pad}└ `;
 
-        const isRoot = indent === 0;
-        const prefix = isRoot ? "🔹 " : `${"  ".repeat(indent)}└ `;
+            if (!child._type) {
+                const line = [...path, key].join(" ");
+                text += `${connector}${line}\n`;
+                if (child._description) {
+                    text += `${"  ".repeat(indent + 1)}└ ${child._description}\n`;
+                }
+                walk(child, [...path, key], indent + 1);
+                if (indent === 0) { text += "\n"; }
 
-        if (!child._type) {
-          // Подкоманда
-          const line = [...path, key].join(" ");
-          const desc = child._description || "";
+            } else {
+                const argStr = `${key} <${child._type}>`;
+                const line = [...path, argStr].join(" ");
+                text += `${connector}${line}`;
+                if (child._default !== undefined) {
+                    text += ` (по умолчанию: ${child._default})`;
+                }
+                text += "\n";
+                if (child._description) {
+                    text += `${"  ".repeat(indent + 1)}└ ${child._description}\n`;
+                }
 
-          text += `${prefix}${line}\n`;
-          if (desc) {
-            text += `${"  ".repeat(indent + 1)}└ ${desc}\n`;
-          }
-
-          walk(child, [...path, key], indent + 1);
-        } else {
-          // Аргумент
-          const argStr = `${key}<${child._type}>`;
-          const line = [...path, argStr].join(" ");
-          const desc = child._description || node._description || "";
-
-          text += `${prefix}${line}\n`;
-          if (desc) {
-            text += `${"  ".repeat(indent + 1)}└ ${desc}\n`;
-          }
-
-          // Подветки аргумента
-          const subKeys = Object.keys(child).filter(k => !k.startsWith("_"));
-          for (const subKey of subKeys) {
-            const subNode = child[subKey];
-            const subLine = [...path, argStr, subKey].join(" ");
-            const subDesc = subNode._description || "";
-
-            text += `${"  ".repeat(indent + 1)}└ ${subLine}\n`;
-            if (subDesc) {
-              text += `${"  ".repeat(indent + 2)}└ ${subDesc}\n`;
+                const subKeys = Object.keys(child).filter(k => !k.startsWith("_"));
+                if (subKeys.length > 0) {
+                    walk(child, [...path, argStr], indent + 1);
+                }
+                if (indent === 0) { text += "\n"; }
             }
-          }
-
-          text += "\n";
         }
-      }
     };
 
-    Object.keys(root)
-      .filter(k => !k.startsWith("_"))
-      .forEach(key => {
-        walk(root[key], [key], 0);
-      });
-
+    walk(root, [], 0);
     return text;
   }
-
   // Переопределяем validate для полного help
   validate_command(module_name, inputArgs, user_rank = undefined) {
     const currentStructure = this.modules_structure[module_name]
