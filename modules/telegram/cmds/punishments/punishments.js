@@ -49,7 +49,7 @@ class PunishmentsCmd extends BaseCmd {
 
         for (const tg_id in this.module_obj.player_settings) {
             const settings = this.module_obj.player_settings[tg_id]
-            if (settings["punishments_on"]) {
+            if (settings["punishments_on"] === true) {
                 this.module_obj.send_message_tg(tg_id, message)
             }
         }
