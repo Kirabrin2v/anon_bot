@@ -168,36 +168,40 @@ class TelegramModule extends BaseModule {
 
 
 	log_tg_messages(type_message, tg_id, message, full_name, username) {
-		tg_id = Number(tg_id)
-		if (!tg_id) {return;}
+	    tg_id = Number(tg_id)
+	    if (!tg_id) return
 
-		const tableName = `dialogue_${tg_id}`
-		const check_exists_user = logs_db.prepare(`SELECT * FROM users WHERE tg_id = ?`)
-		if (check_exists_user.get(tg_id)) {
-			const insertMessage = logs_db.prepare(`
-			    INSERT INTO "${tableName}" (date_time, type_message, message)
-			    VALUES (?, ?, ?)
-			`)
-			insertMessage.run(date_to_text(new Date()), type_message, message)
+	    const tableName = `dialogue_${tg_id}`
 
-		} else {
-			const createTable = logs_db.prepare(`
-			    CREATE TABLE "${tableName}" (
-			        ID INTEGER PRIMARY KEY AUTOINCREMENT,
-			        date_time TEXT NOT NULL,
-			        type_message TEXT NOT NULL,
-			        message TEXT NOT NULL
-			    )
-			`)
-			createTable.run()
+	    const check_exists_user = logs_db.prepare(`
+	        SELECT 1 FROM users WHERE tg_id = ?
+	    `)
 
-			const insertMessage = logs_db.prepare(`INSERT INTO users
-												(tg_id, tg_username)
-												VALUES (?, ?)`)
-			insertMessage.run(tg_id, username)
+	    // всегда гарантируем таблицу
+	    const createTable = logs_db.prepare(`
+	        CREATE TABLE IF NOT EXISTS "${tableName}" (
+	            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	            date_time TEXT NOT NULL,
+	            type_message TEXT NOT NULL,
+	            message TEXT NOT NULL
+	        )
+	    `)
+	    createTable.run()
 
-			this.log_tg_messages(type_message, tg_id, message, username)
-		}
+	    if (!check_exists_user.get(tg_id)) {
+	        const insertUser = logs_db.prepare(`
+	            INSERT INTO users (tg_id, tg_username)
+	            VALUES (?, ?)
+	        `)
+	        insertUser.run(tg_id, username)
+	    }
+
+	    const insertMessage = logs_db.prepare(`
+	        INSERT INTO "${tableName}" (date_time, type_message, message)
+	        VALUES (?, ?, ?)
+	    `)
+
+	    insertMessage.run(date_to_text(new Date()), type_message, message)
 	}
 
 
