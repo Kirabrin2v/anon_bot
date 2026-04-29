@@ -171,19 +171,24 @@ class TelegramModule extends BaseModule {
 		tg_id = Number(tg_id)
 		if (!tg_id) {return;}
 
+		const tableName = `dialogue_${tg_id}`
 		const check_exists_user = logs_db.prepare(`SELECT * FROM users WHERE tg_id = ?`)
 		if (check_exists_user.get(tg_id)) {
-			const insertMessage = logs_db.prepare(`INSERT INTO dialogue_${tg_id}
-											(date_time, type_message, message)
-											VALUES (?, ?, ?)`)
+			const insertMessage = logs_db.prepare(`
+			    INSERT INTO "${tableName}" (date_time, type_message, message)
+			    VALUES (?, ?, ?)
+			`)
 			insertMessage.run(date_to_text(new Date()), type_message, message)
 
 		} else {
-			const createTable = logs_db.prepare(`CREATE TABLE dialogue_${tg_id} (
-													ID INTEGER PRIMARY KEY AUTOINCREMENT,
-													date_time TEXT NOT NULL,
-													type_message TEXT NOT NULL,
-													message TEXT NOT NULL)`)
+			const createTable = logs_db.prepare(`
+			    CREATE TABLE "${tableName}" (
+			        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+			        date_time TEXT NOT NULL,
+			        type_message TEXT NOT NULL,
+			        message TEXT NOT NULL
+			    )
+			`)
 			createTable.run()
 
 			const insertMessage = logs_db.prepare(`INSERT INTO users
