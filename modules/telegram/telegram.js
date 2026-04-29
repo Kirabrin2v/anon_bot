@@ -170,6 +170,7 @@ class TelegramModule extends BaseModule {
 	log_tg_messages(type_message, tg_id, message, full_name, username) {
 	    tg_id = Number(tg_id)
 	    if (!tg_id) return
+	    username = username ?? "unknown"
 
 	    const tableName = `dialogue_${tg_id}`
 
