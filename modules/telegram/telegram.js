@@ -51,16 +51,22 @@ class TelegramModule extends BaseModule {
 		player_settings_object.sections().forEach(tg_id => {
 			this.player_settings[tg_id] = {}
 			player_settings_object.keys(tg_id).forEach(parameter => {
-				if (["chat_on", "whitelist_on", "blacklist_on", "filter_on"].includes(parameter)) {
+				if (["chat_on", "punishments_on", "whitelist_on", "blacklist_on", "filter_on", "nick_notice_on"].includes(parameter)) {
 					this.player_settings[tg_id][parameter] = player_settings_object.get(tg_id, parameter) === "true" // boolean
 
-				} else if (["whitelist_nicks", "blacklist_nicks", "allowed_chats"].includes(parameter)) {
+				} else if (["whitelist_nicks", "blacklist_nicks", "allowed_chats", "notify_aliases"].includes(parameter)) {
 					this.player_settings[tg_id][parameter] = JSON.parse(player_settings_object.get(tg_id, parameter)) // list
 
 				} else {
 					this.player_settings[tg_id][parameter] = player_settings_object.get(tg_id, parameter) // string
 				}
+
 			})
+		})
+		player_settings_object.sections().forEach(tg_id => {
+			if (!this.player_settings[tg_id]["nick_notice_on"]) {
+				this.player_settings[tg_id]["nick_notice_on"] = [this.player_settings_object[tg_id]["nick"]]
+			}
 		})
 
 		this.access_cmds = {} // Ключ - айди, значение - список доступных серверных команд
@@ -74,7 +80,6 @@ class TelegramModule extends BaseModule {
 		    autoStart: true
 		  }
 		});
-		this.tg.deleteWebHook()
 
 		setInterval(() => this.update_player_settings(), 10000)
 	}

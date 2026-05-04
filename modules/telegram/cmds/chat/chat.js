@@ -17,6 +17,11 @@ const STRUCTURE = {
         _aliases: ["c"]
     },
 
+    nick_notice: {
+        _description: "Включить/выключить уведомления о сообщениях, в которых встречается Ваш ник. Сообщение приходит даже при выключенном через /c чате.",
+        _aliases: ["nn"]
+    },
+
     [PARTY_CMDS[0]]: {
         text: {
             _type: "text",
@@ -103,6 +108,16 @@ class ChatCmd extends BaseCmd {
                 .map(log_element => this.format_server_message(log_element.date_time, log_element))
                 .slice(-this.len_context).join("\n")
                 answ = `Сообщения включены. Последние сообщения:\n${context}`
+            }
+        } else if (args[0].name === "nick_notice") {
+            if (settings["nick_notice_on"] === true) {
+                settings["nick_notice_on"] = false;
+                answ = "Уведомления об упоминаниях выключены"
+
+            } else {
+                settings["nick_notice_on"] = true;
+
+                answ = `Уведомления об упоминаниях включены. Ваши ники:\n${settings["notify_aliases"].join("; ")}`
             }
         } else {
             const flattern_args = this.CommandManager.flattenArgs(args)
@@ -257,8 +272,8 @@ class ChatCmd extends BaseCmd {
                 }
                 this.module_obj.send_message_tg(tg_id, notify_message)
 
-            } else if (settings["notify_aliases"]) {
-                const notify_aliases = JSON.parse(settings["notify_aliases"])
+            } else if (settings["nick_notice_on"]) {
+                const notify_aliases = settings["notify_aliases"]
                 for (const alias of notify_aliases) {
                     if (notify_message.toLowerCase().includes(alias)) {
                         notify_message = this.module_obj.escapeMarkdownV2(notify_message)
