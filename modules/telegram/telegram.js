@@ -121,11 +121,25 @@ class TelegramModule extends BaseModule {
 	}
 
 	prepare_broadcast_message(text) {
-	  return text
-	    .replace(/\\n/g, '\n')
-	    .replace(/\\/g, '\\\\')
-	    .replace(/([#+\-=|{}.!])/g, '\\$1')
-	    ;
+	  // 1. переносы строк
+	  text = text.replace(/\\n/g, '\n');
+
+	  // 2. escape слэша
+	  text = text.replace(/\\/g, '\\\\');
+
+	  // 3. _ и *: если не окружены пробелами -> экранируем
+	  text = text.replace(/(?<=\S)(_+)(?=\S)/g, (m) =>
+	    m.replace(/_/g, '\\_')
+	  );
+
+	  text = text.replace(/(?<=\S)(\*+)(?=\S)/g, (m) =>
+	    m.replace(/\*/g, '\\*')
+	  );
+
+	  // 4. остальные символы
+	  text = text.replace(/([[\]()~`>#+\-=|{}.!])/g, '\\$1');
+
+	  return text;
 	}
 
 	send_message_tg(
