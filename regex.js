@@ -86,7 +86,7 @@ const reg_spawnmob_help = new RegExp(
 );
 const reg_spawnmob_region_error = new RegExp(`^Вы можете спавнить мобов только в своём регионе$`)
 const reg_spawnmob_rank_error = new RegExp(`^Необходимо иметь звание, как минимум, полковник$`)
-const reg_spawnmob_success = new RegExp(`^Вы заспавнили (\d) существ.?$`)
+const reg_spawnmob_success = new RegExp(`^Вы заспавнили (\\d+) существ.?$`)
 
 const reg_near = new RegExp(`^Окружающие игроки: ((?:(?:${reg_nickname}\\([0-9]{1,4}m\\)(?:, )?)+)|(?:ничего))$`)
 
