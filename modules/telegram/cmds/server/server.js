@@ -28,6 +28,7 @@ const STRUCTURE = {
         mob_name: {
             rider_name: {
                 _type: "string",
+                _multiple: true,
                 _optional: true,
                 _description: "Название моб-наездника"
             },
