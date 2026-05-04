@@ -63,9 +63,9 @@ class TelegramModule extends BaseModule {
 
 			})
 		})
-		player_settings_object.sections().forEach(tg_id => {
+		Object.keys(this.player_settings).forEach(tg_id => {
 			if (!this.player_settings[tg_id]["nick_notice_on"]) {
-				this.player_settings[tg_id]["nick_notice_on"] = [this.player_settings_object[tg_id]["nick"]]
+				this.player_settings[tg_id]["nick_notice_on"] = [this.player_settings[tg_id]["nick"]]
 			}
 		})
 
