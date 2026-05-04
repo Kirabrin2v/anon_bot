@@ -37,6 +37,7 @@ const {
 	reg_spawnmob_help,
 	reg_spawnmob_region_error,
 	reg_spawnmob_rank_error,
+	reg_spawnmob_success,
 
 	chatSchema
 
@@ -141,7 +142,8 @@ const regexes = [
 
 	reg_spawnmob_help,
 	reg_spawnmob_region_error,
-	reg_spawnmob_rank_error
+	reg_spawnmob_rank_error,
+	reg_spawnmob_success
 ]
 
 const run_local_server = config.get("VARIABLES", "run_local_server") === "True"
@@ -457,6 +459,7 @@ function processing_server_message(sender, message, message_json) {
 	const spawnmob_help = message.match(reg_spawnmob_help)
 	const spawnmob_region_error = message.match(reg_spawnmob_region_error)
 	const spawnmob_rank_error = message.match(reg_spawnmob_rank_error)
+	const spawnmob_success = message.match(reg_spawnmob_success)
 
 	if (message !== "" && !seen && !tca_accept && !bal_survings && !bal_TCA && !message.includes("Лог последних операций с баллами TCA:") && !message.match(reg_log_line)) {
 		bus.emit(
@@ -732,7 +735,7 @@ function processing_server_message(sender, message, message_json) {
 				question
 			}
 		)
-	} else if (spawnmob_help || spawnmob_region_error || spawnmob_rank_error) {
+	} else if (spawnmob_help || spawnmob_region_error || spawnmob_rank_error || spawnmob_success) {
 		now_cmd = "spawnmob"
 	}
 	if (wait_cmd) {

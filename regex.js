@@ -84,8 +84,9 @@ const reg_spawnmob_help = new RegExp(
     `Узнать возможные НД моба можно командой \\/SpawnMob 1 <Моб>: .+\\n` +  // ← .+ вместо \\s*
     `\\(Поставив пробел между названиями мобов, они будут заспавнены друг на друге\\)$`
 );
-const reg_spawnmob_region_error = new RegExp(`Вы можете спавнить мобов только в своём регионе`)
-const reg_spawnmob_rank_error = new RegExp(`Необходимо иметь звание, как минимум, полковник`)
+const reg_spawnmob_region_error = new RegExp(`^Вы можете спавнить мобов только в своём регионе$`)
+const reg_spawnmob_rank_error = new RegExp(`^Необходимо иметь звание, как минимум, полковник$`)
+const reg_spawnmob_success = new RegExp(`^Вы заспавнили (\d) существ.?$`)
 
 const reg_near = new RegExp(`^Окружающие игроки: ((?:(?:${reg_nickname}\\([0-9]{1,4}m\\)(?:, )?)+)|(?:ничего))$`)
 
@@ -189,6 +190,7 @@ module.exports = {
   reg_spawnmob_help,
   reg_spawnmob_region_error,
   reg_spawnmob_rank_error,
+  reg_spawnmob_success,
 
 	chatSchema
 }
