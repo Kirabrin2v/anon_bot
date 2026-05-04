@@ -238,7 +238,7 @@ class ChatCmd extends BaseCmd {
     player_message_processing(type_chat, sender, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         parsed.date_time = date_time
-        const notify_message = this.format_server_message(date_time, parsed)
+        let notify_message = this.format_server_message(date_time, parsed)
         for (const tg_id in this.module_obj.player_settings) {
             if (!this.module_obj.player_settings[tg_id]["allowed_chats"].includes(type_chat)) {
                 continue;
@@ -258,15 +258,21 @@ class ChatCmd extends BaseCmd {
                 this.module_obj.send_message_tg(tg_id, notify_message)
 
             } else if (settings["notify_aliases"]) {
-                const notyfy_aliases = JSON.parse(settings["notify_aliases"])
-                for (const alias of notyfy_aliases) {
-                    if (message.toLowerCase().includes(alias)) {
-                        const context = this.logs
+                const notify_aliases = JSON.parse(settings["notify_aliases"])
+                for (const alias of notify_aliases) {
+                    if (notify_message.toLowerCase().includes(alias)) {
+                        notify_message = this.module_obj.escapeMarkdownV2(notify_message)
+                        for (let replace_alias of notify_aliases) {
+                            replace_alias = this.module_obj.escapeMarkdownV2(replace_alias)
+                            notify_message = notify_message.replace(new RegExp(`(${replace_alias})`, 'ig'), '*$1*')
+                        }
+                        let context = this.logs
                             .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
                             .map(log_element => this.format_server_message(log_element.date_time, log_element))
                             .slice(-this.len_context).join("\n")
+                        context = this.module_obj.escapeMarkdownV2(context)
                         const answ = `${context}\n\n${notify_message}`
-                        this.module_obj.send_message_tg(tg_id, answ)
+                        this.module_obj.send_message_tg(tg_id, answ, undefined, false, 'MarkdownV2')
                         break;
                     }
                 }

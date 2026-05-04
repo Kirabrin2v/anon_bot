@@ -111,15 +111,42 @@ class TelegramModule extends BaseModule {
 		})
 	}
 
-	send_message_tg(tg_id, message, keyboard, is_document = false) {
+	escapeMarkdownV2(text) {
+	  return text.replace(/([\\_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+	}
+
+	prepare_broadcast_message(text) {
+	  return text
+	    .replace(/\\n/g, '\n')
+	    .replace(/\\/g, '\\\\')
+	    .replace(/([#+\-=|{}.!])/g, '\\$1')
+	    ;
+	}
+
+	send_message_tg(
+		tg_id,
+		message,
+		keyboard,
+		is_document = false,
+		parse_mode = null,
+	) {
 		this.log_tg_messages("send", tg_id, message)
+		const parameters = {}
+		if (parse_mode !== null) {
+			parameters.parse_mode = parse_mode
+		}
+		if (keyboard) {
+			parameters.reply_markup = keyboard
+		}
+		console.log([message, parse_mode], parameters)
+
 		if (is_document) {
 			this.tg.sendDocument(tg_id, message)
 		} else {
 			this.tg.sendMessage(
 				tg_id,
 				message.slice(0, 4096),
-				keyboard ? { reply_markup: keyboard } : {}
+				parameters
 			)
 		}
 	}
@@ -137,13 +164,15 @@ class TelegramModule extends BaseModule {
 	    let failed = 0
 	    const errors = []
 
-	    message = `[${prefix}]\n\n${message}`
+	    prefix = this.escapeMarkdownV2(`[${prefix}]`)
+	    message = this.prepare_broadcast_message(message)
+	    message = `${prefix}\n\n${message}`
 
 	    for (let i = 0; i < recipients.length; i++) {
 	        const tg_id = recipients[i]
 
 	        try {
-	            await this.send_message_tg(tg_id, message)
+	            await this.send_message_tg(tg_id, message, undefined, false, 'MarkdownV2')
 	            sent++
 	        } catch (err) {
 	            failed++
