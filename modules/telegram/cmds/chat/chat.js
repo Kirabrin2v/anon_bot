@@ -249,6 +249,16 @@ class ChatCmd extends BaseCmd {
         return `[${time}] [${fields.type_chat}]${clan_part}${rank_part} ${fields.sender}: ${fields.message}`
     }
 
+    replace_notice_nick(message, notify_aliases) {
+        message = this.module_obj.escapeMarkdownV2(message)
+        for (let replace_alias of notify_aliases) {
+            replace_alias = this.module_obj.escapeMarkdownV2(replace_alias)
+            message = message.replace(new RegExp(`(${replace_alias})`, 'ig'), '_*$1*_')
+        }
+
+        return message
+    }
+
     player_message_processing(type_chat, sender, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         console.log("parsed", parsed)
@@ -259,6 +269,7 @@ class ChatCmd extends BaseCmd {
                 continue;
             }
             const settings = this.module_obj.player_settings[tg_id]
+            notify_message = this.replace_notice_nick(notify_message, settings["notify_aliases"])
             if (settings["chat_on"] === true) {
                 if (settings["whitelist_on"] === true) {
                     if (!settings["whitelist_nicks"].includes(sender)) {
@@ -270,24 +281,19 @@ class ChatCmd extends BaseCmd {
                         continue;
                     }
                 }
-                this.module_obj.send_message_tg(tg_id, notify_message)
+                this.module_obj.send_message_tg(tg_id, notify_message, undefined, false, "MarkdownV2")
 
             } else if (settings["nick_notice_on"]) {
                 const notify_aliases = settings["notify_aliases"]
                 for (const alias of notify_aliases) {
                     if (notify_message.toLowerCase().includes(alias)) {
-                        notify_message = this.module_obj.escapeMarkdownV2(notify_message)
-                        for (let replace_alias of notify_aliases) {
-                            replace_alias = this.module_obj.escapeMarkdownV2(replace_alias)
-                            notify_message = notify_message.replace(new RegExp(`(${replace_alias})`, 'ig'), '*$1*')
-                        }
                         let context = this.logs
                             .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
                             .map(log_element => this.format_server_message(log_element.date_time, log_element))
                             .slice(-this.len_context).join("\n")
                         context = this.module_obj.escapeMarkdownV2(context)
                         const answ = `${context}\n\n${notify_message}`
-                        this.module_obj.send_message_tg(tg_id, answ, undefined, false, 'MarkdownV2')
+                        this.module_obj.send_message_tg(tg_id, answ, undefined, false, "MarkdownV2")
                         break;
                     }
                 }
