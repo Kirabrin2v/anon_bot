@@ -263,13 +263,13 @@ class ChatCmd extends BaseCmd {
         const parsed = chatSchema.parse(raw_message)
         console.log("parsed", parsed)
         parsed.date_time = date_time
-        let notify_message = this.format_server_message(date_time, parsed)
+        const formatted_message = this.format_server_message(date_time, parsed)
         for (const tg_id in this.module_obj.player_settings) {
             if (!this.module_obj.player_settings[tg_id]["allowed_chats"].includes(type_chat)) {
                 continue;
             }
             const settings = this.module_obj.player_settings[tg_id]
-            notify_message = this.replace_notice_nick(notify_message, settings["notify_aliases"])
+            let notify_message = this.replace_notice_nick(formatted_message, settings["notify_aliases"])
             if (settings["chat_on"] === true) {
                 if (settings["whitelist_on"] === true) {
                     if (!settings["whitelist_nicks"].includes(sender)) {
