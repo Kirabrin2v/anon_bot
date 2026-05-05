@@ -102,7 +102,7 @@ class ChatCmd extends BaseCmd {
 
             } else {
                 settings["chat_on"] = true;
-
+                console.log(this.logs, settings["allowed_chats"])
                 const context = this.logs
                 .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
                 .map(log_element => this.format_server_message(log_element.date_time, log_element))
@@ -129,7 +129,6 @@ class ChatCmd extends BaseCmd {
     }
 
     chat_commands_processing(tg_id, message, cmd, msg_obj) {
-        console.log("Зашло в chat_commands_processing")
         const settings = this.module_obj.player_settings[tg_id]
         let prefix = `[${settings["nick"]}] `
         let answ, type_chat, server_cmd, recipient;
@@ -187,7 +186,6 @@ class ChatCmd extends BaseCmd {
                     recipient = message_parts[0]
                     message = message_parts.slice(1).join(" ")
                 }
-                console.log("Ник получателя:", recipient, message)
                 if (!recipient.match(reg_full_nickname)) {
                     return "Некорректно указан ник получателя"
                 }
@@ -223,10 +221,8 @@ class ChatCmd extends BaseCmd {
             answ = "Сообщение отправлено!"
         }
         if (answ) {
-            console.log("Что-то отправилось", answ)
             return answ
         }
-        console.log("Ничего не отправилось")
         return "Что-то пошло не так. Ничего не отправилось"
     }
 
@@ -254,6 +250,7 @@ class ChatCmd extends BaseCmd {
 
     player_message_processing(type_chat, sender, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
+        console.log("parsed", parsed)
         parsed.date_time = date_time
         let notify_message = this.format_server_message(date_time, parsed)
         for (const tg_id in this.module_obj.player_settings) {
