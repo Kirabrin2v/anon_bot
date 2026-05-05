@@ -143,7 +143,9 @@ class ChatCmd extends BaseCmd {
             if (parsed) {
                 type_chat = parsed.type_chat;
                 recipient = parsed.sender
-                prefix += `[⤷ "${parsed_replied_message.message.slice(0, 10)} ..."] `
+                const replied_message_parts = parsed_replied_message.message.split(" ")
+                const hidden_text = replied_message_parts.length == 2 ? ' ...' : ''
+                prefix += `[⤷ "${replied_message_parts.slice(0, 2).join(' ')}${hidden_text}"] `
             }
         }
 
