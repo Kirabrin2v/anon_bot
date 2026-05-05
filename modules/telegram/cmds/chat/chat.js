@@ -102,7 +102,6 @@ class ChatCmd extends BaseCmd {
 
             } else {
                 settings["chat_on"] = true;
-                console.log(this.logs, settings["allowed_chats"])
                 const context = this.logs
                 .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
                 .map(log_element => this.format_server_message(log_element.date_time, log_element))
@@ -261,7 +260,6 @@ class ChatCmd extends BaseCmd {
 
     player_message_processing(type_chat, sender, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
-        console.log("parsed", parsed)
         parsed.date_time = date_time
         const formatted_message = this.format_server_message(date_time, parsed)
         for (const tg_id in this.module_obj.player_settings) {
