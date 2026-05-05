@@ -232,6 +232,7 @@ class ChatCmd extends BaseCmd {
     }
 
     format_server_message(date_time, fields) {
+        date_time = new Date(date_time); // копия
         date_time.setHours(date_time.getHours() + 3) // To MSC time
         const time = [date_time.getHours(), date_time.getMinutes(), date_time.getSeconds()]
           .map(n => String(n).padStart(2, '0')).join(':')
