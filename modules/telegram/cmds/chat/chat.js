@@ -74,6 +74,10 @@ class ChatCmd extends BaseCmd {
         this.logs = []
         this.len_context = 5;
 
+        this.CHECK_PLAYERS_COUNT_INTERVAL = 600000 // 10 минут
+        this.WIRETAPPING_NOTIFY_INTERVAL = 86400000 // 24 часа
+        this.last_wiretapping_notify_time = 0
+
         bus.on("player_message", (obj) => this.player_message_processing(
                 obj.type_chat,
                 obj.sender,
@@ -90,6 +94,30 @@ class ChatCmd extends BaseCmd {
                 obj.msg_obj
             )
         })
+    }
+
+    initialize() {
+        setInterval(() => this.check_nearby_players_count(), this.CHECK_PLAYERS_COUNT_INTERVAL)
+    }
+
+    check_nearby_players_count() {
+        const nearby_players_count = this.module_obj.ModuleManager
+            .call_module("entities")
+            .get_players(true)
+            .length
+
+        if (
+            nearby_players_count === 5 &&
+            Date.now() - this.last_wiretapping_notify_time > this.WIRETAPPING_NOTIFY_INTERVAL
+        ) {
+            this.last_wiretapping_notify_time = Date.now()
+            this.module_obj.actions.push({
+                type: "answ",
+                content: {
+                    message: "Бот логирует все сообщения, которые видит. Пожалуйста, не пишите в чат секретную информацию."
+                }
+            })
+        }
     }
 
     _process(sender, args, _unused_args, _cmd, msg_obj) {
