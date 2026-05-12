@@ -102,6 +102,108 @@ class LoggingModule extends BaseModule {
 		}
 	}
 
+	get_players_messages(nickname, parameters = {}) {
+		try {
+			const {
+				limit = 50,
+				offset = 0,
+				order_desc = true,
+				type_chat = null,
+				location = null,
+				date_from = null,
+				date_to = null,
+				exclude_old = true,
+				only_message = false
+			} = parameters
+
+			let query = `
+				SELECT *
+				FROM players_logs
+				WHERE 1 = 1
+			`
+
+			const values = []
+
+			if (nickname) {
+
+				// Один ник
+				if (typeof nickname === "string") {
+					query += ` AND nickname == ?`
+					values.push(nickname)
+				}
+
+				// Несколько ников
+				else if (Array.isArray(nickname) && nickname.length > 0) {
+					const placeholders = nickname
+						.map(() => "?")
+						.join(", ")
+
+					query += `
+						AND nickname IN (${placeholders})
+					`
+
+					values.push(...nickname)
+				}
+			}
+
+			// Фильтры
+
+			if (type_chat) {
+				query += ` AND type_chat == ?`
+				values.push(type_chat)
+			}
+
+			if (location) {
+				query += ` AND location == ?`
+				values.push(location)
+			}
+
+			if (date_from) {
+				query += ` AND date_time >= ?`
+				values.push(date_from)
+			}
+
+			if (date_to) {
+				query += ` AND date_time <= ?`
+				values.push(date_to)
+			}
+
+			if (exclude_old) {
+				query += ` AND is_old == 0`
+			}
+
+			// Сортировка
+
+			query += `
+				ORDER BY ID ${order_desc ? "DESC" : "ASC"}
+				LIMIT ?
+				OFFSET ?
+			`
+
+			values.push(limit)
+			values.push(offset)
+
+			const selectMessage = db.prepare(query)
+
+			let messages = selectMessage.all(...values)
+
+			if (only_message) {
+				messages = messages.map(msg => msg.message)
+			}
+
+			return messages
+
+		} catch (error) {
+			this.add_error_to_logs(
+				new Date(),
+				this.module_name,
+				error.toString(),
+				error.stack,
+				[nickname, JSON.stringify(parameters)]
+			)
+		}
+	}
+
 	add_msg_to_server_logs(date_time, type_sender, message, message_json) {
 		try {
 			date_time = date_to_text(date_time)
