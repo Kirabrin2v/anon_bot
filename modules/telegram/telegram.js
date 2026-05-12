@@ -157,7 +157,7 @@ class TelegramModule extends BaseModule {
 		if (keyboard) {
 			parameters.reply_markup = keyboard
 		}
-		console.log([message, parse_mode], parameters)
+		console.log("Отправляю сообщение в ТГ", tg_id, message)
 
 		if (is_document) {
 			this.tg.sendDocument(tg_id, message)
@@ -333,7 +333,6 @@ class TelegramModule extends BaseModule {
 	}
 
 	server_answ_processing(cmd, server_answ, values, identifier, is_confirmed) {
-		console.log(cmd, server_answ, identifier, is_confirmed)
 		if (is_confirmed) {
 			this.send_message_tg(identifier, `Ответ сервера на команду '${cmd}':\n\n${server_answ}`)
 
