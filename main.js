@@ -874,6 +874,15 @@ function send_answs() {
 			}
 
 			let chat_send = answ.chat_send
+			if (chat_send === "Пати-чат") {
+				chat_send = "/pc "
+			} else if (chat_send === "Клан-чат") {
+				chat_send = "/cc "
+			} else if (chat_send === "Гл") {
+				chat_send = "!"
+			} else if (chat_send === "Лк") {
+				chat_send = ""
+			}
 
 			if (chat_send !== undefined) {
 				send_in_private_message = false
