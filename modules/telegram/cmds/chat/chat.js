@@ -107,7 +107,7 @@ class ChatCmd extends BaseCmd {
             .length
 
         if (
-            nearby_players_count === 5 &&
+            nearby_players_count === 3 &&
             Date.now() - this.last_wiretapping_notify_time > this.WIRETAPPING_NOTIFY_INTERVAL
         ) {
             this.last_wiretapping_notify_time = Date.now()
