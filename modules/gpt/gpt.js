@@ -101,7 +101,7 @@ class GptModule extends BaseModule {
     this.recent_messages = []
 
     this.MESSAGE_WINDOW_MS = 5 * 60 * 1000 // 5 минут
-    this.MIN_COOLDOWN_MS = 2 * 60 * 1000   // минимум 2 минуты между ответами ИИ
+    this.MIN_COOLDOWN_MS = 30 * 60 * 1000   // минимум 30 минут между ответами ИИ
 
     this.last_ai_response_time = 0
   }
