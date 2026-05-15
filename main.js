@@ -146,7 +146,7 @@ const regexes = [
 	reg_spawnmob_success
 ]
 
-const run_local_server = config.get("VARIABLES", "run_local_server") === "True"
+const run_local_server = config.get("VARIABLES", "run_local_server") === "true"
 
 const port_keyboard_event = Number(config.get("VARIABLES", "port_keyboard_event"))
 const app = express();

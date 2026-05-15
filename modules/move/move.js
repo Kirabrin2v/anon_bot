@@ -109,7 +109,7 @@ class MoveModule extends BaseModule {
 		if (bot.players[nickname] && bot.players[nickname].entity) {
 			const items = bot.players[nickname].entity.equipment
 			const id_items = items
-			.filter((item) => item !== undefined)
+			.filter((item) => item !== null)
 			.map((item) => {
 				return item.metadata
 			})
