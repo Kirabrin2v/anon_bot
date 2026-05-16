@@ -874,6 +874,12 @@ function send_answs() {
 			}
 
 			let chat_send = answ.chat_send
+			if (chat_send !== undefined) {
+				send_in_private_message = false
+			} else {
+				chat_send = ""
+			}
+			
 			if (chat_send === "Пати-чат") {
 				chat_send = "/pc "
 			} else if (chat_send === "Клан-чат") {
@@ -882,13 +888,10 @@ function send_answs() {
 				chat_send = "!"
 			} else if (chat_send === "Лк") {
 				chat_send = ""
+			} else if (chat_send === "Приват") {
+				send_in_private_message = true
 			}
 
-			if (chat_send !== undefined) {
-				send_in_private_message = false
-			} else {
-				chat_send = ""
-			}
 
 			const spec_symbols = answ.spec_symbols;
 			const prefix = answ.prefix;
