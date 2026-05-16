@@ -157,7 +157,6 @@ class TelegramModule extends BaseModule {
 		if (keyboard) {
 			parameters.reply_markup = keyboard
 		}
-		console.log("Отправляю сообщение в ТГ", tg_id, message)
 
 		if (is_document) {
 			this.tg.sendDocument(tg_id, message)
