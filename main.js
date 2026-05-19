@@ -109,6 +109,7 @@ const ignore_cmds = JSON.parse(config.get("VARIABLES", "ignore_cmds")) // Не �
 const tesla_ranks = JSON.parse(config.get("TESLA", "ranks"))
 
 const interval_send_cmds = config.get("VARIABLES", "interval_send_cmds")
+const interval_check_surv = config.get("VARIABLES", "interval_check_surv")
 
 const bot_password = config.get(bot_username, "bot_password")
 const bot_pin = config.get(bot_username, "bot_pin")
@@ -1305,7 +1306,7 @@ bot.on("update_bal_survings", (obj) => {
 })
 
 
-setInterval(() => {
+setTimeout(() => {
 
  	if (!location_bot || !location_bot.includes("Локация Край")) {bot.chat("/swarp end")}
  }, 5000)
@@ -1320,6 +1321,6 @@ setInterval(() =>  {
 	if (location_bot && location_bot.includes("Классическое выживание")) {
 		bot.chat("/bal")
 	}
-}, 3000)
+}, interval_check_surv)
 
 setInterval(() => cmds.push("/tca check"), 15000)
