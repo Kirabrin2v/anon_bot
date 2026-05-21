@@ -39,6 +39,8 @@ const {
 	reg_spawnmob_rank_error,
 	reg_spawnmob_success,
 
+	reg_limbo,
+
 	chatSchema
 
 } = require("./regex.js")
@@ -391,10 +393,6 @@ async function actions_processing(actions, module_name, update_action) {
 				type: content.type
 			})
 
-		} else if (type === "waiting_data") {
-			queue_waiting_data["private_message"].push({module_name: module_name,
-														
-														})
 		} else if (type === "module_request") {
 			module_connect(action.module_recipient, action.module_sender, content, action.access_lvl)
 		} else if (type === "wait_data") {
@@ -462,6 +460,8 @@ function processing_server_message(sender, message, message_json) {
 	const spawnmob_rank_error = message.match(reg_spawnmob_rank_error)
 	const spawnmob_success = message.match(reg_spawnmob_success)
 
+	const limbo = message.match(reg_limbo)
+
 	if (message !== "" && !seen && !tca_accept && !bal_survings && !bal_TCA && !message.includes("Лог последних операций с баллами TCA:") && !message.match(reg_log_line)) {
 		bus.emit(
 			"server_message",
@@ -482,6 +482,10 @@ function processing_server_message(sender, message, message_json) {
 
 	} else if (message === "[TeslaCraft] Уже выполняется другая телепортация.") {
 		bot.chat("/hub" + random_number(1, 8))
+
+	} else if (limbo) {
+		console.log("Перезагрузка из-за лимбо")
+		process.exit(-1);
 
 	} else if (seen) {
 		now_cmd = "seen"
@@ -1048,13 +1052,11 @@ bot.on("blockUpdate" , function blocks (oldBlock, newBlock) {
 
 bot.on('messagestr', (raw_message, sender, message_json) => {
 	if (!raw_message || !sender) {return;}
+	const parsed = chatSchema.parse(raw_message)
 
-	if (sender === "chat") {
+	if (parsed) {
 		// const raw_message = message;
-		const parsed = chatSchema.parse(raw_message)
 		console.log(raw_message)
-		if (!parsed) { /* неизвестный формат */ return }
-
 		const { type_chat, sender } = parsed
 		let { message } = parsed
 
