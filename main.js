@@ -1057,13 +1057,14 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 	if (parsed) {
 		// const raw_message = message;
 		console.log(raw_message)
-		const { type_chat, sender } = parsed
+		const { type_chat, sender, recipient } = parsed
 		let { message } = parsed
 
 		bus.emit("player_message", {
 			location_bot,
 			type_chat,
 			sender,
+			recipient,
 			message,
 			raw_message,
 			message_json: JSON.stringify(message_json.json),
@@ -1079,7 +1080,7 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 
 		//console.log(`[${type_chat}] ${sender}: ${message}`)
  		console.log(`[${type_chat}]` + "\033[32m " + sender + ":\033[33m " + message + "\033[0m")
-
+ 		if (sender === bot_username) {return;}
 		let rank_sender = modules.call_module("stats").get_stats(sender, "rank")
 		if (seniors.includes(sender)) {
 			rank_sender = 6;

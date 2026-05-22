@@ -3,8 +3,13 @@ const path = require("path")
 const BaseCmd = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const { chatSchema, reg_full_nickname } = require(path.join(BASE_DIR, "regex.js"))
+const ConfigParser = require('configparser');
 
 
+const global_config = new ConfigParser();
+global_config.read("txt/config.ini")
+
+const bot_username = global_config.get("VARIABLES", "active_nick");
 const PARTY_CMDS = ["pc", "зс"]
 const CLAN_CMDS = ["cc", "сс"]
 const PRIVATE_MESSAGE_CMDS = ["m", "ь"]
@@ -81,6 +86,7 @@ class ChatCmd extends BaseCmd {
         bus.on("player_message", (obj) => this.player_message_processing(
                 obj.type_chat,
                 obj.sender,
+                obj.recipient,
                 obj.message,
                 obj.raw_message,
                 obj.date_time
@@ -265,7 +271,7 @@ class ChatCmd extends BaseCmd {
           .map(n => String(n).padStart(2, '0')).join(':')
 
         if (fields.type_chat === "Приват") {
-          const direction = fields.sender === "Я"
+          const direction = fields.sender === bot_username
             ? `Я -> ${fields.recipient}`
             : `${fields.sender} -> Мне`
           return `[${time}] [${direction}] ${fields.message}`
@@ -286,7 +292,7 @@ class ChatCmd extends BaseCmd {
         return message
     }
 
-    player_message_processing(type_chat, sender, message, raw_message, date_time) {
+    player_message_processing(type_chat, sender, recipient, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         parsed.date_time = date_time
         const formatted_message = this.format_server_message(date_time, parsed)

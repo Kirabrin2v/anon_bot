@@ -28,9 +28,11 @@ class ChatSchema {
 
     m = raw_message.match(this.patterns.me_send)
     if (m) {return { type_chat: "Приват", sender: m[1], recipient: bot_username,  message: m[2] }}
+    
 
     m = raw_message.match(this.patterns.i_send)
     if (m) {return { type_chat: "Приват", sender: bot_username,  recipient: m[1], message: m[2] }}
+    
 
     m = raw_message.match(this.patterns.standard)
     if (m) {
