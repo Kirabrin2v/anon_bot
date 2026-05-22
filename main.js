@@ -156,6 +156,8 @@ const app = express();
 
 
 // Переменные. Изменяются во время выполнения
+let empty_chat_timer;
+
 let bot_bal_survings = 0;
 
 const answs = [];
@@ -822,10 +824,6 @@ function send_pay(nick, amount, reason="") {
 }
 
 function send_cmds() {
-	if (!location_bot) {
-		cmds = []
-		return;
-	}
 	if (cmds.length > 0) {
 		const cmd_object = cmds.shift()
 		let cmd;
@@ -833,6 +831,9 @@ function send_cmds() {
 			cmd = cmd_object.cmd
 		} else {
 			cmd = cmd_object
+		}
+		if (!location_bot && !masters_cmds.includes(cmd)) {
+			return;
 		}
 
 		if (count(cmds, cmd_object) > 5) {
@@ -1055,6 +1056,14 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 	const parsed = chatSchema.parse(raw_message)
 
 	if (parsed) {
+		clearTimeout(empty_chat_timer)
+
+	    // Запускаем новый
+	    empty_chat_timer = setTimeout(() => {
+	        console.log('Перезапуск из-за отсутствия чата на протяжении получаса')
+	        process.exit(-1)
+	    }, 30 * 60 * 1000)
+
 		// const raw_message = message;
 		console.log(raw_message)
 		const { type_chat, sender, recipient } = parsed
