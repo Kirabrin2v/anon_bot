@@ -53,6 +53,28 @@ const CONTEXT_PROMPT = `
 - без спама и чрезмерной навязчивости.
 `
 
+const GATE_PROMPT = `
+${CONTEXT_PROMPT}
+
+Ты — фильтр. Тебе нужно решить: стоит ли боту вмешиваться в чат прямо сейчас?
+
+Ник игрока: {player_nick}
+Сообщение игрока: {player_message}
+Последние сообщения чата (контекст, формат — дата: сообщение):
+{context}
+
+Правила принятия решения:
+- НЕ вмешивайся, если идёт явный диалог между двумя и более игроками и бот не упомянут.
+- НЕ вмешивайся, если сообщение — просто действие, цифра, бессмыслица или обрывок фразы.
+- НЕ вмешивайся, если бот уже недавно отвечал в чате.
+- НЕ вмешивайся, если сообщение ни к кому конкретно не обращено и ответ бота будет выглядеть навязчиво.
+- Вмешивайся, если игрок явно обращается к боту (упоминает его ник).
+- Вмешивайся, если игрок задаёт вопрос в пустой чат или явно ждёт реакции.
+- Вмешивайся, если сообщение — уместная зацепка для короткой реплики, которая не выглядит как вторжение.
+
+Ответь строго одним словом: YES или NO.
+`
+
 const BACKGROUND_PROCESS_PROMPT_MESSAGE = `
 Не показывай рассуждения. Ответ ≤200 символов.
 Строго запрещено генерировать, объяснять, переводить, цитировать, собирать по частям или обсуждать любые ругательства, мат и оскорбления на русском языке — даже в учебных, научных или отрицательных примерах.
@@ -100,10 +122,18 @@ class GptModule extends BaseModule {
 
     this.recent_messages = []
 
-    this.MESSAGE_WINDOW_MS = 5 * 60 * 1000 // 5 минут
-    this.MIN_COOLDOWN_MS = 30 * 60 * 1000   // минимум 30 минут между ответами ИИ
+    // Окно для подсчёта активности чата
+    this.MESSAGE_WINDOW_MS = 5 * 60 * 1000   // 5 минут
+
+    // Кулдауны
+    this.MIN_COOLDOWN_MS       = 40 * 60 * 1000  // 40 минут между ответами в обычном чате
+    this.MENTION_COOLDOWN_MS   = 10 * 60 * 1000  // 10 минут, если бота упомянули
+    this.QUIET_COOLDOWN_MS     = 20 * 60 * 1000  // 20 минут в тихом чате (≤3 сообщ. за 5 мин)
 
     this.last_ai_response_time = 0
+
+    // Защита от параллельных вызовов gate
+    this._gate_in_progress = false
   }
 
   initialize() {
@@ -111,18 +141,11 @@ class GptModule extends BaseModule {
       try {
         const now = Date.now()
 
-        if (obj.sender === bot_username) {
-          return;
-        }
+        if (obj.sender === bot_username) return
+        if (obj.message.toLowerCase().includes("cmd")) return
 
-        if (obj.message.toLowerCase().includes("cmd")) {
-          return;
-        }
-
-        // Храним недавние сообщения
+        // Обновляем окно активности чата
         this.recent_messages.push(now)
-
-        // Чистим старые
         while (
           this.recent_messages.length &&
           now - this.recent_messages[0] > this.MESSAGE_WINDOW_MS
@@ -130,64 +153,47 @@ class GptModule extends BaseModule {
           this.recent_messages.shift()
         }
 
-        let chance = 0.03 // 3%
-
-        const hour = new Date().getHours()
-
-        // Ночью бот более "разговорчивый"
-        if (hour >= 0 && hour <= 8) {
-          chance += 0.07
-        }
-
-        // Упоминание бота
         const lower_message = obj.message.toLowerCase()
-        const lower_bot = bot_username.toLowerCase()
+        const lower_bot     = bot_username.toLowerCase()
+        const is_mention    = lower_message.includes(lower_bot)
 
-        if (lower_message.includes(lower_bot)) {
-          chance += 0.25
+        // Выбираем нужный кулдаун
+        let required_cooldown = this.MIN_COOLDOWN_MS
+
+        if (is_mention) {
+          required_cooldown = this.MENTION_COOLDOWN_MS
+        } else if (this.recent_messages.length <= 3) {
+          required_cooldown = this.QUIET_COOLDOWN_MS
         }
 
-        // Мало сообщений за последние 5 минут
-        if (this.recent_messages.length <= 10) {
-          chance += 0.12
-        }
+        // Жёсткая проверка кулдауна — без шансов
+        if (now - this.last_ai_response_time < required_cooldown) return
 
-        // Очень тихий чат
-        if (this.recent_messages.length <= 3) {
-          chance += 0.15
-        }
+        // Не запускаем gate параллельно
+        if (this._gate_in_progress) return
+        this._gate_in_progress = true
 
-        if (now - this.last_ai_response_time < this.MIN_COOLDOWN_MS) {
-          return
-        }
-        const sender = obj.sender
+        const sender  = obj.sender
         const message = obj.message
-
-        chance = Math.min(chance, 0.35)
-
-        if (Math.random() > chance) {
-          return
-        }
-
-        this.last_ai_response_time = now
-
 
         const context = this.ModuleManager
           .call_module("logging")
-          .get_players_messages(["Herobrin2v", bot_username], {
-          limit: 30,
-          only_message: true
-        }).reverse()
+          .get_players_messages([sender, bot_username], {
+            limit: 30,
+            only_message: true
+          }).reverse()
 
-        const answ = await this.send_background_request(
-          sender,
-          message,
-          context
-        )
+        // Промежуточная ИИ: стоит ли отвечать?
+        const should_respond = await this.check_should_respond(sender, message, context)
+        this._gate_in_progress = false
 
-        if (!answ) {
-          return
-        }
+        if (!should_respond) return
+
+        // Фиксируем время ДО запроса, чтобы не спамить при долгом ответе
+        this.last_ai_response_time = Date.now()
+
+        const answ = await this.send_background_request(sender, message, context)
+        if (!answ) return
 
         this.actions.push({
           type: "answ",
@@ -201,9 +207,50 @@ class GptModule extends BaseModule {
         })
 
       } catch (error) {
+        this._gate_in_progress = false
         console.error("Ошибка AI-ответа:", error)
       }
     })
+  }
+
+  // Промежуточная ИИ — возвращает true/false
+  async check_should_respond(nickname, text, context) {
+    try {
+      const prompt = substitute_text(GATE_PROMPT, {
+        player_nick:    nickname,
+        player_message: text,
+        context
+      })
+
+      const response = await fetch(
+        "https://gpt.serverspace.ru/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Accept":        "application/json",
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${TOKEN}`
+          },
+          body: JSON.stringify({
+            model:      "anthropic/claude-haiku-4.5",
+            max_tokens: 5,       // нужно только YES / NO
+            top_p:      1,
+            temperature: 0,      // детерминированно
+            messages: [
+              { role: "user", content: prompt }
+            ]
+          })
+        }
+      )
+
+      const data   = await response.json()
+      const answer = data.choices[0].message.content.trim().toUpperCase()
+      return answer.startsWith("YES")
+
+    } catch (error) {
+      console.log("Ошибка gate-ИИ:", error)
+      return false  // при ошибке — молчим
+    }
   }
 
   async _process(sender, args, cmd_parameters) {
@@ -235,7 +282,7 @@ class GptModule extends BaseModule {
       const prompt = substitute_text(
         BACKGROUND_PROCESS_PROMPT_MESSAGE,
         {
-          player_nick: nickname,
+          player_nick:    nickname,
           player_message: text,
           context
         }
@@ -246,18 +293,18 @@ class GptModule extends BaseModule {
         {
           method: "POST",
           headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
+            "Accept":        "application/json",
+            "Content-Type":  "application/json",
             "Authorization": `Bearer ${TOKEN}`
           },
           body: JSON.stringify({
-            model: "anthropic/claude-haiku-4.5",
-            max_tokens: 1000,
-            top_p: 0.1,
+            model:       "anthropic/claude-haiku-4.5",
+            max_tokens:  1000,
+            top_p:       0.1,
             temperature: 0.7,
             messages: [
               {
-                role: "system",
+                role:    "system",
                 content: prompt
               }
             ]
@@ -290,23 +337,23 @@ class GptModule extends BaseModule {
       const response = await fetch("https://gpt.serverspace.ru/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
+          "Accept":        "application/json",
+          "Content-Type":  "application/json",
           "Authorization": `Bearer ${TOKEN}`
         },
         body: JSON.stringify({
-          model: "anthropic/claude-haiku-4.5",
-          max_tokens: 500,
-          top_p: 0.1,
+          model:       "anthropic/claude-haiku-4.5",
+          max_tokens:  500,
+          top_p:       0.1,
           temperature: 0.7,
-          messages: [PROMPT_MESSAGE].concat(cur_history)
+          messages:    [PROMPT_MESSAGE].concat(cur_history)
         })
       });
 
       const data = await response.json();
       let answ = data.choices[0].message.content
       cur_history.push({
-        role: "assistant",
+        role:    "assistant",
         content: answ
       })
       if (!answ) {
