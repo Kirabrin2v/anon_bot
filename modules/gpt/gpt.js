@@ -123,12 +123,12 @@ class GptModule extends BaseModule {
     this.recent_messages = []
 
     // Окно для подсчёта активности чата
-    this.MESSAGE_WINDOW_MS = 5 * 60 * 1000   // 5 минут
+    this.MESSAGE_WINDOW_MS = 50 * 60 * 1000   // 50 минут
 
     // Кулдауны
-    this.MIN_COOLDOWN_MS       = 40 * 60 * 1000  // 40 минут между ответами в обычном чате
-    this.MENTION_COOLDOWN_MS   = 10 * 60 * 1000  // 10 минут, если бота упомянули
-    this.QUIET_COOLDOWN_MS     = 20 * 60 * 1000  // 20 минут в тихом чате (≤3 сообщ. за 5 мин)
+    this.MIN_COOLDOWN_MS       = 400 * 60 * 1000  // 400 минут между ответами в обычном чате
+    this.MENTION_COOLDOWN_MS   = 100 * 60 * 1000  // 100 минут, если бота упомянули
+    this.QUIET_COOLDOWN_MS     = 200 * 60 * 1000  // 200 минут в тихом чате
 
     this.last_ai_response_time = 0
 
@@ -178,7 +178,7 @@ class GptModule extends BaseModule {
 
         const context = this.ModuleManager
           .call_module("logging")
-          .get_players_messages([sender, bot_username], {
+          .get_players_messages([send_background_request, bot_username], {
             limit: 30,
             only_message: true
           }).reverse()
