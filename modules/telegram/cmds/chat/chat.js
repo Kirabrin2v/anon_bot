@@ -200,8 +200,9 @@ class ChatCmd extends BaseCmd {
                 }
             } else {
                 if (message[0] === "!") {
+                    message = message.slice(1)
                     type_chat = "Гл"
-                    
+
                 } else {
                     type_chat = "Лк"
                 }

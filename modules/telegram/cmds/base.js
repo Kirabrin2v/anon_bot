@@ -28,21 +28,24 @@ class BaseCmd {
 
                 let answ;
                 let message_type = "text";
-                let parse_mode;
+                let parse_mode, keyboard;
                 if (typeof result === "object") {
                     answ = result.message
                     parse_mode = result.parse_mode
                     if (result.message_type !== undefined) {
                         message_type = result.message_type
                     }
+                    if (result.keyboard !== undefined) {
+                        keyboard = result.keyboard
+                    }
                 } else {
                     answ = result
                 }
                 if (!answ) {return;}
                 if (message_type === "text") {
-                    this.module_obj.send_message_tg(sender, answ, undefined, false, parse_mode)
+                    this.module_obj.send_message_tg(sender, answ, keyboard, false, parse_mode)
                 } else if (message_type === "document") {
-                    this.module_obj.send_message_tg(sender, answ, undefined, true, parse_mode)
+                    this.module_obj.send_message_tg(sender, answ, keyboard, true, parse_mode)
                 }
             } catch (error) {
                 this.module_obj.actions.push({

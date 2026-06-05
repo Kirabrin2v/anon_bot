@@ -80,12 +80,16 @@ class TelegramModule extends BaseModule {
 		    autoStart: true
 		  }
 		});
+		this.tg.on("callback_query", (query) => {
+		    console.log("🔥 RAW:", query.data);
+		});
 
 		setInterval(() => this.update_player_settings(), 10000)
 	}
 
 	start() {
 		this.tg.on("callback_query", query => {
+			console.log("GLOBAL callback_query:", query.data);
 			const tg_id = query.from.id
 			if (!this.seniors.includes(tg_id) && !this.masters.includes(tg_id)) {return}
 
