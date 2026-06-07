@@ -23,6 +23,21 @@ const STRUCTURE = {
     },
 
     nick_notice: {
+        blacklist: {
+            clear: {
+                _description: "Очистить список запретных слов"
+            },
+            list: {
+                _description: "Список запрещённых слов"
+            },
+            words: {
+                _type: "string",
+                _multiple: true,
+                _description: "Слова, которые нужно игнорировать. Все введённые слова регистронезавимы"
+            },
+            _description: "Выключить триггер для определённых слов",
+            _optional: true
+        },
         _description: "Включить/выключить уведомления о сообщениях, в которых встречается Ваш ник. Сообщение приходит даже при выключенном через /c чате.",
         _aliases: ["nn"]
     },
@@ -126,6 +141,27 @@ class ChatCmd extends BaseCmd {
         }
     }
 
+    generate_exclusion_regex(keyword, exclusions) {
+        let behind_parts = new Set();
+        let ahead_parts = new Set();
+        for (const exclusion of exclusions) {
+            let [behind_part, ...ahead_part] = exclusion.split(keyword)
+            ahead_part = ahead_part.join("")
+            
+            behind_parts.add(behind_part)
+            ahead_parts.add(ahead_part)
+        }
+        behind_parts.delete("")
+        ahead_parts.delete("")
+        behind_parts = Array.from(behind_parts)
+        ahead_parts = Array.from(ahead_parts)
+        const behind_condition = behind_parts.length > 0 ? `(?<!${behind_parts.join("|")})` : "" 
+        const ahead_condition = ahead_parts.length > 0 ? `(?!${ahead_parts.join("|")})` : ""
+        const regex = new RegExp(behind_condition + keyword + ahead_condition, "i")
+
+        return regex
+    }
+
     _process(sender, args, _unused_args, _cmd, msg_obj) {
         let answ;
         const settings = this.module_obj.player_settings[sender]
@@ -143,14 +179,32 @@ class ChatCmd extends BaseCmd {
                 answ = `Сообщения включены. Последние сообщения:\n${context}`
             }
         } else if (args[0].name === "nick_notice") {
-            if (settings["nick_notice_on"] === true) {
-                settings["nick_notice_on"] = false;
-                answ = "Уведомления об упоминаниях выключены"
+            if (args.length === 1) {
+                if (settings["nick_notice_on"] === true) {
+                    settings["nick_notice_on"] = false;
+                    answ = "Уведомления об упоминаниях выключены"
 
-            } else {
-                settings["nick_notice_on"] = true;
+                } else {
+                    settings["nick_notice_on"] = true;
 
-                answ = `Уведомления об упоминаниях включены. Ваши ники:\n${settings["notify_aliases"].join("; ")}`
+                    answ = `Уведомления об упоминаниях включены. Ваши ники:\n${settings["notify_aliases"].join("; ")}`
+
+                }
+            } else if (args[1].name === "blacklist") {
+                if (args[2].name === "clear") {
+                    settings["nick_notice_blacklist"] = []
+                    answ = "Список успешно очищен"
+
+                } else if (args[2].name == "list") {
+                    const banwords = settings["nick_notice_blacklist"]
+                    answ = `Текущий список запретных слов:\n${banwords.join('\n')}`
+
+
+                } else if (args[2].name === "words"){
+                    const banwords = args[2].value
+                    settings["nick_notice_blacklist"] = banwords
+                    answ = `Фильтр успешно изменён. Текущий список:\n${banwords.join('\n')}`
+                }
             }
         } else {
             const flattern_args = this.CommandManager.flattenArgs(args)
@@ -318,8 +372,11 @@ class ChatCmd extends BaseCmd {
 
             } else if (settings["nick_notice_on"]) {
                 const notify_aliases = settings["notify_aliases"]
+                const nick_notice_blacklist = settings["nick_notice_blacklist"]
                 for (const alias of notify_aliases) {
-                    if (notify_message.toLowerCase().includes(alias)) {
+                    const match_banwords = nick_notice_blacklist.filter(banword => banword.includes(alias))
+                    const regex = this.generate_exclusion_regex(alias, match_banwords)
+                    if (message.match(regex)) {
                         let context = this.logs
                             .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
                             .map(log_element => this.format_server_message(log_element.date_time, log_element))

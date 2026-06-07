@@ -54,7 +54,7 @@ class TelegramModule extends BaseModule {
 				if (["chat_on", "punishments_on", "whitelist_on", "blacklist_on", "filter_on", "nick_notice_on"].includes(parameter)) {
 					this.player_settings[tg_id][parameter] = player_settings_object.get(tg_id, parameter) === "true" // boolean
 
-				} else if (["whitelist_nicks", "blacklist_nicks", "allowed_chats", "notify_aliases"].includes(parameter)) {
+				} else if (["whitelist_nicks", "blacklist_nicks", "allowed_chats", "notify_aliases", "nick_notice_blacklist"].includes(parameter)) {
 					this.player_settings[tg_id][parameter] = JSON.parse(player_settings_object.get(tg_id, parameter)) // list
 
 				} else {
