@@ -166,7 +166,7 @@ class GptModule extends BaseModule {
           required_cooldown = this.QUIET_COOLDOWN_MS
         }
 
-        // Жёсткая проверка кулдауна — без шансов
+        // Жёсткая проверка кулдауна
         if (now - this.last_ai_response_time < required_cooldown) return
 
         // Не запускаем gate параллельно
@@ -178,7 +178,7 @@ class GptModule extends BaseModule {
 
         const context = this.ModuleManager
           .call_module("logging")
-          .get_players_messages([send_background_request, bot_username], {
+          .get_players_messages([sender, bot_username], {
             limit: 30,
             only_message: true
           }).reverse()
