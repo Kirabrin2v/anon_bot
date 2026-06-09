@@ -41,7 +41,9 @@ const {
 
 	reg_limbo,
 
-	chatSchema
+	chatSchema,
+
+	Color
 
 } = require("./regex.js")
 
@@ -941,6 +943,7 @@ function send_answs() {
 
 			console.log(`${recipient}'у: ${message}`, send_in_private_message, chat_send)
 			if (send_in_private_message) {
+				message = Color.reset(message)
 				if (bot_bal_survings >= 0.01 && bot.players[sender] && bot.players[sender].entity !== undefined) {
 					send_pay(recipient, 0.01, message)
 

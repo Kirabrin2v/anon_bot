@@ -60,6 +60,50 @@ class ChatSchema {
   }
 }
 
+class ColorManager {
+  constructor() {
+    this.COLORS = {
+      BLACK: "0",
+      DARK_BLUE: "1",
+      DARK_GREEN: "2",
+      DARK_AQUA: "3",
+      DARK_RED: "4",
+      DARK_PURPLE: "5",
+      GOLD: "6",
+      GRAY: "7",
+      DARK_GRAY: "8",
+      BLUE: "9",
+      GREEN: "a",
+      AQUA: "b",
+      RED: "c",
+      LIGHT_PURPLE: "d",
+      YELLOW: "e",
+      WHITE: "f"
+    }
+
+    this.FORMATS = {
+      MAGIC: "k",
+      BOLD: "l",
+      STRIKETHROUGH: "m",
+      UNDERLINE: "n",
+      ITALIC: "o",
+      RESET: "r"
+    }
+
+  }
+
+  paint(text, color) {
+    return `&${this.COLORS[color]}${text}&r`
+  }
+
+  reset(text) {
+    const format_keys = Object.values(this.COLORS).concat(Object.values(this.FORMATS))
+    const format_regex = new RegExp(`&(?:${format_keys.join("|")})`, "ig")
+    return text.replaceAll(format_regex, "")
+  }
+
+}
+
 
 const config = new ConfigParser();
 config.read(path.join(BASE_DIR, "txt", "config.ini"))
@@ -76,6 +120,8 @@ const reg_me_send = new RegExp(`^\\[${reg_nickname} -> Мне\\] ${reg_message}`
 const reg_i_send = new RegExp(`^\\[Я -> ${reg_nickname}\\] ${reg_message}`)
 
 const chatSchema = new ChatSchema(reg_nickname, reg_message)
+
+const Color = new ColorManager()
 
 const reg_spawnmob_help = new RegExp(
     `^    \\n` +
@@ -201,5 +247,7 @@ module.exports = {
 
   reg_limbo,
 
-	chatSchema
+	chatSchema,
+
+  Color
 }

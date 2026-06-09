@@ -2,6 +2,7 @@ const path = require("path")
 
 const BaseCmd = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
+const { Color } = require(path.join(BASE_DIR, "regex.js"))
 const { chatSchema, reg_full_nickname } = require(path.join(BASE_DIR, "regex.js"))
 const ConfigParser = require('configparser');
 
@@ -217,7 +218,10 @@ class ChatCmd extends BaseCmd {
 
     chat_commands_processing(tg_id, message, cmd, msg_obj) {
         const settings = this.module_obj.player_settings[tg_id]
-        let prefix = `[${settings["nick"]}] `
+        const nick = settings["nick"]
+        const color = settings["nick_color"]
+        console.log("Объект Цвета:", Color)
+        const prefix = `[${color ? Color.paint(nick, color) : nick}] `
         let answ, type_chat, server_cmd, recipient;
         let send_in_private_message = false;
 
