@@ -220,7 +220,7 @@ class ChatCmd extends BaseCmd {
         const settings = this.module_obj.player_settings[tg_id]
         const nick = settings["nick"]
         const color = settings["nick_color"]
-        console.log("Объект Цвета:", Color)
+
         const prefix = `[${color ? Color.paint(nick, color) : nick}] `
         let answ, type_chat, server_cmd, recipient;
         let send_in_private_message = false;
