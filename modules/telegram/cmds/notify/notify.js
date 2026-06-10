@@ -22,7 +22,7 @@ class NotifyCmd extends BaseCmd {
     async _process(sender, args) {
         let answ;
         if (args[0].name === "text") {
-            let message = args[0].value
+            const message = args[0].value
 
             const players = this.module_obj.player_settings
 

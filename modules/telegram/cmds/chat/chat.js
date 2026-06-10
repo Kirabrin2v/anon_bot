@@ -196,7 +196,7 @@ class ChatCmd extends BaseCmd {
                     settings["nick_notice_blacklist"] = []
                     answ = "Список успешно очищен"
 
-                } else if (args[2].name == "list") {
+                } else if (args[2].name === "list") {
                     const banwords = settings["nick_notice_blacklist"]
                     answ = `Текущий список запретных слов:\n${banwords.join('\n')}`
 
@@ -221,7 +221,7 @@ class ChatCmd extends BaseCmd {
         const nick = settings["nick"]
         const color = settings["nick_color"]
 
-        const prefix = `[${color ? Color.paint(nick, color) : nick}] `
+        let prefix = `[${color ? Color.paint(nick, color) : nick}] `
         let answ, type_chat, server_cmd, recipient;
         let send_in_private_message = false;
 
@@ -360,7 +360,7 @@ class ChatCmd extends BaseCmd {
                 continue;
             }
             const settings = this.module_obj.player_settings[tg_id]
-            let notify_message = this.replace_notice_nick(formatted_message, settings["notify_aliases"])
+            const notify_message = this.replace_notice_nick(formatted_message, settings["notify_aliases"])
             if (settings["chat_on"] === true) {
                 if (settings["whitelist_on"] === true) {
                     if (!settings["whitelist_nicks"].includes(sender)) {

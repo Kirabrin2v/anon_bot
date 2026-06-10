@@ -141,8 +141,8 @@ class GptModule extends BaseModule {
       try {
         const now = Date.now()
 
-        if (obj.sender === bot_username) return
-        if (obj.message.toLowerCase().includes("cmd")) return
+        if (obj.sender === bot_username) {return}
+        if (obj.message.toLowerCase().includes("cmd")) {return}
 
         // Обновляем окно активности чата
         this.recent_messages.push(now)
@@ -167,10 +167,10 @@ class GptModule extends BaseModule {
         }
 
         // Жёсткая проверка кулдауна
-        if (now - this.last_ai_response_time < required_cooldown) return
+        if (now - this.last_ai_response_time < required_cooldown) {return}
 
         // Не запускаем gate параллельно
-        if (this._gate_in_progress) return
+        if (this._gate_in_progress) {return}
         this._gate_in_progress = true
 
         const sender  = obj.sender
@@ -187,13 +187,13 @@ class GptModule extends BaseModule {
         const should_respond = await this.check_should_respond(sender, message, context)
         this._gate_in_progress = false
 
-        if (!should_respond) return
+        if (!should_respond) {return}
 
         // Фиксируем время ДО запроса, чтобы не спамить при долгом ответе
         this.last_ai_response_time = Date.now()
 
         const answ = await this.send_background_request(sender, message, context)
-        if (!answ) return
+        if (!answ) {return}
 
         this.actions.push({
           type: "answ",

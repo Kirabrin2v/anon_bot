@@ -106,7 +106,7 @@ class CommandEngine {
       // 1. Если аргумент — это имя ветки (без _type), переходим внутрь
       const key = this._findKey(currentStructure, arg);
 
-      let is_matched = key && !currentStructure[key]._type;
+      const is_matched = key && !currentStructure[key]._type;
 
       if (is_matched) {
         currentStructure = currentStructure[key];

@@ -25,7 +25,7 @@ class DonateCmd extends BaseCmd {
               };
 
               const amount = starsMap[query.data];
-              if (!amount) return;
+              if (!amount) {return;}
 
               await this.module_obj.tg.answerCallbackQuery(query.id);
 

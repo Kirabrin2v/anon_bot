@@ -395,7 +395,7 @@ class SnowballsModule extends BaseModule {
             answ = `Снежков, достигшних цели: ${stats.hits_done}. Пойманных снежков: ${stats.hits_taken}`
 
         } else if (args[0].name === "list") {
-            num_page = args[1].value
+            const num_page = args[1].value
 
             const hits = this.get_hits({ limit: 50 });
 
