@@ -123,6 +123,12 @@ const chatSchema = new ChatSchema(reg_nickname, reg_message)
 
 const Color = new ColorManager()
 
+const reg_bal_log = new RegExp(
+  "Лог последних операций с сурвингами:\n" +
+  `- (\\d{2}\\.\\d{2}\\.\\d{4}) (\\d{2}:\\d{2}:\\d{2}) (.*) \\((?:(?:От игрока)|(?:Игроку)) ${reg_nickname}\\): \\$(\\+|-)([\\d,\\.]*)\\n?`.repeat(10)
+)
+
+
 const reg_spawnmob_help = new RegExp(
     `^    \\n` +
     `Справка:\\n` +
@@ -207,6 +213,7 @@ const reg_limbo = new RegExp(
 module.exports = {
 	reg_bal_survings,
 	reg_bal_TCA,
+  reg_bal_log,
 
 	reg_nickname,
   reg_full_nickname,

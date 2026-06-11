@@ -7,7 +7,7 @@ const ConfigParser = require('configparser');
 const global_config = new ConfigParser();
 global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
-const { COLORS, date_to_text } = require(path.join(BASE_DIR, "utils", "text.js"))
+const { COLORS, date_to_text, text_to_date } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
@@ -24,6 +24,7 @@ class CashModule extends BaseModule {
 
         this.time_last_check_surv = 0;
         this.last_payers_TCA = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'TCA' ORDER BY id DESC LIMIT 20`).all();
+        this.last_payers_survings = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'survings' ORDER BY id DESC LIMIT 15`).all();
 
         this.bal_survings;
 
@@ -77,6 +78,18 @@ class CashModule extends BaseModule {
 		})
     }
 
+    initialize() {
+    	setInterval(() => {
+	    	this.actions.push({
+				type: "cmd",
+				content: {
+					module_sender: this.module_name,
+					cmd: "/bal log"
+				}
+			})
+    	}, 10000)
+    }
+
     add_pay_to_bd(payer, payee, amount, currency, date_time, reason) {
 		const insertMessage = db.prepare(`INSERT INTO logs (
 		date_time, payer, payee, amount, currency, reason)
@@ -89,9 +102,11 @@ class CashModule extends BaseModule {
 		  currency: currency,
 		  reason: reason
 		  });
-		  if (currency === "TCA") {
-			  this.last_payers_TCA = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'TCA' ORDER BY id DESC LIMIT 20`).all();
-		  }
+		if (currency === "TCA") {
+			this.last_payers_TCA = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'TCA' ORDER BY id DESC LIMIT 20`).all();
+		} else if (currency = "survings") {
+			this.last_payers_survings = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'survings' ORDER BY id DESC LIMIT 15`).all();
+		}
 	}
 
 	confirm_send_money(date, nick, currency, amount) {
@@ -126,6 +141,31 @@ class CashModule extends BaseModule {
 					args: [reason]
 				}
 			})
+		}
+	}
+
+	processing_bal_log(bal_logs) {
+		for (const bal_log of bal_logs) {
+			if (bal_log.sender != bot_username) {
+				const check_money = this.check_repeat_survings(
+					bal_log.sender,
+					bal_log.amount,
+					bal_log.reason,
+					bal_log.date_time
+				)
+				if (check_money["is_ok"]) {
+					this.add_pay_to_bd(bal_log.sender, bot_username, bal_log.amount, "survings", date_to_text(bal_log.date_time), bal_log.reason)
+					this.actions.push({
+						type: "new_survings",
+						content: {
+							payer: bal_log.sender,
+							amount: Math.floor(bal_log.amount),
+							reason: bal_log.reason
+						}
+					})
+				}
+			}
+
 		}
 	}
 
@@ -187,6 +227,31 @@ class CashModule extends BaseModule {
 				return {"is_ok": true}
 			} else {
 				console.log("Недостаточно переводов")
+				return {"is_ok": false, "message_error": "В базе данных недостаточно данных о переводах"}
+			}
+
+		} else {
+			return {"is_ok": false, "message_error": "Перевод уже был обработан"}
+		}
+	}
+
+	check_repeat_survings(payer, amount, reason, date) {
+		let flag_find = false;
+		let info;
+		for (let i = 0; i < this.last_payers_survings.length; i++) {
+			info = this.last_payers_survings[i]
+			const db_date_time = text_to_date(info.date_time, "YYYY-MM-DD HH:mm:ss")
+			// console.log(db_date_time, date)
+			if (info.payer === payer && Math.abs(db_date_time - date) <= 3000 && info.amount === amount && info.reason == reason) {
+				flag_find = true;
+				break;
+			} 
+		}
+		if (!flag_find) {
+			if (this.last_payers_survings.length > 10) {
+				return {"is_ok": true}
+			} else {
+				console.log("Недостаточно переводов сурвингов")
 				return {"is_ok": false, "message_error": "В базе данных недостаточно данных о переводах"}
 			}
 
@@ -272,6 +337,14 @@ class CashModule extends BaseModule {
 				amount: count_tca
 			}
 		)
+	}
+
+	server_answ_processing(cmd, _server_answ, values, _identifier, is_confirmed) {
+		if (is_confirmed) {
+			if (cmd === "/bal log") {
+				this.processing_bal_log(values)
+			}
+		}
 	}
 }
 

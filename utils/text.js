@@ -124,8 +124,53 @@ function date_to_text(
 	return date_text
 }
 
+function text_to_date(date_str, template) {
+  const tokens = {
+    DD:   { regex: '(\\d{2})', field: 'day' },
+    MM:   { regex: '(\\d{2})', field: 'month' },
+    YYYY: { regex: '(\\d{4})', field: 'year' },
+    HH:   { regex: '(\\d{2})', field: 'hours' },
+    mm:   { regex: '(\\d{2})', field: 'minutes' },
+    ss:   { regex: '(\\d{2})', field: 'seconds' },
+  };
+
+  // Находим токены в порядке их появления в шаблоне
+  const found = [];
+  const tokenRegex = /DD|MM|YYYY|HH|mm|ss/g;
+  let m;
+  while ((m = tokenRegex.exec(template)) !== null) {
+    found.push({ token: m[0], index: m.index });
+  }
+
+  // Заменяем токены на группы в правильном порядке
+  let regex_str = template;
+  const fields = [];
+  for (const { token } of found) {
+    const { regex, field } = tokens[token];
+    regex_str = regex_str.replace(token, regex);
+    fields.push(field);
+  }
+
+  const match = date_str.match(new RegExp(regex_str));
+  if (!match) throw new Error(`Не удалось распарсить "${date_str}" по шаблону "${template}"`);
+
+  const parsed = {};
+  fields.forEach((field, i) => {
+    parsed[field] = Number(match[i + 1]);
+  });
+
+  return new Date(
+    parsed.year     ?? 0,
+    (parsed.month ?? 1) - 1,
+    parsed.day      ?? 1,
+    parsed.hours    ?? 0,
+    parsed.minutes  ?? 0,
+    parsed.seconds  ?? 0,
+  );
+}
+
 function substitute_text(pattern, values) {
 	return pattern.replace(/\{([^}]+)\}/g, (match, key) => values[key]);
 }
 
-module.exports = { stats_split_into_pages, date_to_text, substitute_text, COLORS }
+module.exports = { stats_split_into_pages, date_to_text, text_to_date, substitute_text, COLORS }

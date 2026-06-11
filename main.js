@@ -12,6 +12,7 @@ const express = require("express");
 const {
 	reg_bal_survings,
 	reg_bal_TCA,
+	reg_bal_log,
 
 	reg_near,
 
@@ -47,7 +48,7 @@ const {
 
 } = require("./regex.js")
 
-const { stats_split_into_pages } = require("./utils/text.js")
+const { stats_split_into_pages, text_to_date } = require("./utils/text.js")
 
 const { ModuleManager, CommandManager } = require("./module_manager.js")
 const bus = require("./event_bus.js");
@@ -126,6 +127,7 @@ const queue_waiting_data = {"message": [], "cmd": []}
 const regexes = [
 	reg_bal_survings,
 	reg_bal_TCA,
+	reg_bal_log,
 
 	reg_lookup,
 
@@ -441,6 +443,7 @@ function processing_server_message(sender, message, message_json) {
 
 	const bal_TCA = message.match(reg_bal_TCA)
 	const bal_survings = message.match(reg_bal_survings)
+	const bal_log = message.match(reg_bal_log)
 
 	const is_kick = message.match(reg_kick)
 	const is_warn = message.match(reg_warn)
@@ -466,7 +469,7 @@ function processing_server_message(sender, message, message_json) {
 
 	const limbo = message.match(reg_limbo)
 
-	if (message !== "" && !seen && !tca_accept && !bal_survings && !bal_TCA && !message.includes("Лог последних операций с баллами TCA:") && !message.match(reg_log_line)) {
+	if (message !== "" && !seen && !tca_accept && !bal_survings && !bal_log && !bal_TCA && !message.includes("Лог последних операций с баллами TCA:") && !message.match(reg_log_line)) {
 		bus.emit(
 			"server_message",
 			{
@@ -619,6 +622,32 @@ function processing_server_message(sender, message, message_json) {
 				amount: bal_survings_raw
 			}
 		)
+	} else if (bal_log) {
+		now_cmd = "bal log"
+		count_args = 2
+		values = []
+		const GROUPS_PER_ROW = 6
+		for (let i = 1; i < bal_log.length; i += GROUPS_PER_ROW) {
+			const [date, time, reason, nickname, direction, amount] = bal_log.slice(i, i + GROUPS_PER_ROW)
+			let sender, recipient;
+			const date_time = text_to_date(`${date} ${time}`, 'DD.MM.YYYY HH:mm:ss')
+			if (direction === "+") {
+				sender = nickname
+				recipient = bot_username
+			} else {
+				sender = bot_username
+				recipient = nickname
+			}
+			values.push({
+				sender,
+				recipient,
+				reason: reason === "Не указана" ? undefined : reason,
+				amount: Number(amount.replace(/,/g, "")),
+				date_time
+			})
+
+		}
+
 	} else if (is_kick || is_warn || is_ban || is_mute) {
 		let violator, guardian, reason, period;
 		if (is_kick) {
