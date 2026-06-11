@@ -87,7 +87,7 @@ class CashModule extends BaseModule {
 					cmd: "/bal log"
 				}
 			})
-    	}, 10000)
+    	}, 15000)
     }
 
     add_pay_to_bd(payer, payee, amount, currency, date_time, reason) {
@@ -129,7 +129,12 @@ class CashModule extends BaseModule {
 				reason = undefined;
 			}
 			
-			this.wait_confirm_surv.push({"payer": nick, "amount": amount, "reason": reason})
+			this.wait_confirm_surv.push({
+				payer: nick,
+				amount: amount,
+				reason: reason,
+				date_time: new Date()
+			})
 			
 		} catch (error) {
 			this.actions.push({
@@ -180,15 +185,28 @@ class CashModule extends BaseModule {
 			this.wait_confirm_surv.forEach(info => {
 				const amount = info.amount;
 				sum_transactions += amount;
-				confirmed_survings.push({"payer": info.payer, "amount": Math.floor(amount), "reason": info.reason})
+				confirmed_survings.push({
+					payer: info.payer,
+					amount: Math.floor(amount),
+					reason: info.reason,
+					date_time: info.date_time
+				})
 
 			})
 			this.wait_confirm_surv = []
 			const expected_balance = sum_transactions + last_balance;
 			if (Math.round(expected_balance) === Math.round(balance_now) ) {
 				confirmed_survings.forEach(pay => {
-					this.actions.push({"type": "new_survings", "content": pay})
-					this.add_pay_to_bd(pay.payer, bot_username, pay.amount, "survings", date_to_text(new Date()), pay.reason)
+					const check_money = this.check_repeat_survings(
+						pay.payer,
+						pay.amount,
+						pay.reason,
+						pay.date_time
+					)
+					if (check_money["is_ok"]) {
+						this.actions.push({"type": "new_survings", "content": pay})
+						this.add_pay_to_bd(pay.payer, bot_username, pay.amount, "survings", date_to_text(new Date()), pay.reason)
+					}
 				})
 				this.actions = this.actions.concat(confirmed_survings)
 
