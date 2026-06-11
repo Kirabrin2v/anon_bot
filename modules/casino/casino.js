@@ -23,12 +23,14 @@ const STRUCTURE = {
 
 const config = new ConfigParser();
 config.read(path.join(__dirname, "config.ini"))
+const global_config = new ConfigParser()
+global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
 const memory = new ConfigParser();
 const path_memory = path.join(__dirname, "permanent_memory.ini")
 memory.read(path_memory)
 
-const price_TCA = Number(config.get("TESLA", "price_TCA"))
+const price_TCA = Number(global_config.get("TESLA", "price_TCA"))
 const max_bets = JSON.parse(config.get("VARIABLES", "max_bets"))
 const min_bet = Number(config.get("VARIABLES", "min_bet"))
 
@@ -192,7 +194,7 @@ class CasinoModule extends BaseModule {
 		}
 	}
 
-	payment_processing(nick, amount, currency, reason, price_TCA) {
+	payment_processing(nick, amount, currency, reason) {
 		try {
 			if (currency === "TCA") {
 				amount = amount * price_TCA; 

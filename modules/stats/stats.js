@@ -81,7 +81,7 @@ const STRUCTURE = {
 const stats_table_names = ["nickname", "rank", "messages", "cmd", "donate", "casino", "name", "warns"]
 
 const global_config = new ConfigParser();
-global_config.read(path.join(__dirname, "config.ini"))
+global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 const price_TCA = Number(global_config.get("TESLA", "price_TCA"))
 
 const ranks = {1: "Подопытный", 2: "Стажёр", 3: "Исследователь", 4: "Учёный", 5: "Безумный учёный", 6: "Химер Роковой"}
