@@ -176,6 +176,7 @@ class CashModule extends BaseModule {
 
 	processing_wait_survings(last_balance, balance_now, date_now) {
 		try {
+			return {is_ok: false, message_error: "Временно отключено из-за дублирования платежей"}
 			if (this.wait_confirm_surv.length === 0) {
 				return {"is_ok": false, "message_error": "Переводов, ожидающих подтверждения, нет"}
 				
