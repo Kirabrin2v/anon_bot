@@ -185,6 +185,7 @@ class CashModule extends BaseModule {
 			this.wait_confirm_surv.forEach(info => {
 				const amount = info.amount;
 				sum_transactions += amount;
+				console.log("Платёж подтверждён:", info.payer, info.amount, info.date_time)
 				confirmed_survings.push({
 					payer: info.payer,
 					amount: Math.floor(amount),

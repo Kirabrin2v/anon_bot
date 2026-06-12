@@ -825,9 +825,6 @@ function wait_data_processing(type, content) {
 }
 
 function payment_processing(nick, cash, currency, reason) {
-	console.log(`Вернуть ${nick} ${cash} ${currency}`)
-	answs.push({message: "Бот временно не принимает платежи! *Тех Работы*. Все платежи будут возвращены!"})
-	return;
 	console.log(`Перевод ${cash} ${currency} от ${nick} с причиной ${reason}`)
 	if (modules.call_module("casino").payment_processing(nick, cash, currency, reason)["used"]) {
 		
