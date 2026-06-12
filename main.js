@@ -56,6 +56,7 @@ const bus = require("./event_bus.js");
 const { init, get_bot } = require('./init')
 
 // Константы
+const MC_TZ_OFFSET_MINUTES = Number(config.get("TESLA", "MC_TZ_OFFSET_MINUTES"))
 const bot_username = config.get("VARIABLES", "active_nick");
 globalThis.bot_username = bot_username
 
@@ -630,7 +631,17 @@ function processing_server_message(sender, message, message_json) {
 		for (let i = 1; i < bal_log.length; i += GROUPS_PER_ROW) {
 			const [date, time, reason, nickname, direction, amount] = bal_log.slice(i, i + GROUPS_PER_ROW)
 			let sender, recipient;
-			const date_time = text_to_date(`${date} ${time}`, 'DD.MM.YYYY HH:mm:ss')
+			// Парсим как "наивную" дату, цифры которой относятся к TZ Minecraft-сервера
+			const naive = text_to_date(`${date} ${time}`, 'DD.MM.YYYY HH:mm:ss')
+			// Конвертируем в корректный момент времени (UTC), вычитая смещение MC-сервера
+			const date_time = new Date(Date.UTC(
+				naive.getFullYear(),
+				naive.getMonth(),
+				naive.getDate(),
+				naive.getHours(),
+				naive.getMinutes(),
+				naive.getSeconds()
+			) - MC_TZ_OFFSET_MINUTES * 60000)
 			if (direction === "+") {
 				sender = nickname
 				recipient = bot_username
@@ -645,7 +656,6 @@ function processing_server_message(sender, message, message_json) {
 				amount: Number(amount.replace(/,/g, "")),
 				date_time
 			})
-
 		}
 
 	} else if (is_kick || is_warn || is_ban || is_mute) {
@@ -825,9 +835,6 @@ function wait_data_processing(type, content) {
 }
 
 function payment_processing(nick, cash, currency, reason) {
-	console.log(`Вернуть ${nick} ${cash} ${currency}`)
-	answs.push({message: "Бот временно не принимает платежи! *Тех Работы*. Все платежи будут возвращены!"})
-	return;
 	console.log(`Перевод ${cash} ${currency} от ${nick} с причиной ${reason}`)
 	if (modules.call_module("casino").payment_processing(nick, cash, currency, reason)["used"]) {
 		
