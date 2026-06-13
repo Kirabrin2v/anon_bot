@@ -246,6 +246,7 @@ class CashModule extends BaseModule {
 			if (this.last_payers_TCA.length > 15) {
 				return {"is_ok": true}
 			} else {
+				this.add_pay_to_bd(payer, bot_username, amount, "TCA", date_to_text(date))
 				console.log("Недостаточно переводов")
 				return {"is_ok": false, "message_error": "В базе данных недостаточно данных о переводах"}
 			}
@@ -271,6 +272,7 @@ class CashModule extends BaseModule {
 			if (this.last_payers_survings.length > 10) {
 				return {"is_ok": true}
 			} else {
+				this.add_pay_to_bd(payer, bot_username, amount, "survings", date_to_text(date), reason)
 				console.log("Недостаточно переводов сурвингов")
 				return {"is_ok": false, "message_error": "В базе данных недостаточно данных о переводах"}
 			}
