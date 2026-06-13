@@ -6,6 +6,7 @@ const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
 const MODULE_NAME = "twink"
 const HELP = "Позволяет пользоваться ботом с твинков"
+const INTERVAL_CHECK_ACTIONS = 1000
 const STRUCTURE = {
     add: {
         nick: {
