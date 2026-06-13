@@ -805,7 +805,7 @@ function wait_data_processing(type, content) {
 			continue;
 		}
 		if (type === "message") {
-			if (data.content.sender === content.sender) {
+			if (data.content.sender.toLowerCase() === content.sender.toLowerCase()) {
 				const in_private_message = data.content.private_message
 				const pattern = data.content.pattern
 				const message = content.message
