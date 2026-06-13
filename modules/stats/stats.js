@@ -281,17 +281,10 @@ class StatsModule extends BaseModule {
 
 	get_main_account(nickname) {
 		if (!this.players_stats[nickname]) {
-			let marker_find = false;
-
 			for (const nick in this.players_stats) {
 				if (this.players_stats[nick] && this.players_stats[nick]["twinks"].includes(nickname)) {
-					marker_find = true;
-					break;
+					return nick
 				}
-			}
-
-			if (marker_find) {
-				return nickname;
 			}
 		} else {
 			return nickname;
