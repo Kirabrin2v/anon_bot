@@ -138,6 +138,7 @@ class GptModule extends BaseModule {
 
   initialize() {
     bus.on("player_message", async (obj) => {
+      return;
       try {
         const now = Date.now()
 
