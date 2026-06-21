@@ -1107,7 +1107,7 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 	    }, 30 * 60 * 1000)
 
 		// const raw_message = message;
-		console.log(raw_message)
+		// console.log(raw_message)
 		const { type_chat, sender, recipient } = parsed
 		let { message } = parsed
 
