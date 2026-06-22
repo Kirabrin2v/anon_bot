@@ -28,8 +28,8 @@ class EventsModule extends BaseModule {
     _server_answ_processing(cmd, _server_answ, values, _identifier, is_confirmed) {
         if (cmd.split(" ")[0] === "/seen") {
             if (is_confirmed) {
-                const location_bot = values.location_bot
-                if (location_bot.includes("Классическое выживание")) {
+                const bot_location = this.ModuleManager.call_module("move").get_bot_location()
+                if (bot_location.includes("Классическое выживание")) {
                     const nick = values.nick
                     const status = values.status
                     const duration = values.duration

@@ -30,8 +30,8 @@ class BaseModule {
         this.ModuleManager = ModuleManager;
     }
 
-    set_command_engine(CommandEngine) {
-        this.CommandEngine = CommandEngine;
+    set_command_manager(CommandManager) {
+        this.CommandManager = CommandManager;
     }
 
     diagnostic_eval(eval_expression) {

@@ -308,6 +308,14 @@ class TelegramModule extends BaseModule {
 					})
 				}
 			}
+		} else if (this.player_settings[tg_id] && message.toLowerCase().includes("cmd")) {
+			const server_nick = this.player_settings[tg_id]["server_nick"]
+			if (server_nick) {
+				console.log("Начало обработки")
+				this.ModuleManager.call_module("command_handler").handle(server_nick, message)
+			} else {
+				answ = "У Вас не задан серверный ник. Пожалуйста, обратитесь к @Kirabriin, чтобы это исправить."
+			}
 		} else if (this.player_settings[tg_id]) {
 			bus.emit(
 				"telegram_authorized_message",

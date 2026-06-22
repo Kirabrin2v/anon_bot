@@ -18,7 +18,7 @@ class LoggingModule extends BaseModule {
 		bus.on("player_message", (obj) => {
 			this.add_msg_to_players_logs(
 				obj.date_time,
-				obj.location_bot,
+				obj.bot_location,
 				obj.type_chat,
 				obj.sender,
 				obj.message,
@@ -69,7 +69,7 @@ class LoggingModule extends BaseModule {
 		}
 	}
 
-	add_msg_to_players_logs(date_time, location_bot, type_chat, nickname, message, full_message, message_json) {
+	add_msg_to_players_logs(date_time, bot_location, type_chat, nickname, message, full_message, message_json) {
 		try {
 			date_time = date_to_text(date_time)
 
@@ -78,7 +78,7 @@ class LoggingModule extends BaseModule {
 			VALUES (@date_time, @location, @type_chat, @nickname, @message, @full_message)`);
 			const info = insertMessage.run({
 				date_time: date_time,
-				location: location_bot,
+				location: bot_location,
 				nickname: nickname,
 				type_chat: type_chat,
 				message: message,

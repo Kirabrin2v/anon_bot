@@ -54,7 +54,7 @@ class ModuleManager {
 				mod = new Module()
 				//console.log("реквайр", mod)
 				mod.set_module_manager(this)
-				mod.set_command_engine(CommandEngine)
+				mod.set_command_manager(CommandManager)
 				if (mod.initialize) {
 					mod.initialize()
 				}

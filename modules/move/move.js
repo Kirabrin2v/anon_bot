@@ -3,7 +3,7 @@ const path = require("path");
 const { get_bot } = require(path.join(BASE_DIR, 'init.js'))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
-const MODULE_NAME = "ручуп"
+const MODULE_NAME = "move"
 const HELP = "Управление ботом"
 const INTERVAL_CHECK_ACTIONS = 0
 const STRUCTURE = {
@@ -19,22 +19,58 @@ const STRUCTURE = {
 
 const bot = get_bot()
 
-const cmd_access = {"ручуп": [
+const cmd_access = {move: [
 	{},
 	{},
 	{},
 	{}, 
 	{"": true,
-	"ручуп": "end"}
+	move: "end"}
 ]}
 
 class MoveModule extends BaseModule {
-	constructor () {
+	constructor() {
         super(MODULE_NAME, HELP, STRUCTURE, INTERVAL_CHECK_ACTIONS)
 
 		this.tracker_player = {}
 		this.control_player = {}
+
+		this.bot_location;
     }
+
+    initialize() {
+    	setInterval(() => {
+            this.check_bot_loc()
+        }, 3000)
+    }
+
+    get_bot_location() {
+    	return this.bot_location;
+    }
+
+    check_bot_loc() {
+		const tablist = bot.tablist.header.text.split("\n")
+		if (tablist.length >= 3) {
+			const new_bot_location = tablist[2].split("» §b§l")[1].split(" §e§l«")[0];
+			if (new_bot_location !== this.bot_location) {
+				if (this.bot_location) {
+					console.log(`Бот переместился с ${this.bot_location} на ${new_bot_location}`)
+					if (!this.bot_location.includes("Классическое выживание") && new_bot_location.includes("Классическое выживание")) {
+						// if (!timer_check_surv || timer_check_surv._destroyed) {
+						// 	timer_check_surv = setTimeout(() => {bot.chat("/bal")}, interval_check_surv)
+						// }
+					}
+					this.bot_location = new_bot_location;
+
+				} else {
+					this.bot_location = new_bot_location;
+					console.log(`Бот появился на локации ${new_bot_location}`)
+				}
+			}
+		} else {
+			this.bot_location = tablist.join(" ");
+		}
+	}
 
     control_head(delta_yaw, delta_pitch) {
 		let [yaw, pitch] = [bot.entity.yaw, bot.entity.pitch]

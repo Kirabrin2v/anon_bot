@@ -48,7 +48,7 @@ const {
 
 } = require("./regex.js")
 
-const { stats_split_into_pages, text_to_date } = require("./utils/text.js")
+const { text_to_date } = require("./utils/text.js")
 
 const { ModuleManager, CommandManager } = require("./module_manager.js")
 const bus = require("./event_bus.js");
@@ -168,7 +168,7 @@ let bot_bal_survings = 0;
 const answs = [];
 let cmds = [];
 
-let location_bot;
+let bot_location;
 
 let time_last_server_message = 0
 let combine_server_message = [] // Объединение одного логического сообщения, разбитого на разные строки
@@ -226,39 +226,7 @@ function seen_parse_time(input) {
   console.log('Неверный формат времени: ' + input)
 }
 
-function parseArgs(inputString) {
-  const regex = /"([^"]*)"|'([^']*)'|(\S+)/g;
-  const args = [];
-  let match;
-  while ((match = regex.exec(inputString)) !== null) {
-    args.push(match[1] || match[2] || match[3]);
-  }
-  return args;
-}
 
-function check_loc_bot() {
-	const tablist = bot.tablist.header.text.split("\n")
-	if (tablist.length >= 3) {
-		const new_location_bot = tablist[2].split("» §b§l")[1].split(" §e§l«")[0];
-		if (new_location_bot !== location_bot) {
-			if (location_bot) {
-				console.log(`Бот переместился с ${location_bot} на ${new_location_bot}`)
-				if (!location_bot.includes("Классическое выживание") && new_location_bot.includes("Классическое выживание")) {
-					// if (!timer_check_surv || timer_check_surv._destroyed) {
-					// 	timer_check_surv = setTimeout(() => {bot.chat("/bal")}, interval_check_surv)
-					// }
-				}
-				location_bot = new_location_bot;
-
-			} else {
-				location_bot = new_location_bot;
-				console.log(`Бот появился на локации ${new_location_bot}`)
-			}
-		}
-	} else {
-		location_bot = tablist.join(" ");
-	}
-}
 
 function merge_with_inherited(target, source) { // Объединение основного объекта с побочным. Если свойство существует, приоритет у свойства основного.
     let obj = source;
@@ -276,37 +244,6 @@ function merge_with_inherited(target, source) { // Объединение осн
 }
 
 
-function check_access(cmd, args, lvl, module_cmd_access) {
-	if (lvl === undefined || lvl < 0) {return false;}
-
-	let access_object = module_cmd_access[cmd]
-	if (access_object) {access_object = access_object[lvl]}
-
-	if (!access_object) {return true;}
-
-	const source_objects = module_cmd_access[cmd].slice(0, lvl)
-	source_objects.reverse()
-	for (let i=0; i < source_objects.length; i++) {
-		access_object = merge_with_inherited(access_object, source_objects[i])
-	}
-	
-	if (args.length === 0 && !access_object[""]) {return false;}
-
-	let index_args = 0
-
-	while (typeof access_object !== "string") {
-		if (args.length === index_args) {return true;}
-		access_object = access_object[args[index_args]]
-		index_args++;
-		if (!access_object) {return false;}
-
-	}
-	if (access_object === "access_before" && args.length === index_args) {return true;}
-	if (access_object === "end") {return true;}
-	return false;
-	
-}
-
 function random_number(min_num, max_num) {
 	return Math.floor(Math.random() * (max_num - min_num + 1)) + min_num;
 }
@@ -315,31 +252,6 @@ function count(array, value) {
     return array.reduce((accumulator, currentValue) => {
         return currentValue === value ? accumulator + 1 : accumulator;
     }, 0);
-}
-
-function generate_help_message(num_page) {
-	const help_list = Object.entries(modules.modules)
-		.filter((elem) => CommandManager.modules_structure[elem[0]] && elem[1].cmd_processing)
-		.map((elem) => [elem[0], elem[1].help])
-	const info =  stats_split_into_pages(help_list, 3, num_page, "Информация о командах: ")
-	if (info) {
-		return info["answ"]
-	} else {
-		return "Ошибка"
-	}
-}
-
-function check_allow_cmd(cmd, args) {
-	if (args) {
-		cmd = `${cmd} ${args.join(" ")}`
-	}
-
-	for (let i=0; i < masters_cmds.length; i++) {
-		if (cmd.startsWith(masters_cmds[i])) {
-			return true;
-		}
-	}
-	return false
 }
 
 async function actions_processing(actions, module_name, update_action) {
@@ -505,7 +417,7 @@ function processing_server_message(sender, message, message_json) {
 		const server = seen[4]
 		const position = {x: seen[5], y: seen[6], z: seen[7]}
 		
-		values = {nick: nick, status: status, duration: duration, server: server, position: position, location_bot: location_bot}
+		values = {nick: nick, status: status, duration: duration, server: server, position: position, bot_location: bot_location}
 
 	} else if (near) {
 		now_cmd = "near"
@@ -878,7 +790,8 @@ function send_cmds() {
 		} else {
 			cmd = cmd_object
 		}
-		if (!location_bot && !masters_cmds.includes(cmd)) {
+		const bot_location = modules.call_module("move").get_bot_location()
+		if (!bot_location && !masters_cmds.includes(cmd)) {
 			return;
 		}
 
@@ -904,7 +817,8 @@ function send_cmds() {
 
 
 function send_answs() {
-	if (!location_bot) {return;}
+	const bot_location = modules.call_module("move").get_bot_location()
+	if (!bot_location) {return;}
 	if (answs.length > 0) {
 		const answ = answs.shift()
 		let message;
@@ -1008,7 +922,8 @@ function send_answs() {
 
 bot.on('windowOpen', function wnd (window, _info) {
 	const title = window.title
-	if (title === '"§4§l§nВведите Ваш пин-пароль"' && !pin_enter && !location_bot) {
+	const bot_location = modules.call_module("move").get_bot_location()
+	if (title === '"§4§l§nВведите Ваш пин-пароль"' && !pin_enter && !bot_location) {
 		bot.chat(bot_pin)
 		pin_enter = true;
 		console.log("Пин-код введён")
@@ -1112,12 +1027,13 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 	    }, 30 * 60 * 1000)
 
 		// const raw_message = message;
-		// console.log(raw_message)
+		console.log(raw_message, parsed)
 		const { type_chat, sender, recipient } = parsed
 		let { message } = parsed
 
+		const bot_location = modules.call_module("move").get_bot_location()
 		bus.emit("player_message", {
-			location_bot,
+			bot_location,
 			type_chat,
 			sender,
 			recipient,
@@ -1136,147 +1052,13 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 
 		//console.log(`[${type_chat}] ${sender}: ${message}`)
  		console.log(`[${type_chat}]` + "\033[32m " + sender + ":\033[33m " + message + "\033[0m")
- 		if (sender === bot_username) {return;}
-		let rank_sender = modules.call_module("stats").get_stats(sender, "rank")
-		if (seniors.includes(sender)) {
-			rank_sender = 6;
-		}
-		if (!rank_sender) {
-			rank_sender = 0;
-			
-		}
-
-
-		const flags = []
-		message = message.replace(/[c|C][m|M][d|D]/, "cmd")
-		let cmd;
-		let args = []
-		let chat_send;
-		let send_in_private_message;
-		let cmd_parameters;
+ 		// if (sender === bot_username) {return;}
+		
 
 		if (message.toLowerCase().includes("cmd ")) {
-			const flags_match = message.split("cmd ")[0].matchAll(/-([^ -]*)(?: |$)/g)
-			const count_flags = 0;
-			for (let flag of flags_match) {
-				flag = flag[1].toLowerCase()
-				if (flag === "cc") {
-					chat_send = "/cc "
-
-				} else if (flag === "pc") {
-					chat_send = "/pc "
-
-				} else if (flag === "p") {
-					send_in_private_message = true;
-
-				} else if (flag === "l") {
-					chat_send = ""
-
-				} else if (flag === "g" && (seniors.includes(sender) || rank_sender >= 6)) {
-
-					chat_send = "!"
-				} else {
-					flags.push(flag)
-				}
-				if (count_flags === 5) {
-					break;
-				}
-			}
-
-			console.log("Флаги:", flags, chat_send, send_in_private_message)
-			message = message.split("cmd ")[1]
-			message = message.split(" ")
-			cmd = message[0].toLowerCase()
-			args = parseArgs(message.slice(1).join(" "))
-
-			cmd_parameters = {
-				cmd,
-				rank_sender,
-				seniors,
-				location_bot
-			}
+			modules.call_module("command_handler").handle(sender, message)
 		}
-		
-		if (cmd && (rank_sender !== 0 || cmd === "bank")) {
-			console.log(`cmd ${cmd} args ${args}`)
-			if (cmd === "help") {
-				let answ;
-				if (args[0] === "help") {
-					answ = "Возможные аргументы: [номер страницы]"
-				}
-				else {
-					let num_page;
-					if (args.length > 0) {
-						num_page = Number(args[0])
-					}
-					if (!num_page) {
-						num_page = 1;
-					}
-					answ = generate_help_message(num_page)
-				}
 
-				answs.push({"recipient": sender, "message": answ})
-
-			} else if (cmd === "test") {
-				const brin = bot.players["Herobrin2v"].entity
-				setInterval(() => console.log(brin.yaw, brin.pitch), 1000)
-
-			} else if (CommandManager.modules_structure[cmd]) {
-				const module_object = modules.call_module(cmd, sender)
-				const valid_command = CommandManager.validate_command(module_object.module_name, args)
-				if (valid_command["is_ok"]) {
-
-					if (module_object.cmd_access && check_access(cmd, args, rank_sender, module_object.cmd_access) ||
-						!module_object.cmd_access && rank_sender > 0) {
-
-						const cooldown_info = modules.call_module("cooldown").check_cooldown(sender, cmd, args)
-						if (!cooldown_info || seniors.includes(sender) || cooldown_info["is_ok"]) {
-						  const actions = module_object.cmd_processing(sender, valid_command.args, cmd_parameters, valid_command.unused_args);
-
-						  const update_action = {
-						    type: "answ",
-						    content: {
-						      chat_send: chat_send,
-						      send_in_private_message: send_in_private_message
-						    }
-						  };
-
-						  Promise.resolve(actions)
-						    .then(resolvedActions => {
-						      actions_processing(resolvedActions, undefined, update_action);
-						    })
-						    .catch(console.error);
-
-						} else {
-						  actions_processing(cooldown_info);
-						}
-
-					} else if (rank_sender > 0) {
-						answs.push({"recipient": sender, "message": "У Вас недостаточно прав"})
-					}
-				} else {
-					answs.push({"recipient": sender, "message": valid_command["message_error"]})
-				}
-				
-			
-			} else if (check_allow_cmd(cmd, args) && masters.includes(sender)) {
-				bot.chat(`${cmd} ${args.join(" ")}`)
-
-			} else if (seniors.includes(sender)) {
-				if (cmd === "js") {
-					try {
-						eval(args.join(" "))
-					} catch (error) {
-						console.log(error)
-					}
-				} else {
-					bot.chat(`${cmd} ${args.join(" ")}`.trim())
-					
-				}
-			} else {
-				answs.push({"recipient": sender, "message": "Команда не найдена"})
-			}
-		}
 	} else {
 		const delta_time = new Date().getTime() - time_last_server_message
 		time_last_server_message = new Date().getTime()
@@ -1346,7 +1128,8 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 
 
 bot.on('playerJoined', (player) => {
-	if (!location_bot || !location_bot.includes("Классическое выживание")) {return;}
+	const bot_location = modules.call_module("move").get_bot_location()
+	if (!bot_location || !bot_location.includes("Классическое выживание")) {return;}
 	
 	bus.emit("player_joined_raw", {
 		nickname: player.username,
@@ -1357,7 +1140,7 @@ bot.on('playerJoined', (player) => {
 
 bus.on("new_actions", (event) => {
 	// console.log("New actions", event.actions)
-	actions_processing(event.actions)
+	actions_processing(event.actions, event.module_name, event.update_action)
 })
 
 bot.on("update_bal_survings", (obj) => {
@@ -1366,18 +1149,18 @@ bot.on("update_bal_survings", (obj) => {
 
 
 setTimeout(() => {
-
- 	if (!location_bot || !location_bot.includes("Локация Край")) {bot.chat("/swarp end")}
+	const bot_location = modules.call_module("move").get_bot_location()
+ 	if (!bot_location || !bot_location.includes("Локация Край")) {bot.chat("/swarp end")}
  }, 5000)
 
-setInterval(check_loc_bot, 3000)
 
 setInterval(send_answs, 2000)
 setInterval(send_cmds, interval_send_cmds)
 
 setInterval(() => cmds.push("/tca log"), 10000)
 setInterval(() =>  {
-	if (location_bot && location_bot.includes("Классическое выживание")) {
+	const bot_location = modules.call_module("move").get_bot_location()
+	if (bot_location && bot_location.includes("Классическое выживание")) {
 		bot.chat("/bal")
 	}
 }, interval_check_surv)
