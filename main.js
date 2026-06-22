@@ -432,6 +432,7 @@ function processing_server_message(sender, message, message_json) {
 	let wait_cmd;
 	let now_cmd;
 	let values = {}
+	let exclude = []
 	let count_args = 1;
 
 	if (queue_waiting_data["cmd"].length !== 0) {
@@ -610,6 +611,7 @@ function processing_server_message(sender, message, message_json) {
 
 	} else if (bal_survings) {
 		now_cmd = "bal"
+		exclude = ["bal log"]
 
 		// if (!timer_check_surv || timer_check_surv._destroyed) {
 		// 	timer_check_surv = setTimeout(() => {bot.chat("/bal")}, interval_check_surv)
@@ -788,7 +790,10 @@ function processing_server_message(sender, message, message_json) {
 	}
 	if (wait_cmd) {
 		let confirmed = false;
-		if (now_cmd === wait_cmd.trim().split(" ").slice(0, count_args).join(" ").replace("/", "")) {
+		if (
+			now_cmd === wait_cmd.trim().split(" ").slice(0, count_args).join(" ").replace("/", "")
+			&& !exclude.includes(wait_cmd.replace("/", ""))
+		) {
 			confirmed = true;
 		}
 		wait_data_processing("cmd", {server_answ: message, values: values, is_confirmed: confirmed})

@@ -12,7 +12,7 @@ class ChatSchema {
       standard: new RegExp(
         String.raw`^\[([^\]]+)\] ` +           // тип чата
         String.raw`(?:\[[^\]]*\] )?` +          // [?] — один опциональный тег
-        String.raw`(?:\[([^\]]+)\] )?` +        // клан (опционально)
+        String.raw`(?:\[(?:(?!\] ).)*\] )?` +        // клан (опционально)
         String.raw`(?:\[([^\]]+)\] )?` +        // звание (опционально)
         String.raw`${nickname_reg}: ` +
         String.raw`${message_reg}`
