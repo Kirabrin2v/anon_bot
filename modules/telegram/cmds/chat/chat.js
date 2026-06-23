@@ -15,7 +15,7 @@ const PARTY_CMDS = ["pc", "зс"]
 const CLAN_CMDS = ["cc", "сс"]
 const PRIVATE_MESSAGE_CMDS = ["m", "ь"]
 const PRIVATE_FAST_MESSAGE_CMDS = ["r", "к"]
-const FRIEND_CHAT_CMDS_1 = ["frien1", "fr", "акшутв", "ак"]
+const FRIEND_CHAT_CMDS_1 = ["friend", "fr", "акшутв", "ак"]
 const FRIEND_CHAT_CMDS_2 = ["notify", "n", "тщешан", "т"]
 
 const CMD_NAME = "chat"
