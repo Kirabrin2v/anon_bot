@@ -1051,7 +1051,7 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 		})
 
 		//console.log(`[${type_chat}] ${sender}: ${message}`)
- 		console.log(`[${type_chat}]` + "\033[32m " + sender + ":\033[33m " + message + "\033[0m")
+ 		// console.log(`[${type_chat}]` + "\033[32m " + sender + ":\033[33m " + message + "\033[0m")
  		// if (sender === bot_username) {return;}
 		
 

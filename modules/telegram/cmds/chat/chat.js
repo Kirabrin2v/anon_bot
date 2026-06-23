@@ -15,6 +15,8 @@ const PARTY_CMDS = ["pc", "зс"]
 const CLAN_CMDS = ["cc", "сс"]
 const PRIVATE_MESSAGE_CMDS = ["m", "ь"]
 const PRIVATE_FAST_MESSAGE_CMDS = ["r", "к"]
+const FRIEND_CHAT_CMDS_1 = ["frien1", "fr", "акшутв", "ак"]
+const FRIEND_CHAT_CMDS_2 = ["notify", "n", "тщешан", "т"]
 
 const CMD_NAME = "chat"
 const STRUCTURE = {
@@ -50,6 +52,19 @@ const STRUCTURE = {
         },
         _description: "Отправить сообщение в пати-чат",
         _aliases: PARTY_CMDS
+    },
+
+    [FRIEND_CHAT_CMDS_1[0]]: {
+        [FRIEND_CHAT_CMDS_2[0]]: {
+            text: {
+                _type: "text",
+                _description: "Сообщение, которое нужно отправить"
+            },
+            _description: "Отправить сообщение в чат друзей",
+            _aliases: FRIEND_CHAT_CMDS_2
+        },
+        _description: "Команды друзей",
+        _aliases: FRIEND_CHAT_CMDS_1
     },
 
     [CLAN_CMDS[0]]: {
@@ -240,11 +255,17 @@ class ChatCmd extends BaseCmd {
         }
 
         if (!type_chat) {
+            console.log(cmd, message.split(" ")[0])
             if (cmd) {
                 if (CLAN_CMDS.includes(cmd)) {
                     type_chat = "Клан-чат"
                 } else if (PARTY_CMDS.includes(cmd)) {
                     type_chat = "Пати-чат"
+                } else if (
+                    FRIEND_CHAT_CMDS_1.includes(cmd)
+                    && FRIEND_CHAT_CMDS_2.includes(message.split(" ")[0])
+                ) {
+                    type_chat = "Друзья"
                 } else if (PRIVATE_MESSAGE_CMDS.includes(cmd)) {
                     type_chat = "Приват"
                 } else if (PRIVATE_FAST_MESSAGE_CMDS.includes(cmd)) {
@@ -272,6 +293,10 @@ class ChatCmd extends BaseCmd {
                 server_cmd = "/cc"
             } else if (type_chat === "Пати-чат") {
                 server_cmd = "/pc"
+            } else if (type_chat === "Друзья") {
+                server_cmd = "/fr n"
+                const message_parts = message.split(" ")
+                message = message_parts.slice(1).join(" ")
             } else if (type_chat === "Приват") {
                 if (!recipient) {
                     const message_parts = message.split(" ")

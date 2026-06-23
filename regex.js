@@ -20,34 +20,32 @@ class ChatSchema {
     }
 
     this.CLAN_CHATS = ["Лк", "Гл"]
-    this.KNOWN_CHATS = ["Пати-чат", "Лк", "Гл"]
+    this.KNOWN_CHATS = ["Пати-чат", "Лк", "Гл", "Друзья"]
   }
 
   parse(raw_message) {
     let m;
-
     m = raw_message.match(this.patterns.me_send)
-    if (m) {return { type_chat: "Приват", sender: m[1], recipient: bot_username,  message: m[2] }}
-    
+    if (m) {return { type_chat: "Приват", sender: m[1], recipient: bot_username, message: m[2] }}
 
     m = raw_message.match(this.patterns.i_send)
-    if (m) {return { type_chat: "Приват", sender: bot_username,  recipient: m[1], message: m[2] }}
-    
+    if (m) {return { type_chat: "Приват", sender: bot_username, recipient: m[1], message: m[2] }}
 
     m = raw_message.match(this.patterns.standard)
     if (m) {
-      const type_chat = this.KNOWN_CHATS.includes(m[1]) ? m[1] : "Клан-чат"
+      const raw_type  = m[1]
+      const TYPE_MAP  = { "Друзьям": "Друзья" }
+      const type_chat = TYPE_MAP[raw_type]
+                     ?? (this.KNOWN_CHATS.includes(raw_type) ? raw_type : "Клан-чат")
       const has_clan  = this.CLAN_CHATS.includes(type_chat)
-
       return {
         type_chat,
-        clan:    has_clan ? (m[2] ?? null) : null,
+        clan: has_clan ? (m[2] ?? null) : null,
         rank:    has_clan ? (m[3] ?? null) : null,
         sender:  m[4],
         message: m[5]
       }
     }
-
     return null
   }
 
