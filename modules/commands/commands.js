@@ -13,7 +13,7 @@ config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
 const seniors = JSON.parse(config.get("VARIABLES", "seniors"))
 const masters = JSON.parse(config.get("VARIABLES", "masters"))
-const masters_cmds = JSON.parse(config.get("VARIABLES", "master_cmds"))
+const master_cmds = JSON.parse(config.get("VARIABLES", "master_cmds"))
 const bot = get_bot()
 
 class CommandHandlerModule extends BaseModule {
