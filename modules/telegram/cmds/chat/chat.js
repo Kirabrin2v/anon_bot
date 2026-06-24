@@ -255,7 +255,6 @@ class ChatCmd extends BaseCmd {
         }
 
         if (!type_chat) {
-            console.log(cmd, message.split(" ")[0])
             if (cmd) {
                 if (CLAN_CMDS.includes(cmd)) {
                     type_chat = "Клан-чат"
@@ -266,6 +265,8 @@ class ChatCmd extends BaseCmd {
                     && FRIEND_CHAT_CMDS_2.includes(message.split(" ")[0])
                 ) {
                     type_chat = "Друзья"
+                    const message_parts = message.split(" ")
+                    message = message_parts.slice(1).join(" ")
                 } else if (PRIVATE_MESSAGE_CMDS.includes(cmd)) {
                     type_chat = "Приват"
                 } else if (PRIVATE_FAST_MESSAGE_CMDS.includes(cmd)) {
@@ -295,8 +296,6 @@ class ChatCmd extends BaseCmd {
                 server_cmd = "/pc"
             } else if (type_chat === "Друзья") {
                 server_cmd = "/fr n"
-                const message_parts = message.split(" ")
-                message = message_parts.slice(1).join(" ")
             } else if (type_chat === "Приват") {
                 if (!recipient) {
                     const message_parts = message.split(" ")
