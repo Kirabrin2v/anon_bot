@@ -32,8 +32,8 @@ class DonateCmd extends BaseCmd {
               // sendInvoice для Stars: currency = 'XTR', provider_token = ''
               await this.module_obj.tg.sendInvoice(
                 chatId,
-                '💙 Донат автору',
-                `Спасибо за поддержку ${amount} Stars! Это очень помогает развитию бота.`,
+                'Донат автору',
+                `Спасибо за поддержку ${amount} Stars!`,
                 `donate_${amount}_${query.from.id}`,
                 '',          // provider_token — пустой для Stars
                 'XTR',       // currency — Stars
@@ -51,14 +51,14 @@ class DonateCmd extends BaseCmd {
           console.log(`Payload: ${payment.invoice_payload}`);
 
           this.module_obj.tg.sendMessage(msg.chat.id,
-            `🎉 Огромное спасибо за ${stars} ⭐!\n` +
-            `Ты настоящий герой! 💙`
+            `Большое спасибо за ${stars} ⭐!`
           );
         });
     }
 
     _process(sender, args) {
         let answ;
+        return "В разработке"
         if (args.length === 0) {
             console.log("Зашло")
             const keyboard = {

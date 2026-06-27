@@ -233,7 +233,8 @@ class ChatCmd extends BaseCmd {
 
     chat_commands_processing(tg_id, message, cmd, msg_obj) {
         const settings = this.module_obj.player_settings[tg_id]
-        const nick = settings["nick"]
+
+        const nick = settings["show_nick"] || settings["server_nick"]
         const color = settings["nick_color"]
 
         let prefix = `[${color ? Color.paint(nick, color) : nick}] `
@@ -345,6 +346,7 @@ class ChatCmd extends BaseCmd {
     message_processing(tg_id, message, msg_obj) {
         const answ = this.chat_commands_processing(tg_id, message, undefined, msg_obj)
         this.module_obj.send_message_tg(tg_id, answ)
+
     }
 
     format_server_message(date_time, fields) {

@@ -1,11 +1,19 @@
+const ConfigParser = require("configparser");
 const path = require("path")
 
 const BaseCmd = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
+
+const global_config = new ConfigParser();
+global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
 
 const CMD_NAME = "server"
 const STRUCTURE = {
   _description: "Серверные команды",
+  account: {
+    _description: "Привязать Телеграм к Майнкрафт-аккаунту"
+  },
 
   near: {
     _description: "Список игроков, находящихся рядом"
@@ -46,10 +54,64 @@ const STRUCTURE = {
 class ServerCmd extends BaseCmd {
     constructor(module_obj) {
         super(module_obj, CMD_NAME, STRUCTURE)
+
+        this.wait_connect_minecraft = {}
+
+        bus.on("player_message", (obj) => this.connect_minecraft_to_tg(
+                obj.sender,
+                obj.message
+            )
+        )
     }
 
-    _process(sender, args) {
-        if (this.module_obj.access_cmds[sender].includes(args[0].name)) {
+    connect_minecraft_to_tg(sender, message) {
+        Object.entries(this.wait_connect_minecraft).forEach(([tg_id, confirm_message]) => {
+            if (message.toLowerCase() === confirm_message.toLowerCase()) {
+                this.module_obj.player_settings[tg_id].server_nick = sender
+                this.module_obj.actions.push({
+                    type: "answ",
+                    content: {
+                        message: "Аккаунт успешно привязан!",
+                        recipient: sender,
+                        send_in_private_message: true
+                    }
+                })
+                delete this.wait_connect_minecraft[tg_id]
+            }
+        })
+    }
+
+    _process(sender, args, _unused_args, _cmd, msg_obj) {
+        if (args[0].name === "account") {
+            if (this.module_obj.player_settings[sender].server_nick) {
+                return `У Вас уже привязан аккаунт: ${this.module_obj.player_settings[sender].server_nick}. Если Вы привязали не тот аккаунт, обратитесь к @Kirabriin для его изменения`
+            } else {
+                const bot_username = this.module_obj.escapeMarkdownV2(global_config.get("VARIABLES", "active_nick"))
+                const tg_id = msg_obj.chat.id
+                const username = this.module_obj.escapeMarkdownV2(msg_obj.chat.username)
+                const username_block = username ? `@${username}` : "юзернейм отсутствует"
+
+                const confirm_message = `(TG ID: ${msg_obj.chat.id}; Username: ${username_block}) - мой Телеграм-аккаунт, и я несу за него ответственность`
+                this.wait_connect_minecraft[tg_id] = confirm_message
+                setTimeout(() => {
+                    delete wait_connect_minecraft[tg_id]
+                }, 600000)
+
+                const answ = ( 
+                    `Отправьте мне\\(${bot_username}\\) в течение 10 минут в ЛС на сервере следующее сообщение:\n` +
+                    "```\n" +
+                    confirm_message +
+                    "```\n\n" +
+                    "Это подтвердит, что именно Вы пользуетесь аккаунтом и может быть использовано для переноса наказаний за нарушения, совершённые Вами через бота, на Ваш серверный аккаунт\n\n" +
+                    "Просьба привязывать свой основной аккаунт\\. После подтверждения изменить аккаунт *самостоятельно* не получится\\."
+                )
+                return { 
+                    message: answ,
+                    parse_mode: "MarkdownV2"
+                };
+            }
+        }
+        else if (this.module_obj.access_cmds[sender].includes(args[0].name)) {
             const flattern_args = this.CommandManager.flattenArgs(args)
 
             this.module_obj.actions.push({

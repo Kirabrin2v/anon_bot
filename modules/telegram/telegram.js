@@ -7,6 +7,7 @@ const { date_to_text } = require(path.join(BASE_DIR,  "utils", "text.js"))
 const { ModuleManager, CommandManager } = require(path.join(__dirname, "module_manager.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
+const { createUsersProxy } = require(path.join(__dirname, "manage_db.js"))
 
 
 const MODULE_NAME = "telegram"
@@ -15,12 +16,12 @@ const INTERVAL_CHECK_ACTIONS = 10
 const config = new ConfigParser();
 config.read(path.join(__dirname, "config.ini"))
 
-const player_settings_object = new ConfigParser();
-player_settings_object.read(path.join(__dirname, "player_settings.ini"))
+// const player_settings_object = new ConfigParser();
+// player_settings_object.read(path.join(__dirname, "player_settings.ini"))
 
 
 const logs_db = new sqlite(path.join(__dirname, "logs.db"));
-
+const users_db = new sqlite(path.join(__dirname, "users.db"))
 
 class TelegramModule extends BaseModule {
 	constructor () {
@@ -39,33 +40,11 @@ class TelegramModule extends BaseModule {
 		this.seniors = JSON.parse(config.get("VARIABLES", "seniors"))
 		this.masters = JSON.parse(config.get("VARIABLES", "masters"))
 
-		this.access_lvls = JSON.parse(config.get("VARIABLES", "access_lvls"))
-		this.seniors.forEach(tg_chat_id => {
-			Object.keys(this.access_lvls).forEach(cmd_name => {
-					this.access_lvls[cmd_name].at(-1).push(tg_chat_id) // У seniors высший уровень доступа ко всем командам
-				})
-		})
+		this.player_settings = createUsersProxy(users_db)
 
-		this.player_settings = {} 
-		// Инициализация типов данных
-		player_settings_object.sections().forEach(tg_id => {
-			this.player_settings[tg_id] = {}
-			player_settings_object.keys(tg_id).forEach(parameter => {
-				if (["chat_on", "punishments_on", "whitelist_on", "blacklist_on", "filter_on", "nick_notice_on"].includes(parameter)) {
-					this.player_settings[tg_id][parameter] = player_settings_object.get(tg_id, parameter) === "true" // boolean
-
-				} else if (["whitelist_nicks", "blacklist_nicks", "allowed_chats", "notify_aliases", "nick_notice_blacklist"].includes(parameter)) {
-					this.player_settings[tg_id][parameter] = JSON.parse(player_settings_object.get(tg_id, parameter)) // list
-
-				} else {
-					this.player_settings[tg_id][parameter] = player_settings_object.get(tg_id, parameter) // string
-				}
-
-			})
-		})
 		Object.keys(this.player_settings).forEach(tg_id => {
 			if (!this.player_settings[tg_id]["notify_aliases"]) {
-				this.player_settings[tg_id]["notify_aliases"] = [this.player_settings[tg_id]["nick"]]
+				this.player_settings[tg_id]["notify_aliases"] = [this.player_settings[tg_id]["show_nick"]]
 			}
 		})
 
@@ -74,17 +53,19 @@ class TelegramModule extends BaseModule {
 			this.access_cmds[tg_id] = JSON.parse(config.get("VARIABLES", "base_server_cmds"))
 		}
 
+		this.access_lvls = this.generateAccessLvls(this.player_settings) // JSON.parse(config.get("VARIABLES", "access_lvls"))
+		this.seniors.forEach(tg_chat_id => {
+			Object.keys(this.access_lvls).forEach(cmd_name => {
+					this.access_lvls[cmd_name].at(-1).push(tg_chat_id) // У seniors высший уровень доступа ко всем командам
+				})
+		})
+
 		this.tg = new TelegramBot(config.get("VARIABLES", "tg_key"), {
 		  polling: {
 		    interval: 300,
 		    autoStart: true
 		  }
 		});
-		this.tg.on("callback_query", (query) => {
-		    console.log("🔥 RAW:", query.data);
-		});
-
-		setInterval(() => this.update_player_settings(), 10000)
 	}
 
 	start() {
@@ -118,6 +99,38 @@ class TelegramModule extends BaseModule {
 			this.tg_message_processing(msg.chat.id, msg.text, msg)
 			
 		})
+	}
+
+	generateAccessLvls(player_settings) {
+	    const access_lvls = {};
+
+	    for (const [tg_id, settings] of Object.entries(player_settings)) {
+	        for (const [cmd_name, lvl] of Object.entries(settings.access_lvls)) {
+
+	            // Создаём массив уровней, если команды ещё нет
+	            if (!access_lvls[cmd_name]) {
+	                access_lvls[cmd_name] = [];
+	            }
+
+	            // Создаём массив для данного уровня
+	            if (!access_lvls[cmd_name][lvl]) {
+	                access_lvls[cmd_name][lvl] = [];
+	            }
+
+	            access_lvls[cmd_name][lvl].push(Number(tg_id));
+	        }
+	    }
+
+	    // Заполняем пропущенные уровни пустыми массивами
+	    for (const levels of Object.values(access_lvls)) {
+	        for (let i = 0; i < levels.length; i++) {
+	            if (!levels[i]) {
+	                levels[i] = [];
+	            }
+	        }
+	    }
+
+	    return access_lvls;
 	}
 
 	escapeMarkdownV2(text) {
@@ -260,74 +273,81 @@ class TelegramModule extends BaseModule {
 	tg_message_processing(tg_id, message, msg_obj) {
 		let answ;
 		let server_cmd;
-		if (message[0] === "/") {
-			let cmd = message.split(/\s+/)[0].replace("/", "")
-			let args = message.split(/\s+/).slice(1)
-			console.log("Команда", cmd, "Аргументы", args)
-			const module_name = ModuleManager.get_module_name(cmd)
-			if (module_name) {
-				ModuleManager.modules[module_name].cmd_processing(tg_id, args, cmd, msg_obj)
-			
-			} else if (
-				CommandManager._findKey(
-					ModuleManager.modules["server"].structure,
-					cmd
-				)
-			) {
-				args = [cmd].concat(args)
-				cmd = "server"
-				ModuleManager.modules["server"].cmd_processing(tg_id, args, cmd, msg_obj)
-
-			} else if (
-				CommandManager._findKey(
-					ModuleManager.modules["chat"].structure,
-					cmd
-				)
-			) {
-				args = [cmd].concat(args)
-				cmd = "chat"
-				ModuleManager.modules["chat"].cmd_processing(tg_id, args, cmd, msg_obj)
-
-			} else if (this.seniors.includes(tg_id) || this.masters.includes(tg_id) || (this.access_cmds[tg_id] && this.access_cmds[tg_id].includes(cmd))) {
-                    server_cmd = "/" + cmd + " " + args.join(" ")
-
-            } else {
-				answ = `Команды ${cmd} не существует`
+		const settings = this.player_settings[tg_id]
+		let can_use_bot = true;
+		if (settings) {
+			if (!settings.server_nick && !message.startsWith("/server account")) {
+				can_use_bot = false;
+				answ = "Чтобы пользоваться ботом, привяжите серверный аккаунт. Подробности в команде /server account"
 			}
-		} else if (this.seniors.includes(tg_id) && message.split(" ")[0] === "cmd") {
-			const args = message.split(" ").slice(1)
-			if (args.length > 0) {
-				if (args[0] === "js" && args[1]) {
-			 		this.actions.push({
-			 			type: "js",
-			 			module_name: this.module_name,
-			 			content: {
-			 				tg_id,
-			 				js: args.slice(1).join(" ")
-				 		}
-					})
-				}
-			}
-		} else if (this.player_settings[tg_id] && message.toLowerCase().includes("cmd")) {
-			const server_nick = this.player_settings[tg_id]["server_nick"]
-			if (server_nick) {
-				console.log("Начало обработки")
-				this.ModuleManager.call_module("command_handler").handle(server_nick, message)
-			} else {
-				answ = "У Вас не задан серверный ник. Пожалуйста, обратитесь к @Kirabriin, чтобы это исправить."
-			}
-		} else if (this.player_settings[tg_id]) {
-			bus.emit(
-				"telegram_authorized_message",
-				{
-					tg_id,
-					message,
-					msg_obj
-				}
-			)
-		} else {
-			answ = "Я - ТГ-часть anon_bot'a. Чтобы общаться со мной, используй следующий синтаксис: '/{команда} [аргументы]'. Все права на команды выдаются лично @Kirabriin"
 		}
+		if (can_use_bot) {
+			if (message[0] === "/") {
+				let cmd = message.split(/\s+/)[0].replace("/", "")
+				let args = message.split(/\s+/).slice(1)
+				console.log("Команда", cmd, "Аргументы", args)
+				const module_name = ModuleManager.get_module_name(cmd)
+				if (module_name) {
+					ModuleManager.modules[module_name].cmd_processing(tg_id, args, cmd, msg_obj)
+				
+				} else if (
+					CommandManager._findKey(
+						ModuleManager.modules["server"].structure,
+						cmd
+					)
+				) {
+					args = [cmd].concat(args)
+					cmd = "server"
+					ModuleManager.modules["server"].cmd_processing(tg_id, args, cmd, msg_obj)
+
+				} else if (
+					CommandManager._findKey(
+						ModuleManager.modules["chat"].structure,
+						cmd
+					)
+				) {
+					args = [cmd].concat(args)
+					cmd = "chat"
+					ModuleManager.modules["chat"].cmd_processing(tg_id, args, cmd, msg_obj)
+
+				} else if (this.seniors.includes(tg_id) || this.masters.includes(tg_id) || (this.access_cmds[tg_id] && this.access_cmds[tg_id].includes(cmd))) {
+	                    server_cmd = "/" + cmd + " " + args.join(" ")
+
+	            } else {
+					answ = `Команды ${cmd} не существует`
+				}
+			} else if (this.seniors.includes(tg_id) && message.split(" ")[0] === "cmd") {
+				const args = message.split(" ").slice(1)
+				if (args.length > 0) {
+					if (args[0] === "js" && args[1]) {
+				 		this.actions.push({
+				 			type: "js",
+				 			module_name: this.module_name,
+				 			content: {
+				 				tg_id,
+				 				js: args.slice(1).join(" ")
+					 		}
+						})
+					}
+				}
+			} else if (this.player_settings[tg_id] && message.toLowerCase().includes("cmd")) {
+				const server_nick = this.player_settings[tg_id]["server_nick"]
+				this.ModuleManager.call_module("command_handler").handle(server_nick, message)
+
+			} else if (this.player_settings[tg_id]) {
+				bus.emit(
+					"telegram_authorized_message",
+					{
+						tg_id,
+						message,
+						msg_obj
+					}
+				)
+			} else {
+				answ = "Я - ТГ-часть anon_bot'a. Чтобы общаться со мной, используй следующий синтаксис: '/{команда} [аргументы]'. Все права на команды выдаются лично @Kirabriin"
+			}
+		}
+
 		if (server_cmd) {
 			this.actions.push({
 					type: "cmd",
@@ -426,12 +446,6 @@ class TelegramModule extends BaseModule {
 	    
 	    return config;
 	}
-
-	update_player_settings() {
-		const config_object = this.jsonToConfigParser(this.player_settings)
-		config_object.write(path.join(__dirname, "player_settings.ini"))
-	}
-
 }
 
 
