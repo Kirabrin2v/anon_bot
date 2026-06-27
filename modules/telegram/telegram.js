@@ -95,7 +95,7 @@ class TelegramModule extends BaseModule {
 		console.log("Telegram started")
 		this.tg.on("text", async msg => {
 			const full_name = msg.chat.first_name + " " + msg.chat.last_name
-			this.log_tg_messages("accept", msg.chat.id, msg.text, full_name, msg.chat.username)
+			this.log_tg_messages("accept", msg.chat.id, msg.text, full_name, msg.chat.username, msg)
 			this.tg_message_processing(msg.chat.id, msg.text, msg)
 			
 		})
@@ -231,7 +231,7 @@ class TelegramModule extends BaseModule {
 	}
 
 
-	log_tg_messages(type_message, tg_id, message, full_name, username) {
+	log_tg_messages(type_message, tg_id, message, full_name, username, message_obj) {
 	    tg_id = Number(tg_id)
 	    if (!tg_id) {return}
 	    username = username ?? "unknown"
@@ -248,7 +248,8 @@ class TelegramModule extends BaseModule {
 	            ID INTEGER PRIMARY KEY AUTOINCREMENT,
 	            date_time TEXT NOT NULL,
 	            type_message TEXT NOT NULL,
-	            message TEXT NOT NULL
+	            message TEXT NOT NULL,
+	    		message_obj TEXT DEFAULT '{}'
 	        )
 	    `)
 	    createTable.run()
@@ -262,11 +263,11 @@ class TelegramModule extends BaseModule {
 	    }
 
 	    const insertMessage = logs_db.prepare(`
-	        INSERT INTO "${tableName}" (date_time, type_message, message)
-	        VALUES (?, ?, ?)
+	        INSERT INTO "${tableName}" (date_time, type_message, message, message_obj)
+	        VALUES (?, ?, ?, ?)
 	    `)
 
-	    insertMessage.run(date_to_text(new Date()), type_message, message)
+	    insertMessage.run(date_to_text(new Date()), type_message, message, JSON.stringify(message_obj))
 	}
 
 

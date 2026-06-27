@@ -233,6 +233,7 @@ class ChatCmd extends BaseCmd {
 
     chat_commands_processing(tg_id, message, cmd, msg_obj) {
         const settings = this.module_obj.player_settings[tg_id]
+        console.log(msg_obj)
 
         const nick = settings["show_nick"] || settings["server_nick"]
         const color = settings["nick_color"]
