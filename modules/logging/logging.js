@@ -52,18 +52,18 @@ class LoggingModule extends BaseModule {
 		try {
 			let count_messages;
 			if (nickname) {
-				const selectMessage = db.prepare(`SELECT count(message)
+				const selectMessage = db.prepare(`SELECT count(*)
 												FROM players_logs
 												WHERE nickname == ?`)
-				count_messages = selectMessage.all(nickname)
+				count_messages = selectMessage.get(nickname).count()
 
 			} else {
-				const selectMessage = db.prepare(`SELECT count(message)
+				const selectMessage = db.prepare(`SELECT count(*)
 												FROM players_logs`)
-				count_messages = selectMessage.all()
+				count_messages = selectMessage.get(nickname).count()
 			}
 
-			return count_messages[0]['count(message)']
+			return count_messages
 		} catch (error) {
 			this.add_error_to_logs(new Date(), this.module_name, error.toString(), error.stack, [])
 		}

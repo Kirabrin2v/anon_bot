@@ -50,7 +50,6 @@ const {
 
 const { text_to_date } = require("./utils/text.js")
 
-const { ModuleManager, CommandManager } = require("./module_manager.js")
 const bus = require("./event_bus.js");
 
 const { init, get_bot } = require('./init')
@@ -102,6 +101,7 @@ init(options);
 
 const bot = get_bot();
 
+const { ModuleManager, CommandManager } = require("./module_manager.js")
 const modules = ModuleManager;
 
 const seniors = JSON.parse(config.get("VARIABLES", "seniors")) // Полный доступ
