@@ -1148,12 +1148,6 @@ bot.on("update_bal_survings", (obj) => {
 })
 
 
-setTimeout(() => {
-	const bot_location = modules.call_module("move").get_bot_location()
- 	if (!bot_location || !bot_location.includes("Локация Край")) {bot.chat("/swarp end")}
- }, 5000)
-
-
 setInterval(send_answs, 2000)
 setInterval(send_cmds, interval_send_cmds)
 

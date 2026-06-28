@@ -1,4 +1,5 @@
 const path = require("path");
+const { Vec3 } = require('vec3');
 
 const { get_bot } = require(path.join(BASE_DIR, 'init.js'))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
@@ -36,12 +37,44 @@ class MoveModule extends BaseModule {
 		this.control_player = {}
 
 		this.bot_location;
+		this.SPAWN_POSITION = new Vec3(32, 64, 32);
+		this.MAX_INITIAL_SPAWN_DISTANCE = 10
+		this.MAX_SPAWN_DISTANCE = 5000
     }
 
     initialize() {
     	setInterval(() => {
             this.check_bot_loc()
         }, 3000)
+
+    	// Первоначальная проверка, попал ли бот на спавн Энда
+        setTimeout(() => {
+			bot.chat("/swarp end")
+			setTimeout(() => {
+				this.initial_check_spawn()
+			}, 5000)
+		 }, 5000)
+
+        // Регулярная проверка, находится ли бот на спавне Энда
+        setInterval(() => {
+        	const distance_to_spawn = bot.entity.position.distanceTo(this.SPAWN_POSITION)
+	 		if (!this.bot_location || !this.bot_location.includes("Локация Край") || distance_to_spawn > this.MAX_SPAWN_DISTANCE) {
+	 			bot.chat("/swarp end")
+	 			setTimeout(() => {
+					this.initial_check_spawn()
+				}, 5000)
+	 		}
+        }, 30000)
+    }
+
+    initial_check_spawn() {
+ 		const distance_to_spawn = bot.entity.position.distanceTo(this.SPAWN_POSITION)
+ 		if (!this.bot_location || !this.bot_location.includes("Локация Край") || distance_to_spawn > this.MAX_INITIAL_SPAWN_DISTANCE) {
+ 			bot.chat("/swarp end")
+ 			setTimeout(() => {
+				this.initial_check_spawn()
+			}, 5000)
+ 		}
     }
 
     get_bot_location() {
