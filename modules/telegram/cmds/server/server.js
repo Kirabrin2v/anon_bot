@@ -86,9 +86,9 @@ class ServerCmd extends BaseCmd {
             if (this.module_obj.player_settings[sender].server_nick) {
                 return `У Вас уже привязан аккаунт: ${this.module_obj.player_settings[sender].server_nick}. Если Вы привязали не тот аккаунт, обратитесь к @Kirabriin для его изменения`
             } else {
-                const bot_username = this.module_obj.escapeMarkdownV2(global_config.get("VARIABLES", "active_nick"))
+                const bot_username = global_config.get("VARIABLES", "active_nick")
                 const tg_id = msg_obj.chat.id
-                const username = this.module_obj.escapeMarkdownV2(msg_obj.chat.username)
+                const username = msg_obj.chat.username
                 const username_block = username ? `@${username}` : "юзернейм отсутствует"
 
                 const confirm_message = `(TG ID: ${msg_obj.chat.id}; Username: ${username_block}) - мой Телеграм-аккаунт, и я несу за него ответственность`
@@ -100,7 +100,7 @@ class ServerCmd extends BaseCmd {
                 const answ = ( 
                     `Отправьте мне\\(${bot_username}\\) в течение 10 минут в ЛС на сервере следующее сообщение:\n` +
                     "```\n" +
-                    confirm_message +
+                    this.module_obj.escapeMarkdownV2(confirm_message) +
                     "```\n\n" +
                     "Это подтвердит, что именно Вы пользуетесь аккаунтом и может быть использовано для переноса наказаний за нарушения, совершённые Вами через бота, на Ваш серверный аккаунт\n\n" +
                     "Просьба привязывать свой основной аккаунт\\. После подтверждения изменить аккаунт *самостоятельно* не получится\\."
