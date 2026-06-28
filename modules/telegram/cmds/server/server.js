@@ -98,7 +98,7 @@ class ServerCmd extends BaseCmd {
                 }, 600000)
 
                 const answ = ( 
-                    `Отправьте мне\\(${bot_username}\\) в течение 10 минут в ЛС на сервере следующее сообщение:\n` +
+                    `Отправьте мне\\(${this.module_obj.escapeMarkdownV2(bot_username)}\\) в течение 10 минут в ЛС на сервере следующее сообщение:\n` +
                     "```\n" +
                     this.module_obj.escapeMarkdownV2(confirm_message) +
                     "```\n\n" +
