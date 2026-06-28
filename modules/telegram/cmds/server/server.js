@@ -94,7 +94,7 @@ class ServerCmd extends BaseCmd {
                 const confirm_message = `(TG ID: ${msg_obj.chat.id}; Username: ${username_block}) - мой Телеграм-аккаунт, и я несу за него ответственность`
                 this.wait_connect_minecraft[tg_id] = confirm_message
                 setTimeout(() => {
-                    delete wait_connect_minecraft[tg_id]
+                    delete this.wait_connect_minecraft[tg_id]
                 }, 600000)
 
                 const answ = ( 
