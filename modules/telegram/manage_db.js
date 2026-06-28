@@ -136,6 +136,17 @@ function createUsersProxy(db, tableName = "users") {
       tg_id = Number(tg_id);
       db.prepare(`DELETE FROM users WHERE tg_id = ?`).run(tg_id);
       return true;
+    },
+    
+    ownKeys() {
+        return wrapper.all().map(user => String(user.tg_id));
+    },
+
+    getOwnPropertyDescriptor() {
+        return {
+            enumerable: true,
+            configurable: true
+        };
     }
   });
 }
