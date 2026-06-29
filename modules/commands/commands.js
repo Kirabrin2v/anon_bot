@@ -4,7 +4,6 @@ const path = require("path");
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const { get_bot } = require(path.join(BASE_DIR, "init.js"))
-const { stats_split_into_pages } = require(path.join(BASE_DIR, "utils", "text.js"))
 
 const MODULE_NAME = "command_handler"
 
@@ -81,7 +80,7 @@ class CommandHandlerModule extends BaseModule {
         const help_list = Object.entries(modules.modules)
             .filter((elem) => CommandManager.modules_structure[elem[0]] && elem[1].cmd_processing)
             .map((elem) => [elem[0], elem[1].help])
-        const info = stats_split_into_pages(help_list, 3, num_page, "Информация о командах: ")
+        const info = this.ModuleManager.call_module("text").stats_split_into_pages(help_list, 3, num_page, "Информация о командах: ")
         if (info) {
             return info["answ"]
         } else {

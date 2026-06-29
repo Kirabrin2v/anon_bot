@@ -5,7 +5,6 @@ const path = require("path");
 const text = require(path.join(__dirname,  '../text/text.js'))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const { random_choice } = require(path.join(BASE_DIR, "utils", "random.js"))
-const { substitute_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
 const ConfigParser = require("configparser")
@@ -260,7 +259,7 @@ class StatsModule extends BaseModule {
 			this.update_stats(nick, "donate", cash, "add")
 
 			if (cash >= 10000) {
-				const phrase = substitute_text(random_choice(phrases["donate"]), {"name": nick, "cash": cash})
+				const phrase = this.ModuleManager.call_module("text").substitute_text(random_choice(phrases["donate"]), {"name": nick, "cash": cash})
 				this.actions.push({"type": "answ", "content": {"message": phrase}})
 			}
 			return {"used": true}

@@ -2,7 +2,6 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path')
 
-const { date_to_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
@@ -80,7 +79,7 @@ class SkinnaperModule extends BaseModule {
 			if (nick.length === 0 || nick === "Kanaderi") {return;}
 			
 			const pathdir = path.join(__dirname, `skins/${nick}`)
-			const date_text = date_to_text(new Date(), false)
+			const date_text = this.ModuleManager.call_module("text").date_to_text(new Date(), false)
 			fs.stat(pathdir, (err, _stats) => {
 				if (err === null) {
 					const urls = fs.readFileSync(path.join(pathdir, "urls.txt"), 'utf-8').split("\n")

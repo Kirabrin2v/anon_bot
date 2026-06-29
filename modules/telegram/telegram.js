@@ -3,7 +3,6 @@ const TelegramBot = require("node-telegram-bot-api");
 const path = require("path")
 const sqlite = require("better-sqlite3");
 
-const { date_to_text } = require(path.join(BASE_DIR,  "utils", "text.js"))
 const { ModuleManager, CommandManager } = require(path.join(__dirname, "module_manager.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
@@ -267,7 +266,7 @@ class TelegramModule extends BaseModule {
 	        VALUES (?, ?, ?, ?)
 	    `)
 
-	    insertMessage.run(date_to_text(new Date()), type_message, message, JSON.stringify(message_obj))
+	    insertMessage.run(this.ModuleManager.call_module("text").date_to_text(new Date()), type_message, message, JSON.stringify(message_obj))
 	}
 
 
@@ -332,6 +331,7 @@ class TelegramModule extends BaseModule {
 					}
 				}
 			} else if (this.player_settings[tg_id] && message.toLowerCase().includes("cmd")) {
+				console.log("Зашло")
 				const server_nick = this.player_settings[tg_id]["server_nick"]
 				this.ModuleManager.call_module("command_handler").handle(server_nick, message)
 

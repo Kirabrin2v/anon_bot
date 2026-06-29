@@ -2,7 +2,6 @@ const ConfigParser = require('configparser');
 const path = require("path")
 
 const { random_choice, random_number } = require(path.join(BASE_DIR, "utils", "random.js"))
-const { substitute_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
@@ -120,7 +119,7 @@ class CasinoModule extends BaseModule {
 				}
 			})
 		} else {
-			const phrase = substitute_text(random_choice(phrases["lose"]), {"cash": bet})
+			const phrase = this.ModuleManager.call_module("text").substitute_text(random_choice(phrases["lose"]), {"cash": bet})
 			this.actions.push({"type": "answ", "content": {"recipient": nick, "message": phrase}})
 			this.actions.push({
 				type: "update_stats",

@@ -2,8 +2,6 @@ const axios = require('axios');
 const path = require('path');
 
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
-const { slugify } = require(path.join(BASE_DIR, "utils", "text.js"))
-
 
 const MODULE_NAME = "site"
 
@@ -33,7 +31,7 @@ class SiteModule extends BaseModule {
 		const list_commands = []
 		for (const module_name in structures) {
 			list_commands.push({
-				command: slugify(module_name),
+				command: this.ModuleManager.call_module("text").slugify(module_name),
 				short_description: structures[module_name]._description,
 				args: structures[module_name]
 			})

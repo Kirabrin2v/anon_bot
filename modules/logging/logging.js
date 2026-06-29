@@ -2,7 +2,6 @@ const sqlite = require("better-sqlite3");
 const path = require("path");
 
 const db = new sqlite(path.join(__dirname, "logs.db"));
-const { date_to_text } = require(path.join(BASE_DIR,  "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
@@ -71,7 +70,7 @@ class LoggingModule extends BaseModule {
 
 	add_msg_to_players_logs(date_time, bot_location, type_chat, nickname, message, full_message, message_json) {
 		try {
-			date_time = date_to_text(date_time)
+			date_time = this.ModuleManager.call_module("text").date_to_text(date_time)
 
 			const insertMessage = db.prepare(`INSERT INTO players_logs (
 			date_time, location, type_chat, nickname, message, full_message)
@@ -206,7 +205,7 @@ class LoggingModule extends BaseModule {
 
 	add_msg_to_server_logs(date_time, type_sender, message, message_json) {
 		try {
-			date_time = date_to_text(date_time)
+			date_time = this.ModuleManager.call_module("text").date_to_text(date_time)
 
 			const insertMessage = db.prepare(`INSERT INTO server_logs (
 			date_time, type_sender, message)
@@ -231,7 +230,7 @@ class LoggingModule extends BaseModule {
 
 	add_msg_to_script_logs(date_time, type_message, message) {
 		try {
-			date_time = date_to_text(date_time)
+			date_time = this.ModuleManager.call_module("text").date_to_text(date_time)
 
 			const insertMessage = db.prepare(`INSERT INTO script_logs (
 				date_time, type_message, message)
@@ -252,7 +251,7 @@ class LoggingModule extends BaseModule {
 			if (args) {
 				args = (args).join(";\n\n")
 			}
-			date_time = date_to_text(date_time)
+			date_time = this.ModuleManager.call_module("text").date_to_text(date_time)
 
 			const insertMessage = db.prepare(`INSERT INTO error_logs (
 				date_time, module_name, short_error, full_error, args, sender)

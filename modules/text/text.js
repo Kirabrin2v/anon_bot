@@ -4,19 +4,139 @@ const { BaseModule } = require(path.join(__dirname, "../base.js"))
 
 const MODULE_NAME = "text"
 
-const nums_in_page_def = 5;
-const num_page_def = 1;
-const begin_text_def = "";
-const separator_def = "; "
-
 
 class TextModule extends BaseModule {
 	constructor () {
 		super(MODULE_NAME)
+
+		this.nums_in_page_def = 5;
+		this.num_page_def = 1;
+		this.begin_text_def = "";
+		this.separator_def = "; "
+
+		this.COLORS = {
+		    reset: "\x1b[0m",
+
+		    // стили
+		    bold: "\x1b[1m",
+		    dim: "\x1b[2m",
+		    italic: "\x1b[3m",
+		    underline: "\x1b[4m",
+
+		    // обычные цвета
+		    black: "\x1b[30m",
+		    red: "\x1b[31m",
+		    green: "\x1b[32m",
+		    yellow: "\x1b[33m",
+		    blue: "\x1b[34m",
+		    magenta: "\x1b[35m",
+		    cyan: "\x1b[36m",
+		    white: "\x1b[37m",
+
+		    // яркие цвета
+		    brightBlack: "\x1b[90m",
+		    brightRed: "\x1b[91m",
+		    brightGreen: "\x1b[92m",
+		    brightYellow: "\x1b[93m",
+		    brightBlue: "\x1b[94m",
+		    brightMagenta: "\x1b[95m",
+		    brightCyan: "\x1b[96m",
+		    brightWhite: "\x1b[97m",
+
+		    // фоны
+		    bgBlack: "\x1b[40m",
+		    bgRed: "\x1b[41m",
+		    bgGreen: "\x1b[42m",
+		    bgYellow: "\x1b[43m",
+		    bgBlue: "\x1b[44m",
+		    bgMagenta: "\x1b[45m",
+		    bgCyan: "\x1b[46m",
+		    bgWhite: "\x1b[47m",
+
+		    // яркие фоны
+		    bgBrightBlack: "\x1b[100m",
+		    bgBrightRed: "\x1b[101m",
+		    bgBrightGreen: "\x1b[102m",
+		    bgBrightYellow: "\x1b[103m",
+		    bgBrightBlue: "\x1b[104m",
+		    bgBrightMagenta: "\x1b[105m",
+		    bgBrightCyan: "\x1b[106m",
+		    bgBrightWhite: "\x1b[107m"
+		}
 	}
 
-	stats_split_into_pages(stat_top, nums_in_page=nums_in_page_def, num_page=num_page_def, begin_text=begin_text_def, separator=separator_def) {
+	slugify(text) {
+	  const toLower = text.toLowerCase();
+	  const transliterate = {
+	    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e',
+	    'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k',
+	    'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r',
+	    'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c',
+	    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '',
+	    'э': 'e', 'ю': 'yu', 'я': 'ya',
+	  };
+	  const slug = toLower.replace(/[а-яё]/g, char => transliterate[char])
+	                    .replace(/[^a-z0-9-]/g, '-') // замена на тире
+	                    .replace(/-+/g, '-') // удаление лишних тире
+	                    .replace(/^-+|-+$/g, '') // удаление начальных и конечных тире
+	                    .trim();
+
+	  return slug;
+	}
+
+	text_to_date(date_str, template) {
+	  const tokens = {
+	    DD:   { regex: '(\\d{2})', field: 'day' },
+	    MM:   { regex: '(\\d{2})', field: 'month' },
+	    YYYY: { regex: '(\\d{4})', field: 'year' },
+	    HH:   { regex: '(\\d{2})', field: 'hours' },
+	    mm:   { regex: '(\\d{2})', field: 'minutes' },
+	    ss:   { regex: '(\\d{2})', field: 'seconds' },
+	  };
+
+	  // Находим токены в порядке их появления в шаблоне
+	  const found = [];
+	  const tokenRegex = /DD|MM|YYYY|HH|mm|ss/g;
+	  let m;
+	  while ((m = tokenRegex.exec(template)) !== null) {
+	    found.push({ token: m[0], index: m.index });
+	  }
+
+	  // Заменяем токены на группы в правильном порядке
+	  let regex_str = template;
+	  const fields = [];
+	  for (const { token } of found) {
+	    const { regex, field } = tokens[token];
+	    regex_str = regex_str.replace(token, regex);
+	    fields.push(field);
+	  }
+
+	  const match = date_str.match(new RegExp(regex_str));
+	  if (!match) throw new Error(`Не удалось распарсить "${date_str}" по шаблону "${template}"`);
+
+	  const parsed = {};
+	  fields.forEach((field, i) => {
+	    parsed[field] = Number(match[i + 1]);
+	  });
+
+	  return new Date(
+	    parsed.year     ?? 0,
+	    (parsed.month ?? 1) - 1,
+	    parsed.day      ?? 1,
+	    parsed.hours    ?? 0,
+	    parsed.minutes  ?? 0,
+	    parsed.seconds  ?? 0,
+	  );
+	}
+
+	stats_split_into_pages(stat_top, nums_in_page=this.nums_in_page_def, num_page=this.num_page_def, begin_text=this.begin_text_def, separator=this.separator_def) {
 		let answ, is_ok;
+		if (!nums_in_page) {
+			nums_in_page = this.nums_in_page_def
+		}
+		if (!num_page) {
+			num_page = this.num_page_def
+		}
 
 		const length_arr = stat_top.length;
 		const pages = []
@@ -44,7 +164,11 @@ class TextModule extends BaseModule {
 		return {"is_ok": is_ok, "answ": answ, "index_first_element": index_first_element, "index_last_element": index_last_element}
 	}
 
-	date_to_text(date) {
+	date_to_text(
+		date,
+		show_seconds=true,
+		show_minutes=true
+	) {
 		const year = date.getFullYear();
 	    const month = String(date.getMonth() + 1).padStart(2, '0');
 	    const day = String(date.getDate()).padStart(2, '0');
@@ -52,7 +176,15 @@ class TextModule extends BaseModule {
 	    const minutes = String(date.getMinutes()).padStart(2, '0');
 	    const seconds = String(date.getSeconds()).padStart(2, '0');
 
-		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+	    let date_text = `${year}-${month}-${day} ${hours}`
+	    if (show_minutes) {
+	    	date_text += `:${minutes}`
+	    }
+	    if (show_seconds) {
+	    	date_text += `:${seconds}`
+	    }
+
+		return date_text
 	}
 
 	substitute_text(pattern, values) {

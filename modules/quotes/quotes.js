@@ -2,7 +2,6 @@ const sqlite = require("better-sqlite3");
 const path = require("path")
 
 const { random_choice } = require(path.join(BASE_DIR, "utils", "random.js"))
-const { stats_split_into_pages } = require(path.join(BASE_DIR, "utils", "text.js"))
 const db = new sqlite(path.join(__dirname, "quotes.db"));
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
@@ -524,7 +523,7 @@ class QuotesModule extends BaseModule {
                 const num_page = args[3].value
                 const quotes = this.generate_quotes_list(nick)
                 if (quotes && quotes.length > 0) {
-                    answ = stats_split_into_pages(quotes, 5, num_page, `Цитаты игрока ${nick}: `)["answ"]
+                    answ = this.ModuleManager.call_module("text").stats_split_into_pages(quotes, 5, num_page, `Цитаты игрока ${nick}: `)["answ"]
                 } else {
                     answ = "У выбранного игрока нет цитат"
                 }
@@ -532,7 +531,7 @@ class QuotesModule extends BaseModule {
             } else if (args[1].name === "all") {
                 const num_page = args[2].value
                 const stats = this.generate_quotes_stats()
-                answ = stats_split_into_pages(stats, 3, num_page, "Цитаты: ")["answ"]
+                answ = this.ModuleManager.call_module("text").stats_split_into_pages(stats, 3, num_page, "Цитаты: ")["answ"]
 
             } else {
                 answ = "Возможные аргументы: [by, all]"

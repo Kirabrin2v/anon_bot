@@ -2,7 +2,6 @@ const path = require('path');
 const ConfigParser = require('configparser');
 const sqlite = require("better-sqlite3");
 
-const { stats_split_into_pages } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { random_choice } = require(path.join(BASE_DIR, "utils", "random.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"));
@@ -167,7 +166,7 @@ class GriefModule extends BaseModule {
 				return [nick, `x:${elem.x} y:${elem.y} z:${elem.z}`]
 			})
 
-			const split_into_pages = stats_split_into_pages(beds_text, this.NUMS_IN_PAGE, num_page)
+			const split_into_pages = this.ModuleManager.call_module("text").stats_split_into_pages(beds_text, this.NUMS_IN_PAGE, num_page)
 
 			if (split_into_pages["is_ok"]) {
 				const start_index = split_into_pages["index_first_element"]

@@ -6,7 +6,8 @@ const fs = require("fs")
 
 const db = new sqlite(path.join(__dirname, "events.db"));
 
-const { date_to_text } = require(path.join(BASE_DIR,  "utils", "text.js"))
+const TextModule = require(path.join(BASE_DIR,  "modules", "text", "text.js"))
+const Text = new TextModule()
 
 function add_new_event(event_date, event_name, organizers=[], description) {
 	const insertMessage = db.prepare(`INSERT INTO events
@@ -17,7 +18,7 @@ function add_new_event(event_date, event_name, organizers=[], description) {
 		description = undefined
 	}
 
-	insertMessage.run(date_to_text(event_date), event_name, JSON.stringify(organizers), description)
+	insertMessage.run(Text.date_to_text(event_date), event_name, JSON.stringify(organizers), description)
 }
 
 function subscribe(event_id, tg_id) {
@@ -111,7 +112,7 @@ function get_logs_alert(event_id, tg_id) {
 }
 
 function add_logs_alert(event_id, tg_id) {
-	const date_time = date_to_text(new Date())
+	const date_time = Text.date_to_text(new Date())
 	const insertMessage = db.prepare(`INSERT INTO logs_alert
 									(date_time, event_id, tg_id)
 									VALUES (?, ?, ?)`)

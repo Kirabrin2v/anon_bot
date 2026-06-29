@@ -7,7 +7,6 @@ const ConfigParser = require('configparser');
 const global_config = new ConfigParser();
 global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
-const { COLORS, date_to_text, text_to_date } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
@@ -16,6 +15,8 @@ const INTERVAL_CHECK_ACTIONS = 0
 
 const bot_username = global_config.get("VARIABLES", "active_nick")
 const interval_check_surv = Number(global_config.get("VARIABLES", "interval_check_surv"))
+
+let COLORS = {}
 
 
 class CashModule extends BaseModule {
@@ -88,6 +89,8 @@ class CashModule extends BaseModule {
 				}
 			})
     	}, 15000)
+
+    	COLORS = this.ModuleManager.call_module("text").COLORS
     }
 
     add_pay_to_bd(payer, payee, amount, currency, date_time, reason) {
@@ -114,7 +117,7 @@ class CashModule extends BaseModule {
 			const info = this.wait_confirm_send_money[currency][i]
 			if (nick === info.nick && amount === info.amount) {
 				console.log(COLORS.blue + "Подтверждено" + COLORS.reset, nick, amount)
-				this.add_pay_to_bd(bot_username, nick, amount, currency, date_to_text(date), info.reason)
+				this.add_pay_to_bd(bot_username, nick, amount, currency, this.ModuleManager.call_module("text").date_to_text(date), info.reason)
 				this.wait_confirm_send_money[currency].splice(i, 1)
 				break;
 			}
@@ -159,7 +162,7 @@ class CashModule extends BaseModule {
 					bal_log.date_time
 				)
 				if (check_money["is_ok"]) {
-					this.add_pay_to_bd(bal_log.sender, bot_username, bal_log.amount, "survings", date_to_text(bal_log.date_time), bal_log.reason)
+					this.add_pay_to_bd(bal_log.sender, bot_username, bal_log.amount, "survings", this.ModuleManager.call_module("text").date_to_text(bal_log.date_time), bal_log.reason)
 					this.actions.push({
 						type: "new_survings",
 						content: {
@@ -207,7 +210,7 @@ class CashModule extends BaseModule {
 					)
 					if (check_money["is_ok"]) {
 						this.actions.push({"type": "new_survings", "content": pay})
-						this.add_pay_to_bd(pay.payer, bot_username, pay.amount, "survings", date_to_text(new Date()), pay.reason)
+						this.add_pay_to_bd(pay.payer, bot_username, pay.amount, "survings", this.ModuleManager.call_module("text").date_to_text(new Date()), pay.reason)
 					}
 				})
 				this.actions = this.actions.concat(confirmed_survings)
@@ -237,7 +240,7 @@ class CashModule extends BaseModule {
 		let flag_find = false;
 		for (let i = 0; i < this.last_payers_TCA.length; i++) {
 			const info = this.last_payers_TCA[i]
-			if (info.payer === payer && info.date_time === date_to_text(date) && info.amount === amount) {
+			if (info.payer === payer && info.date_time === this.ModuleManager.call_module("text").date_to_text(date) && info.amount === amount) {
 				flag_find = true;
 				break;
 			} 
@@ -246,7 +249,7 @@ class CashModule extends BaseModule {
 			if (this.last_payers_TCA.length > 15) {
 				return {"is_ok": true}
 			} else {
-				this.add_pay_to_bd(payer, bot_username, amount, "TCA", date_to_text(date))
+				this.add_pay_to_bd(payer, bot_username, amount, "TCA", this.ModuleManager.call_module("text").date_to_text(date))
 				console.log("Недостаточно переводов")
 				return {"is_ok": false, "message_error": "В базе данных недостаточно данных о переводах"}
 			}
@@ -261,7 +264,7 @@ class CashModule extends BaseModule {
 		let info;
 		for (let i = 0; i < this.last_payers_survings.length; i++) {
 			info = this.last_payers_survings[i]
-			const db_date_time = text_to_date(info.date_time, "YYYY-MM-DD HH:mm:ss")
+			const db_date_time = this.ModuleManager.call_module("text").text_to_date(info.date_time, "YYYY-MM-DD HH:mm:ss")
 			// console.log(db_date_time, date)
 			if (info.payer === payer && Math.abs(db_date_time - date) <= 3000 && info.amount === amount && info.reason == reason) {
 				flag_find = true;
@@ -272,7 +275,7 @@ class CashModule extends BaseModule {
 			if (this.last_payers_survings.length > 10) {
 				return {"is_ok": true}
 			} else {
-				this.add_pay_to_bd(payer, bot_username, amount, "survings", date_to_text(date), reason)
+				this.add_pay_to_bd(payer, bot_username, amount, "survings", this.ModuleManager.call_module("text").date_to_text(date), reason)
 				console.log("Недостаточно переводов сурвингов")
 				return {"is_ok": false, "message_error": "В базе данных недостаточно данных о переводах"}
 			}
@@ -294,7 +297,7 @@ class CashModule extends BaseModule {
 
 				if (this.check_repeat_TCA(payer, amount, date)["is_ok"]) {
 					confirmed_TCA.push({"type": "new_TCA", "content": {"payer": payer, "amount": amount}})
-					this.add_pay_to_bd(payer, bot_username, amount, "TCA", date_to_text(date))
+					this.add_pay_to_bd(payer, bot_username, amount, "TCA", this.ModuleManager.call_module("text").date_to_text(date))
 				}
 			})
 			this.actions = this.actions.concat(confirmed_TCA)

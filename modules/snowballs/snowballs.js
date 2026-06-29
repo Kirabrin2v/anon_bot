@@ -4,7 +4,6 @@ const sqlite = require("better-sqlite3");
 const Vec3 = require("vec3");
 
 const { get_bot } = require(path.join(BASE_DIR, 'init.js'))
-const { stats_split_into_pages } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { random_choice } = require(path.join(BASE_DIR, 'utils', 'random.js'))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
@@ -402,7 +401,7 @@ class SnowballsModule extends BaseModule {
             const hits_text = hits.map(h => {
                 return [`${h.shooter} → ${h.target}`, `${h.distance.toFixed(1)}м`]
             })
-            const split_into_pages = stats_split_into_pages(hits_text, 5, num_page, "Последние попадания: ")
+            const split_into_pages = this.ModuleManager.call_module("text").stats_split_into_pages(hits_text, 5, num_page, "Последние попадания: ")
 
             answ = split_into_pages["answ"]
         

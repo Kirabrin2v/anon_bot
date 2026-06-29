@@ -2,7 +2,6 @@ const path = require("path")
 const math = require("mathjs");
 const fs = require("fs")
 
-const { COLORS } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 
@@ -25,6 +24,7 @@ const STRUCTURE = {
   }
 }
 
+let COLORS = {}
 
 class QuizModule extends BaseModule {
 	constructor () {
@@ -43,6 +43,10 @@ class QuizModule extends BaseModule {
 						obj.type_question
 					)
 				})
+    }
+
+    initialize() {
+    	COLORS = this.ModuleManager.call_module("text").COLORS
     }
 
     get_answ(question, type_question) {

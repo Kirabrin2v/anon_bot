@@ -5,7 +5,6 @@ const config = new ConfigParser();
 config.read("modules/combine_nicks/config.ini")
 
 const { random_choice, random_number } = require(path.join(BASE_DIR, "utils", "random.js"))
-const { substitute_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
 const MODULE_NAME = "скрести"
@@ -61,7 +60,7 @@ class CombineModule extends BaseModule {
 			answ = `${nick1} + ${nick2} = ${new_nick}`
 		} else {
 			const percent_compatibility = this.check_compatibility(nick1, nick2)
-			answ = substitute_text(
+			answ = this.ModuleManager.call_module("text").substitute_text(
 				random_choice(phrases["compatibility"]),
 				{
 					"nick1": nick1,

@@ -2,7 +2,6 @@ const ConfigParser = require('configparser');
 const path = require("path")
 
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
-const { substitute_text } = require(path.join(BASE_DIR, "utils", "text.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
 const MODULE_NAME = "gpt"
@@ -217,7 +216,7 @@ class GptModule extends BaseModule {
   // Промежуточная ИИ — возвращает true/false
   async check_should_respond(nickname, text, context) {
     try {
-      const prompt = substitute_text(GATE_PROMPT, {
+      const prompt = this.ModuleManager.call_module("text").substitute_text(GATE_PROMPT, {
         player_nick:    nickname,
         player_message: text,
         context
@@ -280,7 +279,7 @@ class GptModule extends BaseModule {
 
   async send_background_request(nickname, text, context) {
     try {
-      const prompt = substitute_text(
+      const prompt = this.ModuleManager.call_module("text").substitute_text(
         BACKGROUND_PROCESS_PROMPT_MESSAGE,
         {
           player_nick:    nickname,
