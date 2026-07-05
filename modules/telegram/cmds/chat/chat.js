@@ -372,7 +372,7 @@ class ChatCmd extends BaseCmd {
         message = this.module_obj.escapeMarkdownV2(message)
         for (let replace_alias of notify_aliases) {
             replace_alias = this.module_obj.escapeMarkdownV2(replace_alias)
-            message = message.replace(new RegExp(`(${replace_alias})`, 'ig'), '_*$1*_')
+            message = message.replace(new RegExp(`(${replace_alias})`, 'ig'), '_*$1*_').replace(/\*__\*/g, "")
         }
 
         return message
