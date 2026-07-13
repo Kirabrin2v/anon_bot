@@ -8,8 +8,6 @@ const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const MODULE_NAME = "logging"
 
 
-
-
 class LoggingModule extends BaseModule {
 	constructor () {
 		super(MODULE_NAME)
@@ -48,24 +46,31 @@ class LoggingModule extends BaseModule {
 	}
 
 	get_count_players_messages(nickname) {
-		try {
-			let count_messages;
-			if (nickname) {
-				const selectMessage = db.prepare(`SELECT count(*)
-												FROM players_logs
-												WHERE nickname == ?`)
-				count_messages = selectMessage.get(nickname).count()
+	    try {
+	        const stmt = nickname
+	            ? db.prepare(`
+	                SELECT COUNT(*) AS count
+	                FROM players_logs
+	                WHERE nickname = ?
+	            `)
+	            : db.prepare(`
+	                SELECT COUNT(*) AS count
+	                FROM players_logs
+	            `);
 
-			} else {
-				const selectMessage = db.prepare(`SELECT count(*)
-												FROM players_logs`)
-				count_messages = selectMessage.get(nickname).count()
-			}
+	        return nickname
+	            ? stmt.get(nickname).count
+	            : stmt.get().count;
 
-			return count_messages
-		} catch (error) {
-			this.add_error_to_logs(new Date(), this.module_name, error.toString(), error.stack, [])
-		}
+	    } catch (error) {
+	        this.add_error_to_logs(
+	            new Date(),
+	            this.module_name,
+	            error.toString(),
+	            error.stack,
+	            []
+	        );
+	    }
 	}
 
 	add_msg_to_players_logs(date_time, bot_location, type_chat, nickname, message, full_message, message_json) {

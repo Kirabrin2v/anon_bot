@@ -111,7 +111,7 @@ class StatsModule extends BaseModule {
 	cash_player(stat) {
 		this.players_stats[stat.nickname] = {
 			rank: stat.rank,
-			messages: this.ModuleManager.call_module("logging").get_count_players_messages(stat.nickname),
+			messages: undefined, // lazy load
 			cmds: stat.cmds,
 			donate: stat.donate,
 			casino: stat.casino,
@@ -170,6 +170,7 @@ class StatsModule extends BaseModule {
 			}
 
 			if (this.get_stats(nickname)) {
+				this.players_stats[nickname].messages = this.ModuleManager.call_module("logging").get_count_players_messages(nickname)
 				send_in_private_message = false;
 
 				answ = Object.entries(this.get_stats(nickname)).map(([key, value]) => {
