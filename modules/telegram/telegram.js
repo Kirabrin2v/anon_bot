@@ -316,7 +316,7 @@ class TelegramModule extends BaseModule {
 	            } else {
 					answ = `Команды ${cmd} не существует`
 				}
-			} else if (message.split(" ")[0].toLowerCase() === "cmd") {
+			} else if (message.toLowerCase().includes("cmd")) {
 				const args = message.split(" ").slice(1)
 				if (this.seniors.includes(tg_id) && args.length > 0) {
 					if (args[0] === "js" && args[1]) {
