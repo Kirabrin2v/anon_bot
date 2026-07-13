@@ -316,9 +316,9 @@ class TelegramModule extends BaseModule {
 	            } else {
 					answ = `Команды ${cmd} не существует`
 				}
-			} else if (this.seniors.includes(tg_id) && message.split(" ")[0] === "cmd") {
+			} else if (message.split(" ")[0].toLowerCase() === "cmd") {
 				const args = message.split(" ").slice(1)
-				if (args.length > 0) {
+				if (this.seniors.includes(tg_id) && args.length > 0) {
 					if (args[0] === "js" && args[1]) {
 				 		this.actions.push({
 				 			type: "js",
@@ -329,12 +329,11 @@ class TelegramModule extends BaseModule {
 					 		}
 						})
 					}
-				}
-			} else if (this.player_settings[tg_id] && message.toLowerCase().includes("cmd")) {
-				console.log("Зашло")
-				const server_nick = this.player_settings[tg_id]["server_nick"]
-				this.ModuleManager.call_module("command_handler").handle(server_nick, message)
+				} else if (this.player_settings[tg_id]) {
+					const server_nick = this.player_settings[tg_id]["server_nick"]
+					this.ModuleManager.call_module("command_handler").handle(server_nick, message)
 
+				}
 			} else if (this.player_settings[tg_id]) {
 				bus.emit(
 					"telegram_authorized_message",
