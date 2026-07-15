@@ -1,9 +1,15 @@
-const sqlite = require("better-sqlite3");
+const ConfigParser = require('configparser');
 const path = require("path")
+const sqlite = require("better-sqlite3");
 
-const { random_choice } = require(path.join(BASE_DIR, "utils", "random.js"))
+const { random_choice, random_number } = require(path.join(BASE_DIR, "utils", "random.js"))
 const db = new sqlite(path.join(__dirname, "quotes.db"));
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const bus = require(path.join(BASE_DIR, "event_bus.js"))
+
+
+const permanent_memory = new ConfigParser();
+permanent_memory.read(path.join(__dirname, "permanent_memory.ini"))
 
 const MODULE_NAME = "цитата"
 const HELP = "Великие цитаты обычных Эндерчан"
@@ -82,6 +88,44 @@ class QuotesModule extends BaseModule {
         }, this.INTERVAL_SEND_RANDOM_QUOTE * 10**3)
     }
 
+    initialize() {
+        bus.on("player_joined", obj => {
+            this.notify_about_citate_change(obj.nickname)
+        })
+    }
+
+    get_citate_changes(nickname) {
+        const citate_changes = JSON.parse(
+            permanent_memory.get("VARIABLES", "users_notify_about_citate_change")
+        )
+        return citate_changes
+    }
+
+    notify_about_citate_change(nickname) {
+        const citate_changes = this.get_citate_changes().filter(obj => obj.nickname === nickname)
+        if (citate_changes.length === 0) {return}
+        const citate_change = citate_changes.shift()
+        this.actions.push({
+            type: "answ",
+            content: {
+                recipient: citate_change.nickname,
+                message: citate_change.message
+            }
+        })
+        this.update_permanent_memory(
+            "users_notify_about_citate_change",
+            citate_changes.filter(obj => obj.id !== citate_change.id)
+        )
+        setTimeout(() => {
+            this.notify_about_citate_change(nickname)
+        }, 5000)
+    }
+
+    update_permanent_memory(key, value) {
+        permanent_memory.set("VARIABLES", key, JSON.stringify(value))
+        permanent_memory.write(path.join(__dirname, "permanent_memory.ini"))
+    }
+
     get_user_vote(quote_id, nickname) {
         const row = db.prepare(`
             SELECT SUM(add_number) as total
@@ -103,7 +147,7 @@ class QuotesModule extends BaseModule {
     add_prepared_quotes_to_bd() {
         try {
             const prepared_quotes = db.prepare(`
-                SELECT ID, citation, author, status
+                SELECT ID, citation, author, status, reason
                 FROM prepare_quotes
                 WHERE status = 1 OR status = 0
             `).all()
@@ -112,9 +156,27 @@ class QuotesModule extends BaseModule {
             const remove = db.prepare(`DELETE FROM prepare_quotes WHERE ID = ?`)
 
             const run_all = db.transaction((quotes) => {
+                let message_for_user;
+
                 for (const quote of quotes) {
                     if (quote.status === 1) {
                         insert.run(quote.citation, quote.author)
+                    }
+                    if (quote.reason) {
+                        const replied_quote_parts = quote.citation.split(" ")
+                        const hidden_text = replied_quote_parts.length >= 3 ? ' ...' : ''
+                        const short_quote = `${replied_quote_parts.slice(0, 3).join(' ')}${hidden_text}`
+
+                        const verdict = quote.status === 1 ? "одобрена" : "отклонена"
+                        const reason = (quote.reason) ? `. Комментарий: ${quote.reason}` : ""
+                        const message_for_user = `Ваша цитата "${short_quote}" ${verdict}${reason}`
+                        const citate_changes = this.get_citate_changes()
+                        citate_changes.push({
+                            nickname: quote.author,
+                            message: message_for_user,
+                            id: random_number(1, 999999999)
+                        })
+                        this.update_permanent_memory("users_notify_about_citate_change", citate_changes)
                     }
                     remove.run(quote.ID)
                 }
