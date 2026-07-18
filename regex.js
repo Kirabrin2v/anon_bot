@@ -126,6 +126,32 @@ const reg_bal_log = new RegExp(
   `- (\\d{2}\\.\\d{2}\\.\\d{4}) (\\d{2}:\\d{2}:\\d{2}) (.*) \\((?:(?:От игрока)|(?:Игроку)) ${reg_nickname}\\): \\$(\\+|-)([\\d,\\.]*)\\n?`.repeat(10)
 )
 
+const reg_friend_add_none = new RegExp(`Неизвестный игрок: ${reg_nickname}`)
+const reg_friend_add_success = new RegExp(`\\[Друзья\\] Вы предложили дружбу игроку ${reg_nickname}`)
+
+const reg_friend_accept_fail = new RegExp('Этот игрок не отправлял Вам предложение дружбы')
+const reg_friend_accept_success = new RegExp(`\\[Друзья\\] ${reg_nickname} теперь Ваш друг!`)
+
+const reg_friend_deny_fail = new RegExp(`Этот игрок не отправлял Вам предложение дружбы`)
+const reg_friend_deny_success = new RegExp(`\\[Друзья\\] Вы отказали в дружбе ${reg_nickname}`)
+
+const reg_friend_remove_fail = new RegExp(`Этот игрок не находится в списке Ваших друзей`)
+const reg_friend_remove_success = new RegExp(`\\[Друзья\\] Вы удалили ${reg_nickname} из друзей`)
+
+const reg_friend_list = new RegExp('-------------------- Ваши друзья \\[[0-9]+\\] --------------------\\n' +
+    ' \\n' +
+    `( ${reg_nickname} \\(((?:Онлайн)|(?:Офлайн))\\)\\. (?:(Местонахождение: .*)|(Был в сети: .*))\\n)+` +
+    '\\n' +
+    '-----------------------------\\[[0-9]+\\]-----------------------------')
+
+const reg_friend_requests_fail = new RegExp('У Вас нет заявок на добавление в друзья')
+const reg_friend_requests_success = new RegExp('----------------- Запросы в друзья \\[[0-9]+\\] -----------------\\n' +
+    '\\n' +
+    `( \\[Принять\\] \\[Отклонить\\] ${reg_nickname}\\n)+` +
+    ' \\n' +
+    'Кликните здесь, чтобы открыть следующую страницу ->>>\\n' +
+    '\\n' +
+    '-----------------------------\\[[0-9]+\\]-----------------------------')
 
 const reg_spawnmob_help = new RegExp(
     `^    \\n` +
@@ -133,7 +159,7 @@ const reg_spawnmob_help = new RegExp(
     `Команда: \\/SpawnMob <Кол-во> <Моб>\\[:НД\\] \\[Наездник\\[:НД\\]\\.\\.\\.\\]\\n` +
     `Возможные мобы:\\n` +
     `armor_stand, bat, blaze, boat, cave_spider, chest_minecart, chicken, cow, creeper, donkey, elder_guardian, ender_crystal, ender_dragon, enderman, endermite, evocation_illager, furnace_minecart, ghast, giant, guardian, hopper_minecart, horse, husk, illusion_illager, iron_golem, llama, magma_cube, minecart, mooshroom, mule, ocelot, parrot, pig, polar_bear, rabbit, sheep, shulker, silverfish, skeleton, skeleton_horse, slime, snowman, spider, squid, stray, tnt_minecart, vex, villager, vindication_illager, witch, wither, wither_skeleton, wolf, zombie, zombie_horse, zombie_pigman, zombie_villager\\n` +
-    `Узнать возможные НД моба можно командой \\/SpawnMob 1 <Моб>: .+\\n` +  // ← .+ вместо \\s*
+    `Узнать возможные НД моба можно командой \\/SpawnMob 1 <Моб>: .+\\n` +
     `\\(Поставив пробел между названиями мобов, они будут заспавнены друг на друге\\)$`
 );
 const reg_spawnmob_region_error = new RegExp(`^Вы можете спавнить мобов только в своём регионе$`)
@@ -218,6 +244,23 @@ module.exports = {
 	reg_message,
 	reg_me_send,
 	reg_i_send,
+
+  reg_friend_add_none,
+  reg_friend_add_success,
+
+  reg_friend_accept_fail,
+  reg_friend_accept_success,
+
+  reg_friend_deny_fail,
+  reg_friend_deny_success,
+
+  reg_friend_remove_fail,
+  reg_friend_remove_success,
+
+  reg_friend_list,
+
+  reg_friend_requests_fail,
+  reg_friend_requests_success,
 
 	reg_near,
 

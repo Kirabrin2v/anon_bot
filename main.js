@@ -14,6 +14,23 @@ const {
 	reg_bal_TCA,
 	reg_bal_log,
 
+	reg_friend_add_none,
+	reg_friend_add_success,
+
+	reg_friend_accept_fail,
+	reg_friend_accept_success,
+
+	reg_friend_deny_fail,
+	reg_friend_deny_success,
+
+	reg_friend_remove_fail,
+	reg_friend_remove_success,
+
+	reg_friend_list,
+
+	reg_friend_requests_fail,
+	reg_friend_requests_success,
+
 	reg_near,
 
 	reg_lookup,
@@ -131,6 +148,23 @@ const regexes = [
 	reg_bal_log,
 
 	reg_lookup,
+
+	reg_friend_add_none,
+	reg_friend_add_success,
+
+	reg_friend_accept_fail,
+	reg_friend_accept_success,
+
+	reg_friend_deny_fail,
+	reg_friend_deny_success,
+
+	reg_friend_remove_fail,
+	reg_friend_remove_success,
+
+	reg_friend_list,
+
+	reg_friend_requests_fail,
+	reg_friend_requests_success,
 
 	reg_vic_question,
 	reg_vic_answ,
@@ -340,6 +374,10 @@ async function actions_processing(actions, module_name, update_action) {
 	})
 }
 
+function normalize_cmd(cmd, count_args) {
+	return cmd.trim().split(" ").slice(0, count_args).join(" ").replace("/", "")
+}
+
 function processing_server_message(sender, message, message_json) {
 	let wait_cmd;
 	let now_cmd;
@@ -352,6 +390,23 @@ function processing_server_message(sender, message, message_json) {
 	}
 
 	const lookup = message.match(reg_lookup)
+
+	const friend_add_none = message.match(reg_friend_add_none)
+	const friend_add_success = message.match(reg_friend_add_success)
+
+	const friend_accept_fail = message.match(reg_friend_accept_fail)
+	const friend_accept_success = message.match(reg_friend_accept_success)
+
+	const friend_deny_fail = message.match(reg_friend_deny_fail)
+	const friend_deny_success = message.match(reg_friend_deny_success)
+
+	const friend_remove_fail = message.match(reg_friend_remove_fail)
+	const friend_remove_success = message.match(reg_friend_remove_success)
+
+	const friend_list = message.match(reg_friend_list)
+
+	const friend_requests_fail = message.match(reg_friend_requests_fail)
+	const friend_requests_success = message.match(reg_friend_requests_success)
 
 	const near = message.match(reg_near)
 
@@ -649,6 +704,36 @@ function processing_server_message(sender, message, message_json) {
 			last_warns: [last_warn_1, last_warn_2, last_warn_3]
 		}
 
+	} else if (friend_add_none || friend_add_success) {
+		now_cmd = "friend add"
+		count_args = 2
+
+	} else if (friend_accept_fail || friend_deny_fail) {
+		if (wait_cmd) {
+			count_args = 2
+			now_cmd = normalize_cmd(wait_cmd, count_args)
+		}
+
+	} else if (friend_accept_success) {
+		now_cmd = "friend accept"
+		count_args = 2
+
+	} else if (friend_deny_success) {
+		now_cmd = "friend deny"
+		count_args = 2
+
+	} else if (friend_remove_fail || friend_remove_success) {
+		now_cmd = "friend remove"
+		count_args = 2
+
+	} else if (friend_list) {
+		now_cmd = "friend list"
+		count_args = 2
+
+	} else if (friend_requests_fail || friend_requests_success) {
+		now_cmd = "friend requests"
+		count_args = 2
+
 	} else if (tryme_info) {
 		now_cmd = "tryme info"
 		count_args = 2
@@ -702,13 +787,14 @@ function processing_server_message(sender, message, message_json) {
 	}
 	if (wait_cmd) {
 		let confirmed = false;
+		wait_cmd = normalize_cmd(wait_cmd, count_args)
 		if (
-			now_cmd === wait_cmd.trim().split(" ").slice(0, count_args).join(" ").replace("/", "")
-			&& !exclude.includes(wait_cmd.replace("/", ""))
+			now_cmd === wait_cmd
+			&& !exclude.includes(wait_cmd)
 		) {
 			confirmed = true;
 		}
-		wait_data_processing("cmd", {server_answ: message, values: values, is_confirmed: confirmed})
+		wait_data_processing("cmd", {cmd: `/${now_cmd}`, server_answ: message, values: values, is_confirmed: confirmed})
 	}
 
 }
@@ -743,7 +829,7 @@ function wait_data_processing(type, content) {
 		} else if (type === "cmd") {
 			const module_object = modules.modules[data.module_sender]
 			if (module_object) {
-				module_object.server_answ_processing(data.cmd, content.server_answ, content.values, data.identifier, content.is_confirmed)
+				module_object.server_answ_processing(content.cmd, content.server_answ, content.values, data.identifier, content.is_confirmed)
 			}
 			queue_waiting_data[type].splice(i, 1)
 			break;

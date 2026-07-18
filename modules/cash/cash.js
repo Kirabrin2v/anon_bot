@@ -153,6 +153,10 @@ class CashModule extends BaseModule {
 	}
 
 	processing_bal_log(bal_logs) {
+		if (bal_logs === null || typeof bal_logs[Symbol.iterator] !== 'function') {
+			console.log("Некорректный bal logs", bal_logs)
+			return;
+		}
 		for (const bal_log of bal_logs) {
 			if (bal_log.sender != bot_username) {
 				const check_money = this.check_repeat_survings(

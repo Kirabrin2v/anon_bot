@@ -47,6 +47,61 @@ const STRUCTURE = {
         _optional: true
     },
     _description: "Спавнит мобов"
+  },
+  friend: {
+    add: {
+        nickname: {
+            _type: "nick"
+        },
+        _need_rank: 1,
+        _description: "Отправить игроку заявку в друзья"
+    },
+    accept: {
+        nickname: {
+            _type: "nick"
+        },
+        _need_rank: 1,
+        _description: "Принять заявку в друзья от игрока"
+    },
+    deny: {
+        nickname: {
+            _type: "nick"
+        },
+        _need_rank: 1,
+        _description: "Отклонить заявку в друзья от игрока"
+    },
+    remove: {
+        nickname: {
+            _type: "nick"
+        },
+        _need_rank: 1,
+        _description: "Удалить игрока из друзей"
+    },
+    tp: {
+        nickname: {
+            _type: "nick"
+        },
+        _need_rank: 1,
+        _description: "Отправиться на режим к другу"
+    },
+    list: {
+        _description: "Страница Посмотреть список друзей"
+    },
+    requests: {
+        page_number: {
+            _description: "Номер страницы",
+            _optional: true
+        },
+        _description: "Посмотреть список запросов"
+    },
+    best: {
+        nickname: {
+            _type: "nick"
+        },
+        _need_rank: 1,
+        _description: "Назначить лучшим другом"
+    },
+    _description: "Друзья",
   }
 };
 

@@ -5,6 +5,7 @@ const CommandEngine = require(path.join(BASE_DIR, "command_engine.js"))
 
 class TelegramCommandEngine extends CommandEngine {
   _checkRank(required, actual) {
+    console.log("Ранг:", actual)
       if (required === undefined) {
         required = 0;
       }

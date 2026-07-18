@@ -38,6 +38,7 @@ class TelegramModule extends BaseModule {
 
 		this.seniors = JSON.parse(config.get("VARIABLES", "seniors"))
 		this.masters = JSON.parse(config.get("VARIABLES", "masters"))
+		this.base_server_commands = JSON.parse(config.get("VARIABLES", "base_server_cmds"))
 
 		this.player_settings = createUsersProxy(users_db)
 
@@ -49,7 +50,7 @@ class TelegramModule extends BaseModule {
 
 		this.access_cmds = {} // Ключ - айди, значение - список доступных серверных команд
 		for (const tg_id in this.player_settings) {
-			this.access_cmds[tg_id] = JSON.parse(config.get("VARIABLES", "base_server_cmds"))
+			this.access_cmds[tg_id] = this.base_server_commands
 		}
 
 		this.access_lvls = this.generateAccessLvls(this.player_settings) // JSON.parse(config.get("VARIABLES", "access_lvls"))
@@ -58,6 +59,7 @@ class TelegramModule extends BaseModule {
 					this.access_lvls[cmd_name].at(-1).push(tg_chat_id) // У seniors высший уровень доступа ко всем командам
 				})
 		})
+		console.log(this.access_lvls)
 
 		this.tg = new TelegramBot(config.get("VARIABLES", "tg_key"), {
 		  polling: {
@@ -119,6 +121,7 @@ class TelegramModule extends BaseModule {
 	            access_lvls[cmd_name][lvl].push(Number(tg_id));
 	        }
 	    }
+
 
 	    // Заполняем пропущенные уровни пустыми массивами
 	    for (const levels of Object.values(access_lvls)) {

@@ -19,7 +19,10 @@ class BaseCmd {
 
     // Общий шаблон
     async cmd_processing(sender, args, cmd, msg_obj) {
-        const rank = this.get_rank(sender, this.module_name)
+        console.log(this.module_obj.seniors, this.module_obj.seniors.includes(sender))
+        const rank = this.module_obj.seniors.includes(sender) ?
+            Infinity : this.get_rank(sender, this.module_name)
+        console.log(sender, rank)
         const valid_command = this.CommandManager.validate_command(this.module_name, args, rank)
         if (valid_command["is_ok"]) {
             try {
