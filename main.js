@@ -26,7 +26,8 @@ const {
 	reg_friend_remove_fail,
 	reg_friend_remove_success,
 
-	reg_friend_list,
+	reg_friend_list_fail,
+	reg_friend_list_success,
 
 	reg_friend_requests_fail,
 	reg_friend_requests_success,
@@ -161,7 +162,8 @@ const regexes = [
 	reg_friend_remove_fail,
 	reg_friend_remove_success,
 
-	reg_friend_list,
+	reg_friend_list_fail,
+	reg_friend_list_success,
 
 	reg_friend_requests_fail,
 	reg_friend_requests_success,
@@ -403,7 +405,8 @@ function processing_server_message(sender, message, message_json) {
 	const friend_remove_fail = message.match(reg_friend_remove_fail)
 	const friend_remove_success = message.match(reg_friend_remove_success)
 
-	const friend_list = message.match(reg_friend_list)
+	const friend_list_fail = message.match(reg_friend_list_fail)
+	const friend_list_success = message.match(reg_friend_list_success)
 
 	const friend_requests_fail = message.match(reg_friend_requests_fail)
 	const friend_requests_success = message.match(reg_friend_requests_success)
@@ -726,7 +729,7 @@ function processing_server_message(sender, message, message_json) {
 		now_cmd = "friend remove"
 		count_args = 2
 
-	} else if (friend_list) {
+	} else if (friend_list_fail || friend_list_success) {
 		now_cmd = "friend list"
 		count_args = 2
 
@@ -829,7 +832,7 @@ function wait_data_processing(type, content) {
 		} else if (type === "cmd") {
 			const module_object = modules.modules[data.module_sender]
 			if (module_object) {
-				module_object.server_answ_processing(content.cmd, content.server_answ, content.values, data.identifier, content.is_confirmed)
+				module_object.server_answ_processing(data.cmd, content.server_answ, content.values, data.identifier, content.is_confirmed, content.cmd)
 			}
 			queue_waiting_data[type].splice(i, 1)
 			break;

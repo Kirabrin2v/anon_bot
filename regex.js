@@ -138,20 +138,22 @@ const reg_friend_deny_success = new RegExp(`\\[Друзья\\] Вы отказа
 const reg_friend_remove_fail = new RegExp(`Этот игрок не находится в списке Ваших друзей`)
 const reg_friend_remove_success = new RegExp(`\\[Друзья\\] Вы удалили ${reg_nickname} из друзей`)
 
-const reg_friend_list = new RegExp('-------------------- Ваши друзья \\[[0-9]+\\] --------------------\\n' +
+const reg_friend_list_fail = new RegExp('Эта страница пуста \\(Всего страниц: [0-9]+\\)')
+const reg_friend_list_success = new RegExp('-+ Ваши друзья \\[[0-9]+\\] -+\\n' +
     ' \\n' +
     `( ${reg_nickname} \\(((?:Онлайн)|(?:Офлайн))\\)\\. (?:(Местонахождение: .*)|(Был в сети: .*))\\n)+` +
     '\\n' +
-    '-----------------------------\\[[0-9]+\\]-----------------------------')
+    '(?:\\[Клик ⇚\\])?-+\\[[0-9]+\\]-+(?:\\[Клик ⇛\\])?')
+
 
 const reg_friend_requests_fail = new RegExp('У Вас нет заявок на добавление в друзья')
-const reg_friend_requests_success = new RegExp('----------------- Запросы в друзья \\[[0-9]+\\] -----------------\\n' +
+const reg_friend_requests_success = new RegExp('-+ Запросы в друзья \\[[0-9]+\\] -+\\n' +
     '\\n' +
     `( \\[Принять\\] \\[Отклонить\\] ${reg_nickname}\\n)+` +
     ' \\n' +
     'Кликните здесь, чтобы открыть следующую страницу ->>>\\n' +
     '\\n' +
-    '-----------------------------\\[[0-9]+\\]-----------------------------')
+    '-+\\[[0-9]+\\]-+')
 
 const reg_spawnmob_help = new RegExp(
     `^    \\n` +
@@ -257,7 +259,8 @@ module.exports = {
   reg_friend_remove_fail,
   reg_friend_remove_success,
 
-  reg_friend_list,
+  reg_friend_list_fail,
+  reg_friend_list_success,
 
   reg_friend_requests_fail,
   reg_friend_requests_success,

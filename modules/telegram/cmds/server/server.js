@@ -85,6 +85,10 @@ const STRUCTURE = {
         _description: "Отправиться на режим к другу"
     },
     list: {
+        page_number: {
+            _description: "Номер страницы",
+            _optional: true
+        },
         _description: "Страница Посмотреть список друзей"
     },
     requests: {

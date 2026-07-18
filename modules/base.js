@@ -81,9 +81,9 @@ class BaseModule {
         return null;
     }
 
-    server_answ_processing(cmd, server_answ, values, identifier, is_confirmed) {
+    server_answ_processing(wait_cmd, server_answ, values, identifier, is_confirmed, now_cmd) {
         try {
-            return this._server_answ_processing(cmd, server_answ, values, identifier, is_confirmed)
+            return this._server_answ_processing(wait_cmd, server_answ, values, identifier, is_confirmed, now_cmd)
         } catch (error) {
             this.actions.push({
                 type: "error",
@@ -97,7 +97,7 @@ class BaseModule {
         }
     }
 
-    _server_answ_processing(cmd, server_answ, values, identifier, is_confirmed) {
+    _server_answ_processing(wait_cmd, server_answ, values, identifier, is_confirmed, now_cmd) {
 
     }
 }

@@ -368,9 +368,9 @@ class CashModule extends BaseModule {
 		)
 	}
 
-	server_answ_processing(cmd, _server_answ, values, _identifier, is_confirmed) {
+	server_answ_processing(_wait_cmd, _server_answ, values, _identifier, is_confirmed, now_cmd) {
 		if (is_confirmed) {
-			if (cmd === "/bal log") {
+			if (now_cmd === "/bal log") {
 				this.processing_bal_log(values)
 			}
 		}

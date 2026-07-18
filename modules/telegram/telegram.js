@@ -59,7 +59,6 @@ class TelegramModule extends BaseModule {
 					this.access_lvls[cmd_name].at(-1).push(tg_chat_id) // У seniors высший уровень доступа ко всем командам
 				})
 		})
-		console.log(this.access_lvls)
 
 		this.tg = new TelegramBot(config.get("VARIABLES", "tg_key"), {
 		  polling: {
@@ -366,15 +365,15 @@ class TelegramModule extends BaseModule {
 		this.send_message_tg(tg_id, answ)
 	}
 
-	server_answ_processing(cmd, server_answ, values, identifier, is_confirmed) {
+	server_answ_processing(wait_cmd, server_answ, values, identifier, is_confirmed) {
 		if (is_confirmed) {
-			this.send_message_tg(identifier, `Ответ сервера на команду '${cmd}':\n\n${server_answ}`)
+			this.send_message_tg(identifier, `Ответ сервера на команду '${wait_cmd}':\n\n${server_answ}`)
 
 		} else {
 			if (this.seniors.includes(identifier) || this.masters.includes(identifier)) {
-				this.send_message_tg(identifier, `Неподтверждённый ответ сервера на команду '${cmd}':\n\n${server_answ}`)
+				this.send_message_tg(identifier, `Неподтверждённый ответ сервера на команду '${wait_cmd}':\n\n${server_answ}`)
 			} else {
-				this.send_message_tg(identifier, `Ответ от сервера на команду ${cmd} не был получен. Повторите попытку`)
+				this.send_message_tg(identifier, `Ответ от сервера на команду ${wait_cmd} не был получен. Повторите попытку`)
 			}
 		}
 	}
