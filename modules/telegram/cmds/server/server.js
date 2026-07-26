@@ -143,7 +143,7 @@ class ServerCmd extends BaseCmd {
     _process(sender, args, _unused_args, _cmd, msg_obj) {
         if (args[0].name === "account") {
             if (this.module_obj.player_settings[sender].server_nick) {
-                return `У Вас уже привязан аккаунт: ${this.module_obj.player_settings[sender].server_nick}. Если Вы привязали не тот аккаунт, обратитесь к @Kirabriin для его изменения`
+                return `У Вас уже привязан аккаунт: ${this.module_obj.player_settings[sender].server_nick}. Если Вы привязали не тот аккаунт, обратитесь к @${this.module_obj.developer_tg_username} для его изменения`
             } else {
                 const bot_username = global_config.get("VARIABLES", "active_nick")
                 const tg_id = msg_obj.chat.id

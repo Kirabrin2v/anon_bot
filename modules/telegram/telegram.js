@@ -38,6 +38,7 @@ class TelegramModule extends BaseModule {
 
 		this.seniors = JSON.parse(config.get("VARIABLES", "seniors"))
 		this.masters = JSON.parse(config.get("VARIABLES", "masters"))
+		this.developer_tg_username = config.get("VARIABLES", "developer_tg_username")
 		this.base_server_commands = JSON.parse(config.get("VARIABLES", "base_server_cmds"))
 
 		this.player_settings = createUsersProxy(users_db)
@@ -346,7 +347,7 @@ class TelegramModule extends BaseModule {
 					}
 				)
 			} else {
-				answ = "Я - ТГ-часть anon_bot'a. Чтобы общаться со мной, используй следующий синтаксис: '/{команда} [аргументы]'. Все права на команды выдаются лично @Kirabriin"
+				answ = `Я - ТГ-часть anon_bot'a. Чтобы общаться со мной, используй следующий синтаксис: '/{команда} [аргументы]'. Все права на команды выдаются лично @${this.developer_tg_username}`
 			}
 		}
 
