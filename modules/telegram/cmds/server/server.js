@@ -58,6 +58,9 @@ const STRUCTURE = {
     _description: "Превратиться в другую сущность",
     _need_rank: 1
   },
+  undis: {
+    _need_rank: 1
+  },
   spawnmob: {
     count: {
         mob_name: {

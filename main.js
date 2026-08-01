@@ -14,6 +14,10 @@ const {
 	reg_bal_TCA,
 	reg_bal_log,
 
+	reg_dis_entity_name_error,
+	  reg_dis_success,
+	  reg_undis_success,
+
 	reg_friend_add_none,
 	reg_friend_add_success,
 
@@ -149,6 +153,10 @@ const regexes = [
 	reg_bal_log,
 
 	reg_lookup,
+
+	reg_dis_entity_name_error,
+	reg_dis_success,
+	reg_undis_success,
 
 	reg_friend_add_none,
 	reg_friend_add_success,
@@ -392,6 +400,10 @@ function processing_server_message(sender, message, message_json) {
 	}
 
 	const lookup = message.match(reg_lookup)
+
+	const dis_entity_name_error = message.match(reg_dis_entity_name_error)
+	const dis_success = message.match(reg_dis_success)
+	const undis_success = message.match(reg_undis_success)
 
 	const friend_add_none = message.match(reg_friend_add_none)
 	const friend_add_success = message.match(reg_friend_add_success)
@@ -711,6 +723,12 @@ function processing_server_message(sender, message, message_json) {
 			count_warns,
 			last_warns: [last_warn_1, last_warn_2, last_warn_3]
 		}
+
+	} else if (dis_entity_name_error || dis_success) {
+		now_cmd = "dis"
+
+	} else if (undis_success) {
+		now_cmd = "undis"
 
 	} else if (friend_add_none || friend_add_success) {
 		now_cmd = "friend add"
