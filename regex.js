@@ -155,6 +155,11 @@ const reg_friend_requests_success = new RegExp('-+ Запросы в друзь�
     '\\n' +
     '-+\\[[0-9]+\\]-+')
 
+
+const reg_dis_entity_name_error = new RegExp("Error! The disguise (.*) doesn't exist!")
+const reg_dis_success = new RegExp("Now disguised as a (.*)")
+const reg_undis_success = new RegExp("You are no longer disguised")
+
 const reg_spawnmob_help = new RegExp(
     `^    \\n` +
     `Справка:\\n` +

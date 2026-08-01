@@ -31,6 +31,32 @@ const STRUCTURE = {
     },
     _description: "Местоположение игрока"
   },
+  dis: {
+    player: {
+        nick: {
+            effects: {
+                _type: "string",
+                _multiple: true,
+                _optional: true,
+                _description: "Дополнительные параметры"
+            },
+            _type: "nick",
+            _description: "Ник игрока"
+        },
+        _description: "Превратиться в игрока"
+    },
+    entity_name: {
+        effects: {
+            _type: "string",
+            _multiple: true,
+            _optional: true,
+            _description: "Дополнительные параметры"
+        },
+        _type: "string",
+        _description: "Название сущности"
+    },
+    _description: "Превратиться в другую сущность"
+  },
   spawnmob: {
     count: {
         mob_name: {

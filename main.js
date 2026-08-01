@@ -454,7 +454,12 @@ function processing_server_message(sender, message, message_json) {
 		console.log([message], sender)
 	}
 
-	if (["Нужно авторизоваться. Напишите в чат Ваш пароль", "Забыли пароль? Восстановите его с помощью команды /Recovery <Почта>"].includes(message)
+	if (
+		[
+		"Нужно авторизоваться. Напишите в чат Ваш пароль",
+		"Забыли пароль? Восстановите его с помощью команды /Recovery <Почта>",
+		"Аутентификация: введите в чат пароль от аккаунта"
+	].includes(message)
 		&& !password_enter) {
 		bot.chat(`/login ${bot_password}`)
 		password_enter = true;
