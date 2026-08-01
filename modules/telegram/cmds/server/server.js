@@ -55,7 +55,8 @@ const STRUCTURE = {
         _type: "string",
         _description: "Название сущности"
     },
-    _description: "Превратиться в другую сущность"
+    _description: "Превратиться в другую сущность",
+    _need_rank: 1
   },
   spawnmob: {
     count: {
@@ -72,42 +73,43 @@ const STRUCTURE = {
         _type: "int",
         _optional: true
     },
-    _description: "Спавнит мобов"
+    _description: "Спавнит мобов",
+    _need_rank: 1
   },
   friend: {
     add: {
         nickname: {
             _type: "nick"
         },
-        _need_rank: 1,
+        _need_rank: 2,
         _description: "Отправить игроку заявку в друзья"
     },
     accept: {
         nickname: {
             _type: "nick"
         },
-        _need_rank: 1,
+        _need_rank: 2,
         _description: "Принять заявку в друзья от игрока"
     },
     deny: {
         nickname: {
             _type: "nick"
         },
-        _need_rank: 1,
+        _need_rank: 2,
         _description: "Отклонить заявку в друзья от игрока"
     },
     remove: {
         nickname: {
             _type: "nick"
         },
-        _need_rank: 1,
+        _need_rank: 2,
         _description: "Удалить игрока из друзей"
     },
     tp: {
         nickname: {
             _type: "nick"
         },
-        _need_rank: 1,
+        _need_rank: 2,
         _description: "Отправиться на режим к другу"
     },
     list: {
@@ -128,7 +130,7 @@ const STRUCTURE = {
         nickname: {
             _type: "nick"
         },
-        _need_rank: 1,
+        _need_rank: 2,
         _description: "Назначить лучшим другом"
     },
     _description: "Друзья",
@@ -196,7 +198,7 @@ class ServerCmd extends BaseCmd {
                 };
             }
         }
-        else if (this.module_obj.access_cmds[sender].includes(args[0].name)) {
+        else {
             const flattern_args = this.CommandManager.flattenArgs(args)
 
             this.module_obj.actions.push({
@@ -207,8 +209,6 @@ class ServerCmd extends BaseCmd {
                     identifier: sender
                 }
             })
-        } else {
-            return "Недостаточно прав для использования этой команды"
         }
     }
 }

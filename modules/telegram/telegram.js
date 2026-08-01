@@ -60,6 +60,7 @@ class TelegramModule extends BaseModule {
 					this.access_lvls[cmd_name].at(-1).push(tg_chat_id) // У seniors высший уровень доступа ко всем командам
 				})
 		})
+		console.log("Ацес левелс", this.access_lvls)
 
 		this.tg = new TelegramBot(config.get("VARIABLES", "tg_key"), {
 		  polling: {
