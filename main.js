@@ -70,7 +70,6 @@ const {
 
 } = require("./regex.js")
 
-const { text_to_date } = require("./utils/text.js")
 
 const bus = require("./event_bus.js");
 
@@ -607,7 +606,7 @@ function processing_server_message(sender, message, message_json) {
 			const [date, time, reason, nickname, direction, amount] = bal_log.slice(i, i + GROUPS_PER_ROW)
 			let sender, recipient;
 			// Парсим как "наивную" дату, цифры которой относятся к TZ Minecraft-сервера
-			const naive = text_to_date(`${date} ${time}`, 'DD.MM.YYYY HH:mm:ss')
+			const naive = modules.call_module("move").text_to_date(`${date} ${time}`, 'DD.MM.YYYY HH:mm:ss')
 			// Конвертируем в корректный момент времени (UTC), вычитая смещение MC-сервера
 			const date_time = new Date(Date.UTC(
 				naive.getFullYear(),
