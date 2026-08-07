@@ -1,5 +1,6 @@
 const ConfigParser = require('configparser');
 const path = require("path");
+const { Vec3 } = require('vec3');
 
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
@@ -88,7 +89,7 @@ class CommandHandlerModule extends BaseModule {
         }
     }
 
-    handle(sender, message) {
+    async handle(sender, message) {
         console.log("Получено:", sender, message)
         if (!message.toLowerCase().includes("cmd ")) return false
 
@@ -208,6 +209,10 @@ class CommandHandlerModule extends BaseModule {
         } else if (this.check_allow_cmd(cmd, args) && masters.includes(sender)) {
           bot.chat(`${cmd} ${args.join(" ")}`)
 
+        } else if (cmd === "test") {
+            console.log("Начало полёта")
+            bot.creative.startFlying();
+            await bot.creative.flyTo(new Vec3(10, 100, 32));
         } else if (seniors.includes(sender)) {
           if (cmd === "js") {
             try { eval(args.join(" ")) }

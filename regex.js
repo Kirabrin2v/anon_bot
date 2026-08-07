@@ -23,15 +23,20 @@ class ChatSchema {
     this.KNOWN_CHATS = ["Пати-чат", "Лк", "Гл", "Друзья"]
   }
 
-  parse(raw_message) {
+  parse(
+    raw_message,
+    me_send_pattern=this.patterns.me_send,
+    i_send_pattern=this.patterns.i_send,
+    standard_pattern=this.patterns.standard
+  ) {
     let m;
-    m = raw_message.match(this.patterns.me_send)
+    m = raw_message.match(me_send_pattern)
     if (m) {return { type_chat: "Приват", sender: m[1], recipient: bot_username, message: m[2] }}
 
-    m = raw_message.match(this.patterns.i_send)
+    m = raw_message.match(i_send_pattern)
     if (m) {return { type_chat: "Приват", sender: bot_username, recipient: m[1], message: m[2] }}
 
-    m = raw_message.match(this.patterns.standard)
+    m = raw_message.match(standard_pattern)
     if (m) {
       const raw_type  = m[1]
       const TYPE_MAP  = { "Друзьям": "Друзья" }

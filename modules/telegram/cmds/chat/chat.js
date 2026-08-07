@@ -45,6 +45,27 @@ const STRUCTURE = {
         _aliases: ["nn"]
     },
 
+    chat_pattern: {
+        show: {
+            _description: "Показать текущий шаблон чата"
+        },
+        edit: {
+            chat_pattern: {
+                _type: "text",
+                _description: "Шаблон сообщения. Пример и доступные параметры можно посмотреть в /chat_pattern info"
+            },
+            _description: "Изменить шаблон шата"
+        },
+        info: {
+            _description: "Информация о доступных параметрах"
+        },
+        reset: {
+            _description: "Сбросить шаблон до заводских настроек"
+        },
+        _description: "Изменить вид, в котором сообщения пересылаются с сервера",
+        _aliases: ["cp"]
+    },
+
     [PARTY_CMDS[0]]: {
         text: {
             _type: "text",
@@ -134,6 +155,7 @@ class ChatCmd extends BaseCmd {
     }
 
     initialize() {
+        this.default_standard_chat_pattern = this.module_obj.config.get("VARIABLES", "default_standard_chat_pattern")
         setInterval(() => this.check_nearby_players_count(), this.CHECK_PLAYERS_COUNT_INTERVAL)
     }
 
@@ -194,6 +216,54 @@ class ChatCmd extends BaseCmd {
                 .slice(-this.len_context).join("\n")
                 answ = `Сообщения включены. Последние сообщения:\n${context}`
             }
+        } else if (args[0].name === "chat_pattern") {
+            if (args[1].name === "show") {
+                let chat_pattern;
+                if (settings["chat_pattern"]) {
+                    chat_pattern = settings["chat_pattern"]
+                } else {
+                    chat_pattern = this.default_standard_chat_pattern
+                }
+                chat_pattern = this.module_obj.escapeMarkdownV2(chat_pattern)
+                answ = "Текущий шаблон чата: \n" +
+                    "```text\n" +
+                    `${chat_pattern}` +
+                    "```"
+
+                return {
+                    message: answ,
+                    parse_mode: "MarkdownV2"
+                }
+
+            } else if (args[1].name === "edit") {
+                const new_chat_pattern = args[2].value
+                settings["chat_pattern"] = new_chat_pattern
+                answ = "Шаблон сообщений успешно изменён!"
+
+            } else if (args[1].name === "reset") {
+                settings["chat_pattern"] = null;
+                answ = "Шаблон успешно сброшен до заводских настроек"
+            
+            } else if (args[1].name === "info") {
+                answ = "С помощью этой команды Вы можете изменить вид серверного сообщения\\. Для этого нужно задать его шаблон\\. " +
+                    "В шаблоне ключевые слова заменяются на реальные значения, полученные с сервера\\. Ниже приведён список всех доступных ключевых слов:\n\n" +
+                    "*time* \\- время в формате HH:MM:SS;\n" +
+                    "*chat*\\_type \\- тип чата\\. Например, Френд\\-чат или локальный чат;\n" +
+                    "*clan*\\_part \\- клан\\. Если клана нет \\- ничего не подставится;\n" +
+                    "*rank*\\_part \\- звание\\. Если звания нет \\- ничего не подставится;\n" +
+                    "*sender* \\- отправитель\\. Игрок, отправивший сообщение;\n" +
+                    "*message* \\- сообщение, которое отправил игрок\\.\n\n" +
+                    "Для использования ключевого слова нужно заключить его в фигурные скобки\\. Например: \\{time\\}\n\n" +
+                    "Примеры шаблонов:\n" +
+                    "1\\) Из\n`{sender}: {message}`\nполучится\n`Kirabrn: Привет!`\n" +
+                    "2\\) Из\n`sender:{sender},время - {time}`\nполучится\n`sender:Kirabrin,время - 01:13:21`"
+
+                return {
+                    message: answ,
+                    parse_mode: "MarkdownV2"
+                }
+            }
+
         } else if (args[0].name === "nick_notice") {
             if (args.length === 1) {
                 if (settings["nick_notice_on"] === true) {
@@ -233,7 +303,6 @@ class ChatCmd extends BaseCmd {
 
     chat_commands_processing(tg_id, message, cmd, msg_obj) {
         const settings = this.module_obj.player_settings[tg_id]
-        console.log(msg_obj)
 
         const nick = settings["show_nick"] || settings["server_nick"]
         const color = settings["nick_color"]
@@ -245,11 +314,11 @@ class ChatCmd extends BaseCmd {
         const replied_msg = msg_obj.reply_to_message
         if (replied_msg && replied_msg.text) {
             const server_text = replied_msg.text.split("] ").slice(1).join("] ")
-            const parsed = chatSchema.parse(server_text)
-            const parsed_replied_message = chatSchema.parse(server_text)
-            if (parsed) {
-                type_chat = parsed.type_chat;
-                recipient = parsed.sender
+            const db_replied_message = this.module_obj.get_tg_message(tg_id, { message_id: replied_msg.message_id })
+            const parsed_replied_message = JSON.parse(db_replied_message.parsed_data)
+            if (parsed_replied_message) {
+                type_chat = parsed_replied_message.type_chat;
+                recipient = parsed_replied_message.sender
                 const replied_message_parts = parsed_replied_message.message.split(" ")
                 const hidden_text = replied_message_parts.length >= 3 ? ' ...' : ''
                 prefix += `[⤷ "${replied_message_parts.slice(0, 3).join(' ')}${hidden_text}"] `
@@ -350,7 +419,14 @@ class ChatCmd extends BaseCmd {
 
     }
 
-    format_server_message(date_time, fields) {
+    format_server_message(
+        date_time,
+        fields,
+        standard_pattern
+    ) {
+        if (!standard_pattern) {
+            standard_pattern = this.default_standard_chat_pattern
+        }
         date_time = new Date(date_time); // копия
         date_time.setHours(date_time.getHours() + 3) // To MSC time
         const time = [date_time.getHours(), date_time.getMinutes(), date_time.getSeconds()]
@@ -365,7 +441,17 @@ class ChatCmd extends BaseCmd {
 
         const clan_part = fields.clan ? ` [${fields.clan}]` : ''
         const rank_part = fields.rank ? ` [${fields.rank}]` : ''
-        return `[${time}] [${fields.type_chat}]${clan_part}${rank_part} ${fields.sender}: ${fields.message}`
+        return this.module_obj.ModuleManager.call_module("text").substitute_text(
+                standard_pattern,
+                {
+                    time: time,
+                    chat_type: fields.type_chat,
+                    clan_part: clan_part,
+                    rank_part: rank_part,
+                    sender: fields.sender,
+                    message: fields.message
+                }
+            )
     }
 
     replace_notice_nick(message, notify_aliases) {
@@ -381,12 +467,12 @@ class ChatCmd extends BaseCmd {
     player_message_processing(type_chat, sender, recipient, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         parsed.date_time = date_time
-        const formatted_message = this.format_server_message(date_time, parsed)
         for (const tg_id in this.module_obj.player_settings) {
             if (!this.module_obj.player_settings[tg_id]["allowed_chats"].includes(type_chat)) {
                 continue;
             }
             const settings = this.module_obj.player_settings[tg_id]
+            const formatted_message = this.format_server_message(date_time, parsed, settings["chat_pattern"])
             const notify_message = this.replace_notice_nick(formatted_message, settings["notify_aliases"])
             if (settings["chat_on"] === true) {
                 if (settings["whitelist_on"] === true) {
@@ -399,7 +485,7 @@ class ChatCmd extends BaseCmd {
                         continue;
                     }
                 }
-                this.module_obj.send_message_tg(tg_id, notify_message, undefined, false, "MarkdownV2")
+                this.module_obj.send_message_tg(tg_id, notify_message, undefined, false, "MarkdownV2", parsed)
 
             } else if (settings["nick_notice_on"]) {
                 const notify_aliases = settings["notify_aliases"]
@@ -410,11 +496,11 @@ class ChatCmd extends BaseCmd {
                     if (message.match(regex)) {
                         let context = this.logs
                             .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
-                            .map(log_element => this.format_server_message(log_element.date_time, log_element))
+                            .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
                             .slice(-this.len_context).join("\n")
                         context = this.module_obj.escapeMarkdownV2(context)
                         const answ = `${context}\n\n${notify_message}`
-                        this.module_obj.send_message_tg(tg_id, answ, undefined, false, "MarkdownV2")
+                        this.module_obj.send_message_tg(tg_id, answ, undefined, false, "MarkdownV2", parsed)
                         break;
                     }
                 }

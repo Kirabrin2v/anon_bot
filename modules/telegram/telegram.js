@@ -5,6 +5,7 @@ const sqlite = require("better-sqlite3");
 
 const { ModuleManager, CommandManager } = require(path.join(__dirname, "module_manager.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
+const { chatSchema } = require(path.join(BASE_DIR, "regex.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const { createUsersProxy } = require(path.join(__dirname, "manage_db.js"))
 
@@ -36,6 +37,7 @@ class TelegramModule extends BaseModule {
 			this.start()
 		});
 
+		this.config = config
 		this.seniors = JSON.parse(config.get("VARIABLES", "seniors"))
 		this.masters = JSON.parse(config.get("VARIABLES", "masters"))
 		this.developer_tg_username = config.get("VARIABLES", "developer_tg_username")
@@ -97,7 +99,7 @@ class TelegramModule extends BaseModule {
 		console.log("Telegram started")
 		this.tg.on("text", async msg => {
 			const full_name = msg.chat.first_name + " " + msg.chat.last_name
-			this.log_tg_messages("accept", msg.chat.id, msg.text, full_name, msg.chat.username, msg)
+			this.log_tg_messages("accept", msg.chat.id, msg.text, full_name, msg.chat.username, msg, msg.message_id)
 			this.tg_message_processing(msg.chat.id, msg.text, msg)
 			
 		})
@@ -162,14 +164,15 @@ class TelegramModule extends BaseModule {
 	  return text;
 	}
 
-	send_message_tg(
+	async send_message_tg(
 		tg_id,
 		message,
 		keyboard,
 		is_document = false,
 		parse_mode = null,
+		server_parsed_data
 	) {
-		this.log_tg_messages("send", tg_id, message)
+		const db_message_id = this.log_tg_messages("send", tg_id, message, undefined, undefined, undefined, undefined, server_parsed_data)
 		const parameters = {}
 		if (parse_mode !== null) {
 			parameters.parse_mode = parse_mode
@@ -178,15 +181,17 @@ class TelegramModule extends BaseModule {
 			parameters.reply_markup = keyboard
 		}
 
+		let telegram_message;
 		if (is_document) {
-			this.tg.sendDocument(tg_id, message)
+			telegram_message = await this.tg.sendDocument(tg_id, message)
 		} else {
-			this.tg.sendMessage(
+			telegram_message = await this.tg.sendMessage(
 				tg_id,
 				message.slice(0, 4096),
 				parameters
 			)
 		}
+		this.update_tg_message_id(tg_id, db_message_id, telegram_message.message_id)
 	}
 
 	async broadcast_messages(module_obj, recipients, message, prefix, delay_ms = 50) {
@@ -234,7 +239,16 @@ class TelegramModule extends BaseModule {
 	}
 
 
-	log_tg_messages(type_message, tg_id, message, full_name, username, message_obj) {
+	log_tg_messages(
+		type_message,
+		tg_id,
+		message,
+		full_name,
+		username,
+		message_obj,
+		telegram_message_id,
+		parsed_data
+	) {
 	    tg_id = Number(tg_id)
 	    if (!tg_id) {return}
 	    username = username ?? "unknown"
@@ -252,7 +266,9 @@ class TelegramModule extends BaseModule {
 	            date_time TEXT NOT NULL,
 	            type_message TEXT NOT NULL,
 	            message TEXT NOT NULL,
-	    		message_obj TEXT DEFAULT '{}'
+	    		message_obj TEXT DEFAULT '{}',
+	    		telegram_message_id INTEGER UNIQUE,
+	    		parsed_data
 	        )
 	    `)
 	    createTable.run()
@@ -266,11 +282,57 @@ class TelegramModule extends BaseModule {
 	    }
 
 	    const insertMessage = logs_db.prepare(`
-	        INSERT INTO "${tableName}" (date_time, type_message, message, message_obj)
-	        VALUES (?, ?, ?, ?)
+	        INSERT INTO "${tableName}" (date_time, type_message, message, message_obj, telegram_message_id, parsed_data)
+	        VALUES (?, ?, ?, ?, ?, ?)
 	    `)
 
-	    insertMessage.run(this.ModuleManager.call_module("text").date_to_text(new Date()), type_message, message, JSON.stringify(message_obj))
+	    const result = insertMessage.run(
+	    	this.ModuleManager.call_module("text").date_to_text(new Date()),
+	    	type_message,
+	    	message,
+	    	JSON.stringify(message_obj),
+	    	telegram_message_id,
+	    	JSON.stringify(parsed_data)
+    	)
+    	return result.lastInsertRowid;
+	}
+
+	update_tg_message_id(tg_id, id, message_id) {
+	    const tableName = `dialogue_${tg_id}`;
+
+	    logs_db.prepare(`
+	        UPDATE "${tableName}"
+	        SET telegram_message_id = ?
+	        WHERE ID = ?
+	    `).run(message_id, id);
+	}
+
+	get_tg_message(tg_id, options = {}) {
+	    tg_id = Number(tg_id);
+
+	    if (!tg_id) return null;
+
+	    const tableName = `dialogue_${tg_id}`;
+
+	    if (options.last) {
+	        return logs_db.prepare(`
+	            SELECT *
+	            FROM "${tableName}"
+	            ORDER BY ID DESC
+	            LIMIT 1
+	        `).get() ?? null;
+	    }
+
+	    if (!options.message_id) {
+	        return null;
+	    }
+
+	    return logs_db.prepare(`
+	        SELECT *
+	        FROM "${tableName}"
+	        WHERE telegram_message_id = ?
+	        LIMIT 1
+	    `).get(options.message_id) ?? null;
 	}
 
 

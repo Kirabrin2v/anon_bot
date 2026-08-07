@@ -15,8 +15,8 @@ const {
 	reg_bal_log,
 
 	reg_dis_entity_name_error,
-	  reg_dis_success,
-	  reg_undis_success,
+    reg_dis_success,
+	reg_undis_success,
 
 	reg_friend_add_none,
 	reg_friend_add_success,
