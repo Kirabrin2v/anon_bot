@@ -183,8 +183,8 @@ class ChatCmd extends BaseCmd {
         let behind_parts = new Set();
         let ahead_parts = new Set();
         for (const exclusion of exclusions) {
-            let [behind_part, ...ahead_part] = exclusion.split(keyword)
-            ahead_part = ahead_part.join("")
+            const [behind_part, ...ahead_part_list] = exclusion.split(keyword)
+            const ahead_part = ahead_part_list.join("")
             
             behind_parts.add(behind_part)
             ahead_parts.add(ahead_part)
@@ -313,7 +313,6 @@ class ChatCmd extends BaseCmd {
 
         const replied_msg = msg_obj.reply_to_message
         if (replied_msg && replied_msg.text) {
-            const server_text = replied_msg.text.split("] ").slice(1).join("] ")
             const db_replied_message = this.module_obj.get_tg_message(tg_id, { message_id: replied_msg.message_id })
             const parsed_replied_message = JSON.parse(db_replied_message.parsed_data)
             if (parsed_replied_message) {

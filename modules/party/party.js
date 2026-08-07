@@ -13,8 +13,7 @@ class PartyModule extends BaseModule {
         super(MODULE_NAME, HELP, STRUCTURE)
     }
 
-	_process(sender, args) {
-		let answ;
+	_process(sender) {
 		const cmd = `/party invite ${sender}`
 		this.actions.push({
 			type: "cmd",

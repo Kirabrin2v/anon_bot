@@ -107,7 +107,7 @@ class CashModule extends BaseModule {
 		  });
 		if (currency === "TCA") {
 			this.last_payers_TCA = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'TCA' ORDER BY id DESC LIMIT 20`).all();
-		} else if (currency = "survings") {
+		} else if (currency === "survings") {
 			this.last_payers_survings = db.prepare(`SELECT * FROM logs WHERE payee == '${bot_username}' AND currency == 'survings' ORDER BY id DESC LIMIT 15`).all();
 		}
 	}
@@ -158,7 +158,7 @@ class CashModule extends BaseModule {
 			return;
 		}
 		for (const bal_log of bal_logs) {
-			if (bal_log.sender != bot_username) {
+			if (bal_log.sender !== bot_username) {
 				const check_money = this.check_repeat_survings(
 					bal_log.sender,
 					bal_log.amount,
@@ -270,7 +270,7 @@ class CashModule extends BaseModule {
 			info = this.last_payers_survings[i]
 			const db_date_time = this.ModuleManager.call_module("text").text_to_date(info.date_time, "YYYY-MM-DD HH:mm:ss")
 			// console.log(db_date_time, date)
-			if (info.payer === payer && Math.abs(db_date_time - date) <= 3000 && info.amount === amount && info.reason == reason) {
+			if (info.payer === payer && Math.abs(db_date_time - date) <= 3000 && info.amount === amount && info.reason === reason) {
 				flag_find = true;
 				break;
 			} 

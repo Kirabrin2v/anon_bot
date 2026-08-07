@@ -41,7 +41,7 @@ class ChoiceModule extends BaseModule {
 		super(MODULE_NAME, HELP, STRUCTURE, INTERVAL_CHECK_ACTIONS)
 	}
 
-	_process(sender, args, cmd_parameters) {
+	_process(sender, args) {
 		let answ;
 		let send_in_private_message = true;
 

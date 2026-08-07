@@ -20,14 +20,6 @@ const STRUCTURE = {
 
 const bot = get_bot()
 
-const cmd_access = {move: [
-	{},
-	{},
-	{},
-	{}, 
-	{"": true,
-	move: "end"}
-]}
 
 class MoveModule extends BaseModule {
 	constructor() {

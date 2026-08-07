@@ -94,7 +94,7 @@ class QuotesModule extends BaseModule {
         })
     }
 
-    get_citate_changes(nickname) {
+    get_citate_changes() {
         const citate_changes = JSON.parse(
             permanent_memory.get("VARIABLES", "users_notify_about_citate_change")
         )
@@ -156,8 +156,6 @@ class QuotesModule extends BaseModule {
             const remove = db.prepare(`DELETE FROM prepare_quotes WHERE ID = ?`)
 
             const run_all = db.transaction((quotes) => {
-                let message_for_user;
-
                 for (const quote of quotes) {
                     if (quote.status === 1) {
                         insert.run(quote.citation, quote.author)

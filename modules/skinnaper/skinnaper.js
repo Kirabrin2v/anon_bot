@@ -43,7 +43,7 @@ class SkinnaperModule extends BaseModule {
 		}
 	}
 
-	_process(sender, args, parameters) {
+	_process(sender, args) {
 		let answ;
 		if (args[0].name === "nick") {
 			const nick = args[0].value

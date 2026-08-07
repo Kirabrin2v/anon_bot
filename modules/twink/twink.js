@@ -1,4 +1,3 @@
-const ConfigParser = require('configparser');
 const path = require("path");
 
 const { random_number } = require(path.join(BASE_DIR, "utils", "random.js"))
@@ -63,7 +62,7 @@ class TwinkModule extends BaseModule {
                 const status = this.ModuleManager.call_module("stats").update_stats(
                     sender,
                     "twinks",
-                    twinks.filter(nick => nick != twink_nick)
+                    twinks.filter(nick => nick !== twink_nick)
                 )
                 if (status["is_ok"]) {
                     answ = "Твинк успешно отвязан"
@@ -114,8 +113,6 @@ class TwinkModule extends BaseModule {
                 })
                 delete(this.wait_add_twink_users[main_nick])
                 break;
-
-            } else {
 
             }
         }

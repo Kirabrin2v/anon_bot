@@ -123,11 +123,10 @@ init(options);
 
 const bot = get_bot();
 
-const { ModuleManager, CommandManager } = require("./module_manager.js")
+const { ModuleManager } = require("./module_manager.js")
 const modules = ModuleManager;
 
 const seniors = JSON.parse(config.get("VARIABLES", "seniors")) // Полный доступ
-const masters = JSON.parse(config.get("VARIABLES", "masters")) // Доступны команды из master_cmds
 
 const tracked_block_place = JSON.parse(config.get("TESLA", "tracked_block_place"))
 
@@ -212,8 +211,6 @@ let bot_bal_survings = 0;
 const answs = [];
 let cmds = [];
 
-let bot_location;
-
 let time_last_server_message = 0
 let combine_server_message = [] // Объединение одного логического сообщения, разбитого на разные строки
 let reset_wait_next_message;
@@ -271,23 +268,6 @@ function seen_parse_time(input) {
 }
 
 
-
-function merge_with_inherited(target, source) { // Объединение основного объекта с побочным. Если свойство существует, приоритет у свойства основного.
-    let obj = source;
-    while (obj) {
-        Object.keys(obj).forEach(prop => {
-            if (!(prop in target)) {
-                target[prop] = source[prop]; // Берём из самого объекта, не из прототипа
-            } else if (typeof target[prop] === "object" && typeof source[prop] === "object") {
-            	target[prop] = merge_with_inherited(target[prop], source[prop])
-            }
-        });
-        obj = Object.getPrototypeOf(obj);
-    }
-    return target;
-}
-
-
 function random_number(min_num, max_num) {
 	return Math.floor(Math.random() * (max_num - min_num + 1)) + min_num;
 }
@@ -298,7 +278,7 @@ function count(array, value) {
     }, 0);
 }
 
-async function actions_processing(actions, module_name, update_action) {
+function actions_processing(actions, module_name, update_action) {
 	if (!actions) {return;}
 	if (!actions.length) {
 		actions = [actions]
@@ -434,7 +414,6 @@ function processing_server_message(sender, message, message_json) {
 	const is_ban = message.match(reg_ban)
 	const is_mute = message.match(reg_mute)
 
-	const vic_answ = message.match(reg_vic_answ)
 	const vic_question = message.match(reg_vic_question)
 
 	const tryme_info = message.match(reg_tryme_info)
@@ -492,7 +471,14 @@ function processing_server_message(sender, message, message_json) {
 		const server = seen[4]
 		const position = {x: seen[5], y: seen[6], z: seen[7]}
 		
-		values = {nick: nick, status: status, duration: duration, server: server, position: position, bot_location: bot_location}
+		values = {
+			nick,
+			status,
+			duration,
+			server,
+			position,
+			bot_location: modules.call_module("move").get_bot_location()
+		}
 
 	} else if (near) {
 		now_cmd = "near"
@@ -778,8 +764,6 @@ function processing_server_message(sender, message, message_json) {
 			number_quest: number_quest,
 			question: question
 			}
-
-	} else if (vic_answ) {
 
 	} else if (vic_question) {
 		let type_question, question;
@@ -1141,7 +1125,7 @@ bot.on('messagestr', (raw_message, sender, message_json) => {
 		// const raw_message = message;
 		console.log(raw_message)
 		const { type_chat, sender, recipient } = parsed
-		let { message } = parsed
+		const { message } = parsed
 
 		const bot_location = modules.call_module("move").get_bot_location()
 		bus.emit("player_message", {

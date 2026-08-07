@@ -1,6 +1,5 @@
 const ConfigParser = require('configparser');
 const path = require("path");
-const { Vec3 } = require('vec3');
 
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
@@ -31,6 +30,21 @@ class CommandHandlerModule extends BaseModule {
         return args;
     }
 
+    merge_with_inherited(target, source) { // Объединение основного объекта с побочным. Если свойство существует, приоритет у свойства основного.
+        let obj = source;
+        while (obj) {
+            Object.keys(obj).forEach(prop => {
+                if (!(prop in target)) {
+                    target[prop] = source[prop]; // Берём из самого объекта, не из прототипа
+                } else if (typeof target[prop] === "object" && typeof source[prop] === "object") {
+                    target[prop] = this.merge_with_inherited(target[prop], source[prop])
+                }
+            });
+            obj = Object.getPrototypeOf(obj);
+        }
+        return target;
+    }
+
     check_access(cmd, args, lvl, module_cmd_access) {
         if (lvl === undefined || lvl < 0) {return false;}
 
@@ -42,7 +56,7 @@ class CommandHandlerModule extends BaseModule {
         const source_objects = module_cmd_access[cmd].slice(0, lvl)
         source_objects.reverse()
         for (let i=0; i < source_objects.length; i++) {
-            access_object = merge_with_inherited(access_object, source_objects[i])
+            access_object = this.merge_with_inherited(access_object, source_objects[i])
         }
         
         if (args.length === 0 && !access_object[""]) {return false;}
@@ -89,7 +103,7 @@ class CommandHandlerModule extends BaseModule {
         }
     }
 
-    async handle(sender, message) {
+    handle(sender, message) {
         console.log("Получено:", sender, message)
         if (!message.toLowerCase().includes("cmd ")) return false
 
@@ -209,10 +223,6 @@ class CommandHandlerModule extends BaseModule {
         } else if (this.check_allow_cmd(cmd, args) && masters.includes(sender)) {
           bot.chat(`${cmd} ${args.join(" ")}`)
 
-        } else if (cmd === "test") {
-            console.log("Начало полёта")
-            bot.creative.startFlying();
-            await bot.creative.flyTo(new Vec3(10, 100, 32));
         } else if (seniors.includes(sender)) {
           if (cmd === "js") {
             try { eval(args.join(" ")) }

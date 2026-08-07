@@ -19,7 +19,7 @@ class TelegramModuleManager extends ModuleManagerConstuctor {
     }
     async load_modules(paths, TelegramModule) {
         console.log("Загрузка команд ТГ", paths)
-        const load_promises = paths.map(async (path) => {
+        const load_promises = paths.map((path) => {
             let mod;
             try {
                 const Module = require(path)

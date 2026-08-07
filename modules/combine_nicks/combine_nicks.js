@@ -48,7 +48,7 @@ class CombineModule extends BaseModule {
 		this.CON_LETTER = 'bcdfghjklmnpqrstvwxyzбвгджзйклмнпрстфхцчшщ'
 	  }
 
-	_process(sender, args, parameters) {
+	_process(sender, args) {
 		let answ;
 		const send_in_private_message = false;
 

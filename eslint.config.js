@@ -43,7 +43,7 @@ module.exports = [
       "no-console": "off",
 
       "eqeqeq": ["error", "always"],
-      "curly": "error",
+      "curly": ["error", "multi-line"],
 
       "no-empty": "warn",
       "no-extra-boolean-cast": "warn",

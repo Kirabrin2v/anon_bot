@@ -91,7 +91,7 @@ class BaseModule {
                     date_time: new Date(),
                     module_name: this.module_name,
                     error: error,
-                    args: [cmd, server_answ, values, identifier, is_confirmed]
+                    args: [wait_cmd, server_answ, values, identifier, is_confirmed]
                 }
             })
         }

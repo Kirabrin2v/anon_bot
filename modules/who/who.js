@@ -27,7 +27,7 @@ class WhoModule extends BaseModule {
         super(MODULE_NAME, HELP, STRUCTURE)
     }
 
-	_process(sender, args, parameters) {
+	_process(sender, args) {
 		const players_on_loc = this.ModuleManager.call_module("entities").get_players(true)
 		let answ;
 

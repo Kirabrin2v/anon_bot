@@ -5,7 +5,6 @@ const sqlite = require("better-sqlite3");
 
 const { ModuleManager, CommandManager } = require(path.join(__dirname, "module_manager.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
-const { chatSchema } = require(path.join(BASE_DIR, "regex.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const { createUsersProxy } = require(path.join(__dirname, "manage_db.js"))
 
@@ -97,7 +96,7 @@ class TelegramModule extends BaseModule {
 			})
 		})
 		console.log("Telegram started")
-		this.tg.on("text", async msg => {
+		this.tg.on("text", msg => {
 			const full_name = msg.chat.first_name + " " + msg.chat.last_name
 			this.log_tg_messages("accept", msg.chat.id, msg.text, full_name, msg.chat.username, msg, msg.message_id)
 			this.tg_message_processing(msg.chat.id, msg.text, msg)

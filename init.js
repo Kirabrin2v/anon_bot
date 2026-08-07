@@ -8,7 +8,7 @@ function init(config) {
 
     bot = mineflayer.createBot(config)
     bot.loadPlugin(maps.inject)
-    bot.on('resourcePack', (url, hash) => {
+    bot.on('resourcePack', (_url, _hash) => {
         console.log("Ресурспак")
         bot.denyResourcePack()
     })

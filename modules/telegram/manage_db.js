@@ -1,6 +1,3 @@
-const sqlite = require("better-sqlite3");
-
-
 const JSON_TYPES = new Set(["LIST", "DICT", "JSON"]);
 const BOOL_TYPES = new Set(["BOOLEAN"]);
 
@@ -36,12 +33,12 @@ function deserialize(row, schema) {
     const type = schema[key];
     if (JSON_TYPES.has(type)) {
       try {
-        result[key] = value != null ? JSON.parse(value) : null;
+        result[key] = value !== null ? JSON.parse(value) : null;
       } catch {
         result[key] = value; // fallback
       }
     } else if (BOOL_TYPES.has(type)) {
-      result[key] = value != null ? Boolean(value) : null;
+      result[key] = value !== null ? Boolean(value) : null;
     } else {
       result[key] = value;
     }

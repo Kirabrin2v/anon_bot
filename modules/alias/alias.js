@@ -1,7 +1,6 @@
 const ConfigParser = require('configparser');
 const path = require("path");
 
-const { reg_full_nickname } = require(path.join(BASE_DIR, "regex.js"))
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 
 const MODULE_NAME = "alias"

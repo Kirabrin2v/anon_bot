@@ -47,7 +47,7 @@ class ModuleManager {
 	}
 
 	async load_modules(paths) {
-		const load_promises = paths.map(async (path) => {
+		const load_promises = paths.map((path) => {
 			let mod;
 			try {
 				const Module = require(path)
