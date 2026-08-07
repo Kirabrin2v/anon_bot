@@ -181,14 +181,26 @@ class TelegramModule extends BaseModule {
 		}
 
 		let telegram_message;
-		if (is_document) {
-			telegram_message = await this.tg.sendDocument(tg_id, message)
-		} else {
-			telegram_message = await this.tg.sendMessage(
-				tg_id,
-				message.slice(0, 4096),
-				parameters
-			)
+		try {
+			if (is_document) {
+				telegram_message = await this.tg.sendDocument(tg_id, message)
+			} else {
+				telegram_message = await this.tg.sendMessage(
+					tg_id,
+					message.slice(0, 4096),
+					parameters
+				)
+			}
+		} catch (error) {
+		    if (
+		        error.response?.body?.error_code === 403 &&
+		        error.response?.body?.description === "Forbidden: bot was blocked by the user"
+		    ) {
+		        // Пользователь заблокировал бота — игнорируем
+		        return;
+		    }
+
+		    throw error;
 		}
 		this.update_tg_message_id(tg_id, db_message_id, telegram_message.message_id)
 	}
@@ -487,9 +499,21 @@ class TelegramModule extends BaseModule {
 	}
 
 	send_message(message) {
-		this.seniors.forEach(tg_chat_id => {
-			this.tg.sendMessage(tg_chat_id, message.slice(0, 4096))
-		})
+		try {
+			this.seniors.forEach(tg_chat_id => {
+				this.tg.sendMessage(tg_chat_id, message.slice(0, 4096))
+			})
+		} catch (error) {
+		    if (
+		        error.response?.body?.error_code === 403 &&
+		        error.response?.body?.description === "Forbidden: bot was blocked by the user"
+		    ) {
+		        // Пользователь заблокировал бота — игнорируем
+		        return;
+		    }
+
+		    throw error;
+		}
 	}
 
 	jsonToConfigParser(jsonData) {
