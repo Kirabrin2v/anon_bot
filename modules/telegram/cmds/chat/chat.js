@@ -212,7 +212,7 @@ class ChatCmd extends BaseCmd {
                 settings["chat_on"] = true;
                 const context = this.logs
                 .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
-                .map(log_element => this.format_server_message(log_element.date_time, log_element))
+                .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
                 .slice(-this.len_context).join("\n")
                 answ = `Сообщения включены. Последние сообщения:\n${context}`
             }
