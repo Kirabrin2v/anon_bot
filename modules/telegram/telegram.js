@@ -37,8 +37,6 @@ class TelegramModule extends BaseModule {
 		});
 
 		this.config = config
-		this.seniors = JSON.parse(config.get("VARIABLES", "seniors"))
-		this.masters = JSON.parse(config.get("VARIABLES", "masters"))
 		this.developer_tg_username = config.get("VARIABLES", "developer_tg_username")
 		this.base_server_commands = JSON.parse(config.get("VARIABLES", "base_server_cmds"))
 
@@ -56,7 +54,8 @@ class TelegramModule extends BaseModule {
 		}
 
 		this.access_lvls = this.generateAccessLvls(this.player_settings) // JSON.parse(config.get("VARIABLES", "access_lvls"))
-		this.seniors.forEach(tg_chat_id => {
+		Object.keys(this.player_settings).forEach(tg_chat_id => {
+			if (!this.player_settings[tg_chat_id].is_senior) return;
 			Object.keys(this.access_lvls).forEach(cmd_name => {
 					this.access_lvls[cmd_name].at(-1).push(tg_chat_id) // У seniors высший уровень доступа ко всем командам
 				})
@@ -75,7 +74,8 @@ class TelegramModule extends BaseModule {
 		this.tg.on("callback_query", query => {
 			console.log("GLOBAL callback_query:", query.data);
 			const tg_id = query.from.id
-			if (!this.seniors.includes(tg_id) && !this.masters.includes(tg_id)) {return}
+			const player_settings = this.player_settings[tg_id]
+			if (!player_settings.is_senior && !player_settings.is_master) return;
 
 			const data = query.data
 			const [_action, id, page] = data.split(":")
@@ -387,7 +387,7 @@ class TelegramModule extends BaseModule {
 					cmd = "chat"
 					ModuleManager.modules["chat"].cmd_processing(tg_id, args, cmd, msg_obj)
 
-				} else if (this.seniors.includes(tg_id) || this.masters.includes(tg_id) || (this.access_cmds[tg_id] && this.access_cmds[tg_id].includes(cmd))) {
+				} else if (this.player_settings[tg_id].is_senior || this.player_settings[tg_id].is_master || (this.access_cmds[tg_id] && this.access_cmds[tg_id].includes(cmd))) {
 	                    server_cmd = "/" + cmd + " " + args.join(" ")
 
 	            } else {
@@ -395,7 +395,7 @@ class TelegramModule extends BaseModule {
 				}
 			} else if (message.toLowerCase().includes("cmd")) {
 				const args = message.split(" ").slice(1)
-				if (this.seniors.includes(tg_id) && args.length > 0) {
+				if (this.player_settings[tg_id].is_senior && args.length > 0) {
 					if (args[0] === "js" && args[1]) {
 				 		this.actions.push({
 				 			type: "js",
@@ -445,7 +445,7 @@ class TelegramModule extends BaseModule {
 			this.send_message_tg(identifier, `Ответ сервера на команду '${wait_cmd}':\n\n${server_answ}`)
 
 		} else {
-			if (this.seniors.includes(identifier) || this.masters.includes(identifier)) {
+			if (this.player_settings[identifier].is_senior || this.player_settings[identifier].is_master) {
 				this.send_message_tg(identifier, `Неподтверждённый ответ сервера на команду '${wait_cmd}':\n\n${server_answ}`)
 			} else {
 				this.send_message_tg(identifier, `Ответ от сервера на команду ${wait_cmd} не был получен. Повторите попытку`)
@@ -495,24 +495,6 @@ class TelegramModule extends BaseModule {
 					}
 				}
 			}
-		}
-	}
-
-	send_message(message) {
-		try {
-			this.seniors.forEach(tg_chat_id => {
-				this.tg.sendMessage(tg_chat_id, message.slice(0, 4096))
-			})
-		} catch (error) {
-		    if (
-		        error.response?.body?.error_code === 403 &&
-		        error.response?.body?.description === "Forbidden: bot was blocked by the user"
-		    ) {
-		        // Пользователь заблокировал бота — игнорируем
-		        return;
-		    }
-
-		    throw error;
 		}
 	}
 

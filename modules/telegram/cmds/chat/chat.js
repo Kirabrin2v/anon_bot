@@ -3,7 +3,7 @@ const path = require("path")
 const BaseCmd = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
 const { Color } = require(path.join(BASE_DIR, "regex.js"))
-const { chatSchema, reg_full_nickname } = require(path.join(BASE_DIR, "regex.js"))
+const { chatSchema, reg_full_nickname, reg_nickname } = require(path.join(BASE_DIR, "regex.js"))
 const ConfigParser = require('configparser');
 
 
@@ -317,14 +317,18 @@ class ChatCmd extends BaseCmd {
         let answ, type_chat, server_cmd, recipient;
         let send_in_private_message = false;
 
-        const replied_msg = msg_obj.reply_to_message
-        if (replied_msg && replied_msg.text) {
-            const db_replied_message = this.module_obj.get_tg_message(tg_id, { message_id: replied_msg.message_id })
+        const tg_replied_msg = msg_obj.reply_to_message
+        if (tg_replied_msg && tg_replied_msg.text) {
+            const db_replied_message = this.module_obj.get_tg_message(tg_id, { message_id: tg_replied_msg.message_id })
             const parsed_replied_message = JSON.parse(db_replied_message.parsed_data)
             if (parsed_replied_message) {
                 type_chat = parsed_replied_message.type_chat;
                 recipient = parsed_replied_message.sender
-                const replied_message_parts = parsed_replied_message.message.split(" ")
+
+                const quote_pattern = new RegExp(`(?<=^\\[${reg_nickname}\\]) \\[⤷ "[^"]*"\\]`)
+                let replied_message = parsed_replied_message.message
+                replied_message = replied_message.replace(quote_pattern, "")
+                const replied_message_parts = replied_message.split(" ")
                 const hidden_text = replied_message_parts.length >= 3 ? ' ...' : ''
                 prefix += `[⤷ "${replied_message_parts.slice(0, 3).join(' ')}${hidden_text}"] `
             }
@@ -489,14 +493,15 @@ class ChatCmd extends BaseCmd {
         return message
     }
 
+
     player_message_processing(type_chat, sender, recipient, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         parsed.date_time = date_time
         for (const tg_id in this.module_obj.player_settings) {
-            if (!this.module_obj.player_settings[tg_id]["allowed_chats"].includes(type_chat)) {
+            const settings = this.module_obj.player_settings[tg_id]
+            if (!settings["allowed_chats"].includes(type_chat)) {
                 continue;
             }
-            const settings = this.module_obj.player_settings[tg_id]
             const formatted_message = this.format_server_message(date_time, parsed, settings["chat_pattern"])
             const notify_message = this.replace_notice_nick(formatted_message, settings["notify_aliases"])
             if (settings["chat_on"] === true) {

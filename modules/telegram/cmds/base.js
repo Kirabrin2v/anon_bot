@@ -19,9 +19,7 @@ class BaseCmd {
 
     // Общий шаблон
     async cmd_processing(sender, args, cmd, msg_obj) {
-        console.log(this.module_obj.seniors, this.module_obj.seniors.includes(sender))
-        const rank = this.module_obj.seniors.includes(sender) ?
-            Infinity : this.get_rank(sender, this.module_name)
+        const rank = this.get_rank(sender, this.module_name)
         console.log(sender, rank)
         const valid_command = this.CommandManager.validate_command(this.module_name, args, rank)
         if (valid_command["is_ok"]) {
@@ -74,6 +72,10 @@ class BaseCmd {
     }
 
     get_rank(tg_id, module_name) {
+        const player_settings = this.module_obj.player_settings[tg_id]
+        if (player_settings.is_senior) {
+            return Infinity;
+        }
         const access_lvls_module = this.module_obj.access_lvls[module_name]
         if (access_lvls_module) {
             for (let i=0; i < access_lvls_module.length; i++) {
@@ -82,7 +84,7 @@ class BaseCmd {
                 }
             }
         }
-        if (this.module_obj.player_settings[tg_id]) {
+        if (player_settings[tg_id]) {
             return 0;
         }
         return -1;
