@@ -248,6 +248,12 @@ class ChatCmd extends BaseCmd {
                 answ = "С помощью этой команды Вы можете изменить вид серверного сообщения\\. Для этого нужно задать его шаблон\\. " +
                     "В шаблоне ключевые слова заменяются на реальные значения, полученные с сервера\\. Ниже приведён список всех доступных ключевых слов:\n\n" +
                     "*time* \\- время в формате HH:MM:SS;\n" +
+                    "*YYYY* \\- текущий год;\n" +
+                    "*MM* \\- текущий месяц;\n" +
+                    "*DD* \\- текущий день;\n" +
+                    "*hh* \\- текущие часы;\n" +
+                    "*mm* \\- текущие минуты;\n" +
+                    "*ss* \\- текущие секунды;\n" +
                     "*chat*\\_type \\- тип чата\\. Например, Френд\\-чат или локальный чат;\n" +
                     "*clan*\\_part \\- клан\\. Если клана нет \\- ничего не подставится;\n" +
                     "*rank*\\_part \\- звание\\. Если звания нет \\- ничего не подставится;\n" +
@@ -428,8 +434,22 @@ class ChatCmd extends BaseCmd {
         }
         date_time = new Date(date_time); // копия
         date_time.setHours(date_time.getHours() + 3) // To MSC time
-        const time = [date_time.getHours(), date_time.getMinutes(), date_time.getSeconds()]
-          .map(n => String(n).padStart(2, '0')).join(':')
+        let [
+            YYYY,
+            MM,
+            DD,
+            hh,
+            mm,
+            ss
+        ] = [
+            String(date_time.getFullYear()),
+            String((date_time.getMonth() % 12 + 1)).padStart(2, '0'),
+            String(date_time.getDate()).padStart(2, '0'),
+            String(date_time.getHours()).padStart(2, '0'),
+            String(date_time.getMinutes()).padStart(2, '0'),
+            String(date_time.getSeconds()).padStart(2, '0')
+        ]
+        const time = [hh, mm, ss].join(':')
 
         if (fields.type_chat === "Приват") {
           const direction = fields.sender === bot_username
@@ -444,9 +464,15 @@ class ChatCmd extends BaseCmd {
                 standard_pattern,
                 {
                     time: time,
+                    YYYY,
+                    MM,
+                    DD,
+                    hh,
+                    mm,
+                    ss,
                     chat_type: fields.type_chat,
-                    clan_part: clan_part,
-                    rank_part: rank_part,
+                    clan_part,
+                    rank_part,
                     sender: fields.sender,
                     message: fields.message
                 }
