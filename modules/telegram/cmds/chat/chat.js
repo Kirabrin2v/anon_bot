@@ -2,6 +2,7 @@ const path = require("path")
 
 const BaseCmd = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
+const { random_number } = require(path.join(BASE_DIR, "utils", "random.js")) 
 const { Color } = require(path.join(BASE_DIR, "regex.js"))
 const { chatSchema, reg_full_nickname, reg_nickname } = require(path.join(BASE_DIR, "regex.js"))
 const ConfigParser = require('configparser');
@@ -18,10 +19,26 @@ const PRIVATE_FAST_MESSAGE_CMDS = ["r", "к"]
 const FRIEND_CHAT_CMDS_1 = ["fr", "ак"]
 const FRIEND_CHAT_CMDS_2 = ["notify", "n", "тщешан", "т"]
 
-const CMD_NAME = "chat"
+const CMD_NAME = "server_chat"
 const STRUCTURE = {
     chat: {
-        _description: "Включить/выключить пересылку сообщений",
+        switch: {
+            chat_type: {
+                _type: "text",
+                _description: "Тип чата(Лк, Пати-чат и др.)"
+            },
+            _description: "Включить/выключить пересылку из конкретных видов чата",
+            _optional: true
+        },
+        list: {
+            _description: "Список отслеживаемых типов чата",
+            _optional: true
+        },
+        info: {
+            _description: "Информация о команде",
+            _optional: true
+        },
+        _description: "Включить/выключить пересылку из всех видов чата",
         _aliases: ["c"]
     },
 
@@ -135,6 +152,10 @@ class ChatCmd extends BaseCmd {
         this.WIRETAPPING_NOTIFY_INTERVAL = 86400000 // 24 часа
         this.last_wiretapping_notify_time = 0
 
+        this.all_chat_types = ["Приват", "Лк", "Гл", "Клан-чат", "Пати-чат", "Друзья"]
+        this.wait_continue_dialogue = {}
+        this.wait_continue_dialogue_interval = 300000
+
         bus.on("player_message", (obj) => this.player_message_processing(
                 obj.type_chat,
                 obj.sender,
@@ -204,18 +225,55 @@ class ChatCmd extends BaseCmd {
         let answ;
         const settings = this.module_obj.player_settings[sender]
         if (args[0].name === "chat") {
-            if (settings["chat_on"] === true) {
-                settings["chat_on"] = false;
-                answ = "Сообщения выключены"
-
-            } else {
-                settings["chat_on"] = true;
-                const context = this.logs
-                .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
-                .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
-                .slice(-this.len_context).join("\n")
-                answ = `Сообщения включены. Последние сообщения:\n${context}`
+            if (args.length === 1) {
+                if (settings["chats_on"].length === 0) {
+                    settings["chats_on"] = this.all_chat_types
+                    const context = this.logs
+                        .filter(log_element => this.check_access_to_msg(sender, log_element))
+                        .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
+                        .slice(-this.len_context).join("\n")
+                    answ = `Сообщения включены. Последние сообщения:\n${context}`
+                } else {
+                    settings["chats_on"] = []
+                    answ = "Сообщения выключены"
+                }
+            } else if (args[1].name === "switch") {
+                const chat_type = args[2].value
+                if (this.all_chat_types.includes(chat_type)) {
+                    let action;
+                    if (settings["chats_on"].includes(chat_type)) {
+                        action = "выключена"
+                        settings["chats_on"] = settings["chats_on"].filter(cur_chat_type => cur_chat_type !== chat_type)
+                    } else {
+                        action = "включена"
+                        settings["chats_on"].push(chat_type)
+                    }
+                    answ = `Пересылка сообщений из ${chat_type} успешно ${action}`
+                } else {
+                    answ = `Введённого чата не существует. Доступные виды чата:\n${this.all_chat_types.join("\n")}`
+                }
+            } else if (args[1].name === "list") {
+                answ = `Включённые на данный момент чаты:\n${settings["chats_on"].join("\n")}`
+            } else if (args[1].name === "info") {
+                const color_symbol = Color.COLORS[settings.nick_color]?.toLowerCase()
+                answ = "Команда позволяет управлять тем, что будет пересылаться из Майнкрафт\\-чата в Телеграм\\-чат\n\n" +
+                    "Чтобы написать что\\-то в Майнкрафт\\-чат, необходимо без дополнительных команд отправить боту нужный текст\n" +
+                    "Чтобы *ответить* на конкретное сообщение, нужно переслать его\\(ПКМ по сообщению \\-\\> \"Ответить\"\\) и написать нужный текст\n\n" +
+                    "Команда /c включает/выключает пересылку сообщений полностью\n" +
+                    "Команда /c switch \\<тип чата\\> включает/выключает пересылку из определённого чата\\(например, только из глобального чата\\)\n\n" +
+                    "Приватные сообщения передаются *не все*\\. Чтобы получить приватное сообщение, оно должно быть адресовано *именно Вам*\n" +
+                    "Для этого собеседник должен добавить в начало сообщения:\n" +
+                    (color_symbol ? "либо\n" : "") +
+                    `\`${settings["show_nick"]}\\. \`\n` +
+                    (color_symbol ? "либо\n" : "") +
+                    (color_symbol ? `\`${color_symbol}\`\\. \n` : "") +
+                    "*Пробел после точки обязателен*"
+                return {
+                    message: answ,
+                    parse_mode: "MarkdownV2"
+                }
             }
+
         } else if (args[0].name === "chat_pattern") {
             if (args[1].name === "show") {
                 let chat_pattern;
@@ -385,6 +443,25 @@ class ChatCmd extends BaseCmd {
                 if (!recipient.match(reg_full_nickname)) {
                     return "Некорректно указан ник получателя"
                 }
+
+                const delete_tg_from_wait_dialogue = () => {
+                    if (this.wait_continue_dialogue[recipient.toLowerCase()]) {
+                        delete this.wait_continue_dialogue[recipient.toLowerCase()][tg_id];
+                    }
+                };
+                if (this.wait_continue_dialogue[recipient.toLowerCase()]) {
+                    const dialogue_candidates = this.wait_continue_dialogue[recipient.toLowerCase()]
+                    if (dialogue_candidates[tg_id]) {
+                        clearTimeout(dialogue_candidates[tg_id])
+                    } 
+                    dialogue_candidates[tg_id] = setTimeout(delete_tg_from_wait_dialogue, this.wait_continue_dialogue_interval)
+                
+                } else {
+                    this.wait_continue_dialogue[recipient.toLowerCase()] = {
+                        [tg_id]: setTimeout(delete_tg_from_wait_dialogue, this.wait_continue_dialogue_interval)
+                    }
+                }
+
             } else if (type_chat === "Гл") {
                 prefix = `!${prefix}`
             }
@@ -493,29 +570,141 @@ class ChatCmd extends BaseCmd {
         return message
     }
 
+    can_receive_private_message(tg_id, sender, message) {
+        const settings = this.module_obj.player_settings[tg_id]
+        if (settings.is_senior) return true;
+
+        let identifier;
+        if (sender === bot_username) {
+            const identifier_pattern = new RegExp(`^\\[${reg_nickname}\\]`)
+            const identifier_match = message.match(identifier_pattern)
+            if (!identifier_match) return false;
+            identifier = identifier_match[1].toLowerCase()
+        } else {            
+            const identifier_pattern = new RegExp(`^${reg_nickname}(?=\\. )`)
+            const identifier_match = message.match(identifier_pattern)
+            if (identifier_match) {
+                identifier = identifier_match[1].toLowerCase()
+
+            }
+            if (
+                this.wait_continue_dialogue[sender.toLowerCase()]
+                && this.wait_continue_dialogue[sender.toLowerCase()][tg_id]
+                && Object.keys(this.wait_continue_dialogue[sender.toLowerCase()]).length === 1
+                && !Object.keys(this.module_obj.player_settings).some(id => this.check_identifier(identifier, this.module_obj.player_settings[id]))
+            ) {
+                return true;
+            }
+
+        }
+
+        if (this.check_identifier(identifier, settings)) {
+            return true;
+        }
+        return false;
+    }
+
+    check_identifier(identifier, settings) {
+        if (identifier === undefined) return false;
+        const color_symbol = Color.COLORS[settings.nick_color]?.toLowerCase()
+        const show_nick = settings.show_nick?.toLowerCase()
+        if (
+            identifier === color_symbol
+            || identifier === show_nick
+            || (settings.server_nick && identifier === settings.server_nick.toLowerCase())
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    check_access_to_msg(tg_id, log_element) {
+        const settings = this.module_obj.player_settings[tg_id]
+        if (!settings["allowed_chats"].includes(log_element.type_chat)) {
+            return false;
+        }
+
+        if (log_element.type_chat === "Приват") {
+            return this.can_receive_private_message(tg_id, log_element.sender, log_element.message)
+        }
+
+        return true;
+    }
+
+    send_feedback(sender, count_sended_private_messages) {
+        if (sender === bot_username) return;
+        let answ;
+        const [num1, num2] = Array.from(
+            { length: 2 },
+            () => random_number(1, 999999)
+        );
+        const prefix = `[${num1}ant.fld${num2}]`
+
+        let count_seniors = 0;
+        Object.values(this.module_obj.player_settings).forEach(settings => {
+            if (settings.is_senior && settings.chats_on.includes("Приват")) {
+               count_seniors += 1 
+            }
+        })
+
+        if (count_sended_private_messages > count_seniors) {
+            answ = "Сообщение успешно отправлено!"
+
+        } else if (
+            this.wait_continue_dialogue[sender.toLowerCase()]
+            && Object.keys(this.wait_continue_dialogue[sender.toLowerCase()]).length > 0
+        ) {
+            answ = "Чтобы отправить сообщение кому-то, нужно в начало сообщения добавить: \"{ник}. \". Точка и пробел после ника обязательны"
+        }
+
+        if (answ) { 
+            this.module_obj.actions.push({
+                type: "answ",
+                content: {
+                    message: answ,
+                    recipient: sender,
+                    prefix: prefix
+                }
+            })
+        }
+    }
 
     player_message_processing(type_chat, sender, recipient, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         parsed.date_time = date_time
+
+        let count_sended_private_messages = 0;
+
         for (const tg_id in this.module_obj.player_settings) {
+            let is_sended = false;
+
             const settings = this.module_obj.player_settings[tg_id]
             if (!settings["allowed_chats"].includes(type_chat)) {
                 continue;
             }
+            if (type_chat === "Приват") {
+                if (!this.can_receive_private_message(tg_id, sender, message)) {
+                    continue;
+                }
+            }
+
+            if (settings["whitelist_on"] === true) {
+                if (!settings["whitelist_nicks"].includes(sender)) {
+                    continue;
+                }
+            }
+            if (settings["blacklist_on"] === true) {
+                if (settings["blacklist_nicks"].includes(sender)) {
+                    continue;
+                }
+            }
+
             const formatted_message = this.format_server_message(date_time, parsed, settings["chat_pattern"])
             const notify_message = this.replace_notice_nick(formatted_message, settings["notify_aliases"])
-            if (settings["chat_on"] === true) {
-                if (settings["whitelist_on"] === true) {
-                    if (!settings["whitelist_nicks"].includes(sender)) {
-                        continue;
-                    }
-                }
-                if (settings["blacklist_on"] === true) {
-                    if (settings["blacklist_nicks"].includes(sender)) {
-                        continue;
-                    }
-                }
+
+            if (settings["chats_on"].includes(type_chat)) {
                 this.module_obj.send_message_tg(tg_id, notify_message, undefined, false, "MarkdownV2", parsed)
+                is_sended = true;
 
             } else if (settings["nick_notice_on"]) {
                 const notify_aliases = settings["notify_aliases"]
@@ -525,17 +714,24 @@ class ChatCmd extends BaseCmd {
                     const regex = this.generate_exclusion_regex(alias, match_banwords)
                     if (message.match(regex)) {
                         let context = this.logs
-                            .filter(log_element => settings["allowed_chats"].includes(log_element.type_chat))
+                            .filter(log_element => this.check_access_to_msg(tg_id, log_element))
                             .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
                             .slice(-this.len_context).join("\n")
                         context = this.module_obj.escapeMarkdownV2(context)
                         const answ = `${context}\n\n${notify_message}`
                         this.module_obj.send_message_tg(tg_id, answ, undefined, false, "MarkdownV2", parsed)
+                        is_sended = true;
                         break;
                     }
                 }
             }
-        } 
+            if (type_chat === "Приват" && is_sended) {
+                count_sended_private_messages += 1
+            }
+        }
+        if (type_chat === "Приват") {
+            this.send_feedback(sender, count_sended_private_messages)
+        }
 
         if (this.logs.length < 5) {
                 this.logs.push(parsed)

@@ -198,9 +198,22 @@ class TelegramModule extends BaseModule {
 		    ) {
 		        // Пользователь заблокировал бота — игнорируем
 		        return;
-		    }
+		    } else if (
+		    	error.response?.body?.error_code === 400
+	    	) {
+		    	console.log("Чат не найден:", tg_id)
+		    	return;
+	    	}
 
-		    throw error;
+	    	this.actions.push({
+                type: "error",
+                content: {
+                    date_time: new Date(),
+                    module_name: this.module_name,
+                    error: error,
+                    args: []
+                }
+            })
 		}
 		this.update_tg_message_id(tg_id, db_message_id, telegram_message.message_id)
 	}
@@ -379,13 +392,14 @@ class TelegramModule extends BaseModule {
 
 				} else if (
 					CommandManager._findKey(
-						ModuleManager.modules["chat"].structure,
+						ModuleManager.modules["server_chat"].structure,
 						cmd
 					)
 				) {
 					args = [cmd].concat(args)
-					cmd = "chat"
-					ModuleManager.modules["chat"].cmd_processing(tg_id, args, cmd, msg_obj)
+					cmd = "server_chat"
+					console.log("Начинается обработка")
+					ModuleManager.modules["server_chat"].cmd_processing(tg_id, args, cmd, msg_obj)
 
 				} else if (this.player_settings[tg_id].is_senior || this.player_settings[tg_id].is_master || (this.access_cmds[tg_id] && this.access_cmds[tg_id].includes(cmd))) {
 	                    server_cmd = "/" + cmd + " " + args.join(" ")

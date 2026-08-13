@@ -84,7 +84,7 @@ class BaseCmd {
                 }
             }
         }
-        if (player_settings[tg_id]) {
+        if (player_settings) {
             return 0;
         }
         return -1;
