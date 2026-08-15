@@ -42,6 +42,59 @@ const STRUCTURE = {
         _aliases: ["c"]
     },
 
+        blacklist: {
+        clear: {
+            _description: "Очистить чёрный список ников"
+        },
+        list: {
+            _description: "Список игнорируемых ников"
+        },
+        add: {
+            nick: {
+                _type: "nick",
+                _description: "Ник, который нужно добавить в список"
+            },
+            _description: "Добавить ник в список"
+        },
+        remove: {
+            nick: {
+                _type: "nick",
+                _description: "Ник, который нужно удалить из списка"
+            },
+            _description: "Удалить ник из списка"
+        },
+        switch: {
+            _description: "Включить/выключить чёрный список"
+        },
+        _description: "Чёрный список ников. Сообщения от игроков из списка всегда будут игнорироваться",
+    },
+    whitelist: {
+        clear: {
+            _description: "Очистить белый список ников"
+        },
+        list: {
+            _description: "Список предпочитаемых ников"
+        },
+        add: {
+            nick: {
+                _type: "nick",
+                _description: "Ник, который нужно добавить в список"
+            },
+            _description: "Добавить ник в список"
+        },
+        remove: {
+            nick: {
+                _type: "nick",
+                _description: "Ник, который нужно удалить из списка"
+            },
+            _description: "Удалить ник из списка"
+        },
+        switch: {
+            _description: "Включить/выключить белый список"
+        },
+        _description: "Белый список ников. Сообщения от игроков, которых НЕТ в этом списке, будут игнорироваться",
+    },
+
     nick_notice: {
         blacklist: {
             clear: {
@@ -53,7 +106,7 @@ const STRUCTURE = {
             words: {
                 _type: "string",
                 _multiple: true,
-                _description: "Слова, которые нужно игнорировать. Все введённые слова регистронезавимы"
+                _description: "Слова, которые нужно игнорировать. Все введённые слова регистронезависимы"
             },
             _description: "Выключить триггер для определённых слов",
             _optional: true
@@ -272,6 +325,39 @@ class ChatCmd extends BaseCmd {
                     message: answ,
                     parse_mode: "MarkdownV2"
                 }
+            }
+
+        } else if (["blacklist", "whitelist"].includes(args[0].name)) {
+            const list_type = args[0].name // "blacklist" или "whitelist"
+            const nicks_key = `${list_type}_nicks`
+            const on_key = `${list_type}_on`
+            const list_name_ru = list_type === "blacklist" ? "Чёрный" : "Белый"
+
+            if (args[1].name === "clear") {
+                settings[nicks_key] = []
+                answ = "Список успешно очищен"
+
+            } else if (args[1].name === "list") {
+                const nicks = settings[nicks_key]
+                if (nicks.length === 0) {
+                    answ = "Список пуст"
+                }
+                answ = `${list_name_ru} список ников:\n${nicks.join("\n")}`
+
+            } else if (args[1].name === "add") {
+                const nick = args[2].value.toLowerCase()
+                if (settings[nicks_key].includes(nick)) {
+                    answ = "Ник уже добавлен в список"
+                } else {
+                    const nicks = settings[nicks_key]
+                    nicks.push(nick)
+                    settings[nicks_key] = nicks
+                    answ = "Ник успешно добавлен!"
+                }
+
+            } else if (args[1].name === "switch") {
+                settings[on_key] = !settings[on_key]
+                answ = `${list_name_ru} список ${settings[on_key] ? "включен" : "выключен"}`
             }
 
         } else if (args[0].name === "chat_pattern") {
@@ -689,12 +775,12 @@ class ChatCmd extends BaseCmd {
             }
 
             if (settings["whitelist_on"] === true) {
-                if (!settings["whitelist_nicks"].includes(sender)) {
+                if (!settings["whitelist_nicks"].includes(sender.toLowerCase())) {
                     continue;
                 }
             }
             if (settings["blacklist_on"] === true) {
-                if (settings["blacklist_nicks"].includes(sender)) {
+                if (settings["blacklist_nicks"].includes(sender.toLowerCase())) {
                     continue;
                 }
             }
@@ -726,6 +812,16 @@ class ChatCmd extends BaseCmd {
                 }
             }
             if (type_chat === "Приват" && is_sended) {
+                if (settings.server_nick) {
+                    this.module_obj.actions.push({
+                        type: "answ",
+                        content: {
+                            recipient: settings.server_nick,
+                            message: formatted_message.replaceAll("М", "M")
+                        }
+                    })
+
+                }
                 count_sended_private_messages += 1
             }
         }

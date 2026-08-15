@@ -1,5 +1,7 @@
 const ConfigParser = require('configparser');
 const path = require("path");
+const { Vec3 } = require('vec3')
+
 
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
 const bus = require(path.join(BASE_DIR, "event_bus.js"))
@@ -227,6 +229,20 @@ class CommandHandlerModule extends BaseModule {
           if (cmd === "js") {
             try { eval(args.join(" ")) }
             catch (error) { console.log(error) }
+          } else if (cmd === "test") {
+            const pos = new Vec3(45546, 142, 354595)
+            const block = bot.blockAt(pos)
+            
+            console.log("Блок")
+            if (block) {
+                console.log(block)
+                console.log('Название:', block.name)
+                console.log('ID:', block.type)
+                console.log('Позиция:', block.position)
+            }
+
+
+
           } else {
             bot.chat(`${cmd} ${args.join(" ")}`.trim())
           }
