@@ -812,7 +812,7 @@ class ChatCmd extends BaseCmd {
                 }
             }
             if (type_chat === "Приват" && is_sended) {
-                if (settings.server_nick) {
+                if (settings.server_nick && sender !== bot_username) {
                     this.module_obj.actions.push({
                         type: "answ",
                         content: {
