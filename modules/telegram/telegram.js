@@ -238,6 +238,7 @@ class TelegramModule extends BaseModule {
 					parameters
 				)
 			}
+			this.update_tg_message_id(tg_id, db_message_id, telegram_message.message_id)
 		} catch (error) {
 		    if (
 		        error.response?.body?.error_code === 403 &&
@@ -262,7 +263,6 @@ class TelegramModule extends BaseModule {
                 }
             })
 		}
-		this.update_tg_message_id(tg_id, db_message_id, telegram_message.message_id)
 	}
 
 	async broadcast_messages(module_obj, recipients, message, prefix, delay_ms = 50) {
