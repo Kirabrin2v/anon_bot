@@ -15,6 +15,9 @@ const INTERVAL_CHECK_ACTIONS = 10
 const config = new ConfigParser();
 config.read(path.join(__dirname, "config.ini"))
 
+const global_config = new ConfigParser();
+global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
+
 // const player_settings_object = new ConfigParser();
 // player_settings_object.read(path.join(__dirname, "player_settings.ini"))
 
@@ -39,6 +42,8 @@ class TelegramModule extends BaseModule {
 		this.config = config
 		this.developer_tg_username = config.get("VARIABLES", "developer_tg_username")
 		this.base_server_commands = JSON.parse(config.get("VARIABLES", "base_server_cmds"))
+
+		this.imgbb_api_key = global_config.get("VARIABLES", "ImageBB_API_KEY")
 
 		this.player_settings = createUsersProxy(users_db)
 
@@ -68,6 +73,27 @@ class TelegramModule extends BaseModule {
 		    autoStart: true
 		  }
 		});
+	}
+
+	async uploadImageToImgBB(buffer) {
+	    const form = new FormData();
+	    form.append("image", new Blob([buffer]));
+
+	    const response = await fetch(
+	        `https://api.imgbb.com/1/upload?key=${this.imgbb_api_key}`,
+	        {
+	            method: "POST",
+	            body: form
+	        }
+	    );
+
+	    const result = await response.json();
+
+	    if (!result.success) {
+	        throw new Error(result.error?.message || "ImgBB upload failed");
+	    }
+
+	    return result.data.url;
 	}
 
 	start() {
@@ -102,6 +128,27 @@ class TelegramModule extends BaseModule {
 			this.tg_message_processing(msg.chat.id, msg.text, msg)
 			
 		})
+		this.tg.on("photo", async msg => {
+			try {
+				const full_name = msg.chat.first_name + " " + msg.chat.last_name
+
+				const photo = msg.photo[msg.photo.length - 1];
+
+				const fileUrl = await this.tg.getFileLink(photo.file_id);
+
+				const response = await fetch(fileUrl);
+				const buffer = Buffer.from(await response.arrayBuffer());
+
+				const url = await this.uploadImageToImgBB(buffer);
+
+				this.log_tg_messages("accept", msg.chat.id, url, full_name, msg.chat.username, msg, msg.message_id)
+				this.tg_message_processing(msg.chat.id, url, msg)
+				console.log("Изображение:", url);
+
+			} catch (err) {
+				console.error(err);
+			}
+		});
 	}
 
 	generateAccessLvls(player_settings) {
