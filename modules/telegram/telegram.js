@@ -522,7 +522,7 @@ class TelegramModule extends BaseModule {
 	}
 
 	module_dialogue(module_recipient, module_sender, json_cmd) {
-		if (json_cmd.prepared_quotes) {
+		if (json_cmd.prepared_quotes.length !== 0) {
 
 			const last_prepared_quote_id = json_cmd.old_data.prepared_quote_id
 			const tg_id = json_cmd.old_data.tg_id

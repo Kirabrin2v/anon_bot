@@ -277,6 +277,7 @@ class ChatCmd extends BaseCmd {
     _process(sender, args, _unused_args, _cmd, msg_obj) {
         let answ;
         const settings = this.module_obj.player_settings[sender]
+
         if (args[0].name === "chat") {
             if (args.length === 1) {
                 if (settings["chats_on"].length === 0) {
@@ -677,20 +678,19 @@ class ChatCmd extends BaseCmd {
                 this.wait_continue_dialogue[sender.toLowerCase()]
                 && this.wait_continue_dialogue[sender.toLowerCase()][tg_id]
                 && Object.keys(this.wait_continue_dialogue[sender.toLowerCase()]).length === 1
-                && !Object.keys(this.module_obj.player_settings).some(id => this.check_identifier(identifier, this.module_obj.player_settings[id]))
+                && !Object.keys(this.module_obj.player_settings).some(id => this.check_identifier(identifier, this.module_obj.player_settings[tg_id]))
             ) {
                 return true;
             }
 
         }
-
         if (this.check_identifier(identifier, settings)) {
             return true;
         }
         return false;
     }
 
-    check_identifier(identifier, settings) {
+    check_identifier(identifier, settings) {    
         if (identifier === undefined) return false;
         const color_symbol = Color.COLORS[settings.nick_color]?.toLowerCase()
         const show_nick = settings.show_nick?.toLowerCase()
@@ -828,7 +828,6 @@ class ChatCmd extends BaseCmd {
                 }
             }
         }
-        console.log(sent_users)
         if (type_chat === "Приват") {
             this.send_feedback(sender, sent_users.filter(player_settings => (!player_settings.is_senior || alias_in_message)))
         }
