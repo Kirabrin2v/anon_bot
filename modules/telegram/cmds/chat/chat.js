@@ -717,7 +717,7 @@ class ChatCmd extends BaseCmd {
         return true;
     }
 
-    send_feedback(sender, count_sended_private_messages) {
+    send_feedback(sender, sent_users) {
         if (sender === bot_username) return;
         let answ;
         const [num1, num2] = Array.from(
@@ -726,15 +726,11 @@ class ChatCmd extends BaseCmd {
         );
         const prefix = `[${num1}ant.fld${num2}]`
 
-        let count_seniors = 0;
-        Object.values(this.module_obj.player_settings).forEach(settings => {
-            if (settings.is_senior && settings.chats_on.includes("Приват")) {
-               count_seniors += 1 
-            }
-        })
 
-        if (count_sended_private_messages > count_seniors) {
-            answ = "Сообщение успешно отправлено!"
+        if (sent_users.length !== 0) {
+            const nicks = sent_users.map(user => user.server_nick)
+            const many_or_one = nicks.length === 1 ? "игроку" : "игрокам"
+            answ = `Сообщение успешно отправлено ${many_or_one}: ${nicks.join(", ")}`
 
         } else if (
             this.wait_continue_dialogue[sender.toLowerCase()]
@@ -755,11 +751,25 @@ class ChatCmd extends BaseCmd {
         }
     }
 
+    check_alias(message, settings) {
+        const notify_aliases = settings["notify_aliases"]
+        const nick_notice_blacklist = settings["nick_notice_blacklist"]
+        for (const alias of notify_aliases) {
+            const match_banwords = nick_notice_blacklist.filter(banword => banword.includes(alias))
+            const regex = this.generate_exclusion_regex(alias, match_banwords)
+            if (message.match(regex)) {
+                return true
+            }
+        }
+        return false;
+    }
+
     player_message_processing(type_chat, sender, recipient, message, raw_message, date_time) {
         const parsed = chatSchema.parse(raw_message)
         parsed.date_time = date_time
 
-        let count_sended_private_messages = 0;
+        const sent_users = [];
+        let alias_in_message = false;
 
         for (const tg_id in this.module_obj.player_settings) {
             let is_sended = false;
@@ -793,26 +803,21 @@ class ChatCmd extends BaseCmd {
                 is_sended = true;
 
             } else if (settings["nick_notice_on"]) {
-                const notify_aliases = settings["notify_aliases"]
-                const nick_notice_blacklist = settings["nick_notice_blacklist"]
-                for (const alias of notify_aliases) {
-                    const match_banwords = nick_notice_blacklist.filter(banword => banword.includes(alias))
-                    const regex = this.generate_exclusion_regex(alias, match_banwords)
-                    if (message.match(regex)) {
-                        let context = this.logs
-                            .filter(log_element => this.check_access_to_msg(tg_id, log_element))
-                            .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
-                            .slice(-this.len_context).join("\n")
-                        context = this.module_obj.escapeMarkdownV2(context)
-                        const answ = `${context}\n\n${notify_message}`
-                        this.module_obj.send_message_tg(tg_id, answ, undefined, false, "MarkdownV2", parsed)
-                        is_sended = true;
-                        break;
-                    }
+                if (this.check_alias(message, settings)) {
+                    alias_in_message = true;
+                    let context = this.logs
+                        .filter(log_element => this.check_access_to_msg(tg_id, log_element))
+                        .map(log_element => this.format_server_message(log_element.date_time, log_element, settings["chat_pattern"]))
+                        .slice(-this.len_context).join("\n")
+                    context = this.module_obj.escapeMarkdownV2(context)
+                    const answ = `${context}\n\n${notify_message}`
+                    this.module_obj.send_message_tg(tg_id, answ, undefined, false, "MarkdownV2", parsed)
+                    is_sended = true;
                 }
             }
-            if (type_chat === "Приват" && is_sended) {
-                if (settings.server_nick && sender !== bot_username) {
+            if (is_sended) {
+                sent_users.push(settings)
+                if (type_chat === "Приват" && settings.server_nick && sender !== bot_username) {
                     this.module_obj.actions.push({
                         type: "answ",
                         content: {
@@ -820,13 +825,12 @@ class ChatCmd extends BaseCmd {
                             message: formatted_message.replaceAll("М", "M")
                         }
                     })
-
                 }
-                count_sended_private_messages += 1
             }
         }
+        console.log(sent_users)
         if (type_chat === "Приват") {
-            this.send_feedback(sender, count_sended_private_messages)
+            this.send_feedback(sender, sent_users.filter(player_settings => (!player_settings.is_senior || alias_in_message)))
         }
 
         if (this.logs.length < 5) {

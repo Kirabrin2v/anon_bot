@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
+const { pipeline } = require('node:stream/promises');
 const path = require('path')
 
 const { BaseModule } = require(path.join(__dirname, "..", "base.js"))
@@ -33,14 +34,29 @@ class SkinnaperModule extends BaseModule {
         })
     }
 
-    downloadFile(url, path) {
-		try {
-		  return fetch(url).then(res => {
-		    res.body.pipe(fs.createWriteStream(path));
-		  });
-		} catch {
-			return this.downloadFile(url, path)
-		}
+    async downloadFile(url, filePath) {
+	    for (let attempt = 0; attempt < 3; attempt++) {
+	        try {
+	            const response = await fetch(url);
+
+	            if (!response.ok) {
+	                throw new Error(`HTTP ${response.status}`);
+	            }
+
+	            await pipeline(
+	                response.body,
+	                fs.createWriteStream(filePath)
+	            );
+
+	            return;
+	        } catch (error) {
+	            if (attempt === 2) {
+	                throw error;
+	            }
+
+	            await new Promise(resolve => setTimeout(resolve, 1000));
+	        }
+	    }
 	}
 
 	_process(sender, args) {
@@ -74,17 +90,17 @@ class SkinnaperModule extends BaseModule {
 		return answ
 	}
 
-	processing_skin_url(nick, skin_url) {
+	async processing_skin_url(nick, skin_url) {
 		try {
 			if (nick.length === 0 || nick === "Kanaderi") {return;}
 			
 			const pathdir = path.join(__dirname, `skins/${nick}`)
 			const date_text = this.ModuleManager.call_module("text").date_to_text(new Date(), false)
-			fs.stat(pathdir, (err, _stats) => {
+			fs.stat(pathdir, async (err, _stats) => {
 				if (err === null) {
 					const urls = fs.readFileSync(path.join(pathdir, "urls.txt"), 'utf-8').split("\n")
 					if (!urls.includes(skin_url)) {
-						this.downloadFile(skin_url, `${pathdir}/${date_text}.jpg`)
+						await this.downloadFile(skin_url, `${pathdir}/${date_text}.jpg`)
 						fs.appendFile(path.join(pathdir, "urls.txt"), skin_url + "\n", 'utf-8', (err) => {
 							if (err) {console.log(err)}
 						})
@@ -93,7 +109,7 @@ class SkinnaperModule extends BaseModule {
 				else {
 					fs.mkdirSync(pathdir, { recursive: true });
 					fs.writeFileSync(path.join(pathdir, "urls.txt"), skin_url + "\n", 'utf-8')
-					this.downloadFile(skin_url, `${pathdir}/${date_text}.jpg`)
+					await this.downloadFile(skin_url, `${pathdir}/${date_text}.jpg`)
 				}
 			})
 		} catch(error) {
