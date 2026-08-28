@@ -1255,3 +1255,11 @@ setInterval(() =>  {
 }, interval_check_surv)
 
 setInterval(() => cmds.push("/tca check"), 15000)
+
+process.on("unhandledRejection", (reason) => {
+    console.error("[UNHANDLED REJECTION]", reason);
+});
+
+process.on("uncaughtException", (error) => {
+    console.error("[UNCAUGHT EXCEPTION]", error);
+});

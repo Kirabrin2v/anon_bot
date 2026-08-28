@@ -1,34 +1,46 @@
 const mitt = require("mitt");
 
 const emitter = mitt();
+const wrappedHandlers = new WeakMap();
 
 const safeEmitter = {
     on(type, handler) {
         const wrapped = (event) => {
             try {
-                handler(event);
-            } catch (e) {
-                console.log(`[BUS ERROR] ${type}`, e);
+                const result = handler(event);
+
+                if (result && typeof result.catch === "function") {
+                    result.catch((error) => {
+                        console.error(`[BUS ERROR] ${type}`, error);
+                    });
+                }
+            } catch (error) {
+                console.error(`[BUS ERROR] ${type}`, error);
             }
         };
 
-        handler.__wrapped = wrapped;
+        wrappedHandlers.set(handler, wrapped);
         emitter.on(type, wrapped);
     },
 
     off(type, handler) {
         try {
-            emitter.off(type, handler.__wrapped || handler);
-        } catch (e) {
-            console.log(`[BUS ERROR]`, e)
+            emitter.off(
+                type,
+                wrappedHandlers.get(handler) || handler
+            );
+
+            wrappedHandlers.delete(handler);
+        } catch (error) {
+            console.error(`[BUS ERROR] ${type}`, error);
         }
     },
 
     emit(type, event) {
         try {
             emitter.emit(type, event);
-        } catch (e) {
-            console.log(`[BUS ERROR]`, e)
+        } catch (error) {
+            console.error(`[BUS ERROR] ${type}`, error);
         }
     }
 };

@@ -99,31 +99,55 @@ class ModuleManager {
 		if (mod) {
 			return new Proxy(mod, {
 				get(target, prop) {
-					const value = target[prop]
+					const value = target[prop];
 
-					if (typeof value === 'function') {
-						return (...args) => {
-							try {
-								return value.apply(target, args)
-							} catch (error) {
-								manager.actions.push({
-									type: "error",
-									content: {
-										date_time: new Date(),
-										module_name: module_name,
-										error: error,
-										args: args,
-										sender: initiator
-									}
-								})
-								console.error(`[${initiator}] Ошибка при вызове ${prop} из модуля ${module_name}:`, error)
-							}
-						}
-					} else {
-						return value // просто значение, если не функция
-					}
-				}
-			})
+	                if (typeof value !== "function") {
+	                    return value;
+	                }
+
+	                return (...args) => {
+	                    try {
+	                        const result = value.apply(target, args);
+
+	                        /*
+	                         * Синхронный throw ловится выше.
+	                         *
+	                         * Если метод async, result будет Promise.
+	                         * Перехватываем его rejection.
+	                         */
+	                        if (
+	                            result &&
+	                            typeof result.catch === "function"
+	                        ) {
+	                            return result.catch((error) => {
+	                                manager.handle_module_error(
+	                                    module_name,
+	                                    prop,
+	                                    error,
+	                                    args,
+	                                    initiator
+	                                );
+
+	                                return undefined;
+	                            });
+	                        }
+
+	                        return result;
+
+	                    } catch (error) {
+	                        manager.handle_module_error(
+	                            module_name,
+	                            prop,
+	                            error,
+	                            args,
+	                            initiator
+	                        );
+
+	                        return undefined;
+	                    }
+	                }
+	            }
+	        })
 
 		} else {
 			// console.log(`Модуля ${module_name} не существует`)
