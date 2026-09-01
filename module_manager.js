@@ -95,7 +95,6 @@ class ModuleManager {
 	}
 	call_module(module_name, initiator) {
 		const mod = this.modules[module_name]
-		const manager = this;
 		if (mod) {
 			return new Proxy(mod, {
 				get(target, prop) {
@@ -120,14 +119,25 @@ class ModuleManager {
 	                            typeof result.catch === "function"
 	                        ) {
 	                            return result.catch((error) => {
-	                                manager.handle_module_error(
-	                                    module_name,
-	                                    prop,
-	                                    error,
-	                                    args,
-	                                    initiator
-	                                );
-
+		                        	let actions = []
+	                            	actions.push({
+										type: "error",
+										content: {
+											date_time: new Date(),
+											module_name: "ModuleManager",
+											error: error,
+											args: [
+												module_name,
+			                                    prop,
+			                                    error,
+			                                    args,
+			                                    initiator
+			                                ]
+										}
+									})
+									bus.emit("actions", {
+			                    		actions
+			                    	})
 	                                return undefined;
 	                            });
 	                        }
@@ -135,13 +145,24 @@ class ModuleManager {
 	                        return result;
 
 	                    } catch (error) {
-	                        manager.handle_module_error(
-	                            module_name,
-	                            prop,
-	                            error,
-	                            args,
-	                            initiator
-	                        );
+	                    	let actions = []
+	                    	actions.push({
+										type: "error",
+										content: {
+											date_time: new Date(),
+											module_name: "ModuleManager",
+											error: error,
+											args: [
+												prop,
+					                            error,
+					                            args,
+					                            initiator
+											]
+										}
+									})
+	                    	bus.emit("actions", {
+	                    		actions
+	                    	})
 
 	                        return undefined;
 	                    }

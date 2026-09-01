@@ -174,7 +174,6 @@ class CommandHandlerModule extends BaseModule {
         } else if (CommandManager.modules_structure[cmd]) {
           const module_object = modules.call_module(cmd, sender)
           const valid_command = CommandManager.validate_command(module_object.module_name, args)
-
           if (!valid_command.is_ok) {
             this.actions.push({
               type: "answ",
@@ -209,18 +208,19 @@ class CommandHandlerModule extends BaseModule {
             this.actions.push(cooldown_info)
             return true
           }
-
           Promise.resolve(
             module_object.cmd_processing(sender, valid_command.args, cmd_parameters, valid_command.unused_args)
           )
-            .then(resolved => bus.emit(
-                "new_actions",
-                {
-                    actions: resolved,
-                    module_name: undefined,
-                    update_action
-                }
-            )).catch(console.error)
+            .then(resolved => {
+                bus.emit(
+                    "new_actions",
+                    {
+                        actions: resolved,
+                        module_name: undefined,
+                        update_action
+                    }
+                )
+            }).catch(console.error)
 
         } else if (this.check_allow_cmd(cmd, args) && masters.includes(sender)) {
           bot.chat(`${cmd} ${args.join(" ")}`)

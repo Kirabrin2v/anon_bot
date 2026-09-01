@@ -44,8 +44,9 @@ class BaseModule {
 
     // Общий шаблон
     async cmd_processing(sender, args, cmd_parameters, unused_args) {
+        let result
         try {
-            const result = await this._process(sender, args, cmd_parameters, unused_args);
+            result = await this._process(sender, args, cmd_parameters, unused_args);
         } catch (error) {
             this.actions.push({
                 type: "error",
