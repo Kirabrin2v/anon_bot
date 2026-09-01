@@ -98,7 +98,8 @@ class CommandEngine {
         result.message_error = this._generateHelpMessage(
           module_name,
           result.args.map(arg => arg.name),
-          result
+          result,
+          user_rank
         );
 
         return result;
@@ -259,7 +260,7 @@ class CommandEngine {
 
     if (requiredKeys.length > 0 && requiredKeys.length === availableKeys.length) {
       result.is_ok = false;
-      result.message_error = this._generateHelpMessage(module_name, result.args.map(arg => arg.name), result)
+      result.message_error = this._generateHelpMessage(module_name, result.args.map(arg => arg.name), result, user_rank)
       //result.message_error = `Ожидался один из аргументов: ${Object.keys(currentStructure).filter(k => !k.startsWith('_')).join(', ')}`;
       return result;
 
@@ -296,7 +297,7 @@ class CommandEngine {
   }
 
 
-  _generateHelpMessage(module_name, usedArgs, _result) {
+  _generateHelpMessage(module_name, usedArgs, _result, user_rank) {
     let current = this.modules_structure[module_name];
 
     for (const arg of usedArgs) {

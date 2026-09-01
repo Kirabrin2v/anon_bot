@@ -101,25 +101,33 @@ class TelegramModule extends BaseModule {
 			console.log("GLOBAL callback_query:", query.data);
 			const tg_id = query.from.id
 			const player_settings = this.player_settings[tg_id]
-			if (!player_settings.is_senior && !player_settings.is_master) return;
 
 			const data = query.data
-			const [_action, id, page] = data.split(":")
+			const [action, id, page] = data.split(":")
 
-			this.actions.push({
-				type: "module_request",
-				module_recipient: "цитата",
-				module_sender: this.module_name,
-				content: {
-					type: "request",
-					tg_id,
-					cmd: "quote",
-					args: [
-						id,
-						page
-					]
+
+			bus.emit(
+				"callback_query",
+				{
+					query
 				}
-			})
+			)
+			// if (!player_settings.is_senior && !player_settings.is_master) return;
+
+			// this.actions.push({
+			// 	type: "module_request",
+			// 	module_recipient: "цитата",
+			// 	module_sender: this.module_name,
+			// 	content: {
+			// 		type: "request",
+			// 		tg_id,
+			// 		cmd: "quote",
+			// 		args: [
+			// 			id,
+			// 			page
+			// 		]
+			// 	}
+			// })
 		})
 		console.log("Telegram started")
 		this.tg.on("text", msg => {
@@ -222,6 +230,7 @@ class TelegramModule extends BaseModule {
 		const parameters = {}
 		if (parse_mode !== null) {
 			parameters.parse_mode = parse_mode
+			message = message.replaceAll("\\n", "\n")
 		}
 		if (keyboard) {
 			parameters.reply_markup = keyboard
@@ -250,7 +259,7 @@ class TelegramModule extends BaseModule {
 		    	error.response?.body?.error_code === 400
 	    	) {
 		    	console.log("Чат не найден:", tg_id)
-		    	return;
+		    	// return;
 	    	}
 
 	    	this.actions.push({
@@ -264,6 +273,46 @@ class TelegramModule extends BaseModule {
             })
 		}
 	}
+
+	async edit_message_tg(
+		tg_id,
+		message_id,
+		message,
+		keyboard,
+		parse_mode = null
+	) {
+		const parameters = {
+			chat_id: tg_id,
+			message_id: message_id
+		}
+		if (parse_mode !== null) {
+			parameters.parse_mode = parse_mode
+			message = message.replaceAll("\\n", "\n")
+		}
+		if (keyboard !== undefined) {
+			parameters.reply_markup = keyboard
+		}
+ 
+		try {
+			await this.tg.editMessageText(message.slice(0, 4096), parameters)
+		} catch (error) {
+			if (error.response?.body?.error_code === 400) {
+				// Сообщение не изменилось или больше не существует - игнорируем
+				return;
+			}
+ 
+			this.actions.push({
+				type: "error",
+				content: {
+					date_time: new Date(),
+					module_name: this.module_name,
+					error: error,
+					args: []
+				}
+			})
+		}
+	}
+
 
 	async broadcast_messages(module_obj, recipients, message, prefix, delay_ms = 50) {
 	    if (!Array.isArray(recipients)) {
@@ -445,7 +494,6 @@ class TelegramModule extends BaseModule {
 				) {
 					args = [cmd].concat(args)
 					cmd = "server_chat"
-					console.log("Начинается обработка")
 					ModuleManager.modules["server_chat"].cmd_processing(tg_id, args, cmd, msg_obj)
 
 				} else if (this.player_settings[tg_id].is_senior || this.player_settings[tg_id].is_master || (this.access_cmds[tg_id] && this.access_cmds[tg_id].includes(cmd))) {
@@ -522,7 +570,7 @@ class TelegramModule extends BaseModule {
 	}
 
 	module_dialogue(module_recipient, module_sender, json_cmd) {
-		if (json_cmd.prepared_quotes.length !== 0) {
+		if (json_cmd.prepared_quotes && json_cmd.prepared_quotes.length !== 0) {
 
 			const last_prepared_quote_id = json_cmd.old_data.prepared_quote_id
 			const tg_id = json_cmd.old_data.tg_id

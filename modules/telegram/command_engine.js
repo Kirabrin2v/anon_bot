@@ -5,13 +5,20 @@ const CommandEngine = require(path.join(BASE_DIR, "command_engine.js"))
 
 class TelegramCommandEngine extends CommandEngine {
   _checkRank(required, actual) {
-    console.log("Ранг:", actual, required)
       if (required === undefined) {
         required = 0;
       }
       if (actual === undefined) {return false;}
       return actual >= required;
     }
+
+  _hasAccess(node, user_rank) {
+    if (!node || typeof node !== 'object') {
+      return false;
+    }
+
+    return this._checkRank(node._need_rank, user_rank);
+  }
 
   get_available_commands(tg_id, get_rank) {
     const result = {};
@@ -39,14 +46,22 @@ class TelegramCommandEngine extends CommandEngine {
     return result;
   }
 
-  _generateHelpMessage(module_name, usedArgs, result = null) {
+  _generateHelpMessage(
+    module_name,
+    usedArgs,
+    result = null,
+    user_rank = undefined
+  ) {
     let current = this.modules_structure[module_name];
 
-    // ----------- ПЕРЕХОД ПО СТРУКТУРЕ (с alias) -----------
     for (const arg of usedArgs) {
       const key = this._findKey(current, arg);
 
-      if (key && typeof current[key] === 'object') {
+      if (
+        key &&
+        typeof current[key] === 'object' &&
+        this._hasAccess(current[key], user_rank)
+      ) {
         current = current[key];
       } else {
         break;
@@ -55,13 +70,13 @@ class TelegramCommandEngine extends CommandEngine {
 
     let text = `Команда: /${module_name}\n\n`;
 
-    // ------------------ РАСПОЗНАННЫЕ ------------------
     if (result && result.args.length > 0) {
       const parsed = result.args
         .map(arg => {
           if (arg.value === undefined || arg.value === "") {
             return `  ${arg.name}: (пусто или некорректно)`;
           }
+
           return `  ${arg.name}: ${arg.value}`;
         })
         .join('\n');
@@ -69,21 +84,26 @@ class TelegramCommandEngine extends CommandEngine {
       text += `Распознано:\n${parsed}\n\n`;
     }
 
-    // ------------------ НЕИСПОЛЬЗОВАННЫЕ ------------------
     if (result && result.unused_args && result.unused_args.length > 0) {
       text += `Не распознано:\n${result.unused_args.join(', ')}\n\n`;
     }
 
-    // ------------------ ОПИСАНИЕ ------------------
     if (current._description) {
       text += `${current._description}\n\n`;
     }
 
-    // ------------------ ОЖИДАЕМЫЕ АРГУМЕНТЫ ------------------
     const options = Object.entries(current)
-      .filter(([key]) => !key.startsWith('_'))
+      .filter(([key, value]) => {
+        if (key.startsWith('_')) {
+          return false;
+        }
+
+        return this._hasAccess(value, user_rank);
+      })
       .map(([key, value]) => {
-        if (typeof value !== 'object') {return `• ${key}`;}
+        if (typeof value !== 'object') {
+          return `• ${key}`;
+        }
 
         const isBranch = !('_type' in value);
 
@@ -116,53 +136,83 @@ class TelegramCommandEngine extends CommandEngine {
   }
 
   // Полный help (если нет аргументов или help)
-  _generateFullHelp(module_name) {
+  _generateFullHelp(module_name, user_rank = undefined) {
     const root = this.modules_structure[module_name];
+
     let text = `Команда: /${module_name}\n`;
+
     if (root._description) {
-        text += `${root._description}\n`;
+      text += `${root._description}\n`;
     }
+
     text += "\n";
 
     const walk = (node, path = [], indent = 0) => {
-        const keys = Object.keys(node).filter(k => !k.startsWith("_"));
+      const keys = Object.keys(node)
+        .filter(key => !key.startsWith('_'))
+        .filter(key => this._hasAccess(node[key], user_rank));
 
-        for (const key of keys) {
-            const child = node[key];
-            const pad = "  ".repeat(indent);
-            const connector = indent === 0 ? "🔹 " : `${pad}└ `;
+      for (const key of keys) {
+        const child = node[key];
+        const pad = "  ".repeat(indent);
+        const connector = indent === 0 ? "🔹 " : `${pad}└ `;
 
-            if (!child._type) {
-                const line = [...path, key].join(" ");
-                text += `${connector}${line}\n`;
-                if (child._description) {
-                    text += `${"  ".repeat(indent + 1)}└ ${child._description}\n`;
-                }
-                walk(child, [...path, key], indent + 1);
-                if (indent === 0) { text += "\n"; }
+        if (!child._type) {
+          const line = [...path, key].join(" ");
 
-            } else {
-                const argStr = `${key}<${child._type}>`;
-                const line = [...path, argStr].join(" ");
-                text += `${connector}${line}`;
-                if (child._default !== undefined) {
-                    text += ` (по умолчанию: ${child._default})`;
-                }
-                text += "\n";
-                if (child._description) {
-                    text += `${"  ".repeat(indent + 1)}└ ${child._description}\n`;
-                }
+          text += `${connector}${line}\n`;
 
-                const subKeys = Object.keys(child).filter(k => !k.startsWith("_"));
-                if (subKeys.length > 0) {
-                    walk(child, [...path, argStr], indent + 1);
-                }
-                if (indent === 0) { text += "\n"; }
-            }
+          if (child._description) {
+            text += `${"  ".repeat(indent + 1)}└ ${child._description}\n`;
+          }
+
+          walk(
+            child,
+            [...path, key],
+            indent + 1
+          );
+
+          if (indent === 0) {
+            text += "\n";
+          }
+
+        } else {
+          const argStr = `${key}<${child._type}>`;
+          const line = [...path, argStr].join(" ");
+
+          text += `${connector}${line}`;
+
+          if (child._default !== undefined) {
+            text += ` (по умолчанию: ${child._default})`;
+          }
+
+          text += "\n";
+
+          if (child._description) {
+            text += `${"  ".repeat(indent + 1)}└ ${child._description}\n`;
+          }
+
+          const subKeys = Object.keys(child)
+            .filter(k => !k.startsWith("_"))
+            .filter(k => this._hasAccess(child[k], user_rank));
+
+          if (subKeys.length > 0) {
+            walk(
+              child,
+              [...path, argStr],
+              indent + 1
+            );
+          }
+
+          if (indent === 0) {
+            text += "\n";
+          }
         }
+      }
     };
 
     walk(root, [], 0);
+
     return text;
   }
   // Переопределяем validate для полного help
@@ -187,7 +237,7 @@ class TelegramCommandEngine extends CommandEngine {
         is_ok: false,
         args: [],
         unused_args: [],
-        message_error: this._generateFullHelp(module_name)
+        message_error: this._generateFullHelp(module_name, user_rank)
       };
     }
 
