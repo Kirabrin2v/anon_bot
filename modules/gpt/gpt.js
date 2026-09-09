@@ -1,3 +1,5 @@
+const { GoogleGenAI } = require("@google/genai");
+
 const ConfigParser = require('configparser');
 const path = require("path")
 
@@ -24,7 +26,10 @@ global_config.read(path.join(BASE_DIR, "txt", "config.ini"))
 
 const bot_username = global_config.get("VARIABLES", "active_nick")
 
-const TOKEN = config.get("AI", "gpt_bearer_token")
+const TOKEN = config.get("AI", "token")
+const ai = new GoogleGenAI({
+  apiKey: TOKEN
+});
 const PROMPT_MESSAGE = {
   role: "system",
   content: "Не показывай рассуждения. Ответ ≤200 символов.\n\
@@ -320,8 +325,10 @@ class GptModule extends BaseModule {
     }
   }
 
+
   async send_request(nickname, text) {
     try {
+      console.log("Запрос отправляется")
       let cur_history;
       if (this.dialogue_history[nickname]) {
         cur_history = this.dialogue_history[nickname]
@@ -334,24 +341,14 @@ class GptModule extends BaseModule {
         content: text
       })
 
-      const response = await fetch("https://gpt.serverspace.ru/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Accept":        "application/json",
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${TOKEN}`
-        },
-        body: JSON.stringify({
-          model:       "anthropic/claude-haiku-4.5",
-          max_tokens:  500,
-          top_p:       0.1,
-          temperature: 0.7,
-          messages:    [PROMPT_MESSAGE].concat(cur_history)
-        })
+      console.log("AI Input", JSON.stringify([PROMPT_MESSAGE].concat(cur_history)))
+      const interaction = await ai.interactions.create({
+        model: "gemini-3.5-flash-lite",
+        input: JSON.stringify([PROMPT_MESSAGE].concat(cur_history)),
       });
 
-      const data = await response.json();
-      let answ = data.choices[0].message.content
+      let answ = interaction.output_text
+      console.log("AI Answer", answ)
       cur_history.push({
         role:    "assistant",
         content: answ

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@google/genai": "^2.21.0",
     "@telegraf/entity": "^0.7.0",
     "better-sqlite3": "^12.6.0",
     "configparser": "^0.3.10",
