@@ -250,7 +250,14 @@ class LoggingModule extends BaseModule {
 		}
 	}
 
-	add_error_to_logs(date_time, module_name, short_error, full_error, args, sender) {
+	add_error_to_logs(
+	    date_time = new Date(),
+	    module_name,
+	    short_error,
+	    full_error,
+	    args,
+	    sender
+	) {
 		try {
 			console.log("Ошибка:", module_name, short_error, args, sender)
 			if (args) {
