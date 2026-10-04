@@ -465,10 +465,13 @@ class ChatCmd extends BaseCmd {
         const tg_replied_msg = msg_obj.reply_to_message
         if (tg_replied_msg && tg_replied_msg.text) {
             const db_replied_message = this.module_obj.get_tg_message(tg_id, { message_id: tg_replied_msg.message_id })
+            if (!db_replied_message.parsed_data) return;
             const parsed_replied_message = JSON.parse(db_replied_message.parsed_data)
             if (parsed_replied_message) {
                 type_chat = parsed_replied_message.type_chat;
-                recipient = parsed_replied_message.sender
+                recipient = parsed_replied_message.sender === bot_username
+                    ? parsed_replied_message.recipient   // отвечаем собеседнику, а не себе
+                    : parsed_replied_message.sender
 
                 const quote_pattern = new RegExp(`(?<=^\\[${reg_nickname}\\]) \\[⤷ "[^"]*"\\]`)
                 let replied_message = parsed_replied_message.message

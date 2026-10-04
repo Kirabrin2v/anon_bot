@@ -98,7 +98,7 @@ const options = {
     maps_outputDir: "img/",
     maps_saveToFile: false,
     version: "1.12.2",
-    hideErrors: true,
+    hideErrors: false,
     username: bot_username
 };
 
