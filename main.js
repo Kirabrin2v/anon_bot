@@ -1024,6 +1024,7 @@ bot.on('windowOpen', function wnd (window, _info) {
 		console.log("Пин-код введён")
 	}
 	console.log(`Окно открылось ${title}`)
+	bot.closeWindow(window)
 })
 
 bot.on('entitySpawn', (entity) => {
