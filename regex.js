@@ -191,7 +191,7 @@ const reg_spawnmob_success = new RegExp(`^Вы заспавнили (\\d+) су�
 const reg_near = new RegExp(`^Окружающие игроки: ((?:(?:${reg_nickname}\\([0-9]{1,4}m\\)(?:, )?)+)|(?:ничего))$`)
 
 const reg_encrypted_ip = String.raw`[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}`;
-const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ\n ` +
+const reg_lookup = new RegExp(`^ஜ♒+ ${reg_nickname} \\| ${reg_encrypted_ip} ♒+ஜ\n ` +
 "Статус: (.*)\n " +
 "Звание: (?:\\[([А-яA-z. ]*)\\].*){0,1}\n" +
 "(?: Клан:   (.*)\n){0,1}\n " +
@@ -199,7 +199,7 @@ const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypte
 "Имеет мут: (.*)\n\n " +
 "Регистрация: (.*) \\(Мск\\)\n " +
 "Был в сети:  (.*) \\(Мск\\)\n" +
-"(?: Местонахождение: (.*)\n){0,1} " +
+"(?: (?:Локация|Местонахождение): (.*)\n){0,1} " +
 "История: ([0-9]{1,4}) бан.*\n         " +
 "([0-9]{1,4}) кик.*\n         " +
 "([0-9]{1,4}) мут.*\n         " +
@@ -207,7 +207,7 @@ const reg_lookup = new RegExp(`^ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypte
 "(?: Последние предупреждения:\n(?:  (.*)\n){0,1}" +
 "(?:  (.*)\n){0,1}" +
 "(?:  (.*)\n){0,1}){0,1}" +
-`ஜ♒♒♒  ${reg_nickname} \\| ${reg_encrypted_ip}  ♒♒♒ஜ`)
+"ஜ♒+✵♒+ஜ");
 
 const reg_vic_prefix = String.raw`\[Викторина\] `
 const reg_vic_anagrams = new RegExp("Расшифруйте первым анаграмму (.*) , чтобы выиграть!")
