@@ -20,11 +20,11 @@ class ChatSchema {
 
       // [тип] стафф-звание [звание] ник: сообщение
       standard: new RegExp(
-        String.raw`^\[?([^\]«]+)«?\]? ` +                        // m[1] тип чата
+        String.raw`^(?:\[([^\]]+)\]|([^\s«]+)«) ` +                        // m[1] тип чата
         String.raw`(?:(${this.STAFF_RANKS.join("|")}) )?` + // m[3] стафф-звание
-        String.raw`(?:\[([^\]]+)\] )?` +                    // m[2] игровое звание
-        String.raw`${nickname_reg}: ` +                     // m[4] ник
-        String.raw`${message_reg}`                          // m[5] сообщение
+        String.raw`(?:\[([^\]]+)\] )?` +                    // m[4] игровое звание
+        String.raw`${nickname_reg}: ` +                     // m[5] ник
+        String.raw`${message_reg}`                          // m[6] сообщение
       )
     }
 
@@ -47,7 +47,7 @@ class ChatSchema {
 
     m = raw_message.match(standard_pattern)
     if (m) {
-      const raw_type  = m[1]
+      const raw_type  = m[1] || m[2]
       const TYPE_MAP  = { "Друзьям": "Друзья" }
       const type_chat = TYPE_MAP[raw_type]
                      ?? (this.KNOWN_CHATS.includes(raw_type) ? raw_type : "Клан-чат")
@@ -55,10 +55,10 @@ class ChatSchema {
       return {
         type_chat,
         clan:    null,
-        staff:   m[2] ?? null,
-        rank:    has_clan ? (m[3] ?? null) : null,
-        sender:  m[4],
-        message: m[5]
+        staff:   m[3] ?? null,
+        rank:    has_clan ? (m[4] ?? null) : null,
+        sender:  m[5],
+        message: m[6]
       }
     }
     return null
