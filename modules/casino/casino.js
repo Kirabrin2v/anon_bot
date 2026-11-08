@@ -198,6 +198,7 @@ class CasinoModule extends BaseModule {
 			if (currency === "TCA") {
 				amount = amount * price_TCA; 
 			}
+			console.log("Ожидающие:", this.wait_pay, nick, this.wait_pay[nick])
 			if (this.wait_pay[nick]) {
 				if (this.wait_pay[nick]["bet"] === amount) {
 

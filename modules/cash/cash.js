@@ -153,6 +153,7 @@ class CashModule extends BaseModule {
 	}
 
 	processing_bal_log(bal_logs) {
+		return {is_ok: false, message_error: "Временно отключено из-за неверного регистра ников"}
 		if (bal_logs === null || typeof bal_logs[Symbol.iterator] !== 'function') {
 			console.log("Некорректный bal logs", bal_logs)
 			return;
@@ -183,7 +184,6 @@ class CashModule extends BaseModule {
 
 	processing_wait_survings(last_balance, balance_now, date_now) {
 		try {
-			return {is_ok: false, message_error: "Временно отключено из-за дублирования платежей"}
 			if (this.wait_confirm_surv.length === 0) {
 				return {"is_ok": false, "message_error": "Переводов, ожидающих подтверждения, нет"}
 				

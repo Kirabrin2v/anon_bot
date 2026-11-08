@@ -849,7 +849,7 @@ function wait_data_processing(type, content) {
 function payment_processing(nick, cash, currency, reason) {
 	console.log(`Перевод ${cash} ${currency} от ${nick} с причиной ${reason}`)
 	if (modules.call_module("casino").payment_processing(nick, cash, currency, reason)["used"]) {
-		
+
 	} else if (modules.call_module("bank").payment_processing(nick, cash, currency, reason)["used"]) {
 		
 	} else if (modules.call_module("stats").payment_processing(nick, cash, currency, reason)["used"]) {
