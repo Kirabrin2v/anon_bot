@@ -22,7 +22,7 @@ blacklist_on=false
 blacklist_nicks=[]
 nick=Брин
 notify_aliases=[]
-allowed_chats=["Лк","Гл","Клан-чат","Пати-чат","Приват"]
+allowed_chats=["ЛК","ГЛ","Клан-чат","Пати-чат","Приват"]
 ' > modules/telegram/player_settings.ini
 
 echo > modules/telegram/cmds/events/manage_events.txt

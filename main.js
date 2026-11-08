@@ -945,9 +945,9 @@ function send_answs() {
 				chat_send = "/pc "
 			} else if (chat_send === "Клан-чат") {
 				chat_send = "/cc "
-			} else if (chat_send === "Гл") {
+			} else if (chat_send === "ГЛ") {
 				chat_send = "!"
-			} else if (chat_send === "Лк") {
+			} else if (chat_send === "ЛК") {
 				chat_send = ""
 			} else if (chat_send === "Приват") {
 				send_in_private_message = true

@@ -25,7 +25,7 @@ const STRUCTURE = {
         switch: {
             chat_type: {
                 _type: "text",
-                _description: "Тип чата(Лк, Пати-чат и др.)"
+                _description: "Тип чата(ЛК, Пати-чат и др.)"
             },
             _description: "Включить/выключить пересылку из конкретных видов чата",
             _optional: true
@@ -205,7 +205,7 @@ class ChatCmd extends BaseCmd {
         this.WIRETAPPING_NOTIFY_INTERVAL = 86400000 // 24 часа
         this.last_wiretapping_notify_time = 0
 
-        this.all_chat_types = ["Приват", "Лк", "Гл", "Клан-чат", "Пати-чат", "Друзья"]
+        this.all_chat_types = ["Приват", "ЛК", "ГЛ", "Клан-чат", "Пати-чат", "Друзья"]
         this.wait_continue_dialogue = {}
         this.wait_continue_dialogue_interval = 300000
 
@@ -509,10 +509,10 @@ class ChatCmd extends BaseCmd {
             } else {
                 if (message[0] === "!") {
                     message = message.slice(1)
-                    type_chat = "Гл"
+                    type_chat = "ГЛ"
 
                 } else {
-                    type_chat = "Лк"
+                    type_chat = "ЛК"
                 }
             }
         }
@@ -552,7 +552,7 @@ class ChatCmd extends BaseCmd {
                     }
                 }
 
-            } else if (type_chat === "Гл") {
+            } else if (type_chat === "ГЛ") {
                 prefix = `!${prefix}`
             }
         }
@@ -571,7 +571,7 @@ class ChatCmd extends BaseCmd {
             answ = "Сообщение отправлено!"
         }
 
-        if (["Лк", "Гл", "Приват"].includes(type_chat)) {
+        if (["ЛК", "ГЛ", "Приват"].includes(type_chat)) {
             this.module_obj.actions.push({
                 type: "answ",
                 content: {

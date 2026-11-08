@@ -10,27 +10,26 @@ class ChatSchema {
       "Строитель",
       "Гл. Строитель",
       "Администратор",
-      "Мл. Админ"
+      "Мл. Админ",
+      "☬"
     ]
 
     this.patterns = {
       me_send:  new RegExp(String.raw`^\[${nickname_reg} -> Мне\] ${message_reg}`),
       i_send:   new RegExp(String.raw`^\[Я -> ${nickname_reg}\] ${message_reg}`),
 
-      // [тип] [?] [клан] [звание] [стафф-звание] ник: сообщение — все скобки, кроме типа, опциональны
+      // [тип] стафф-звание [звание] ник: сообщение
       standard: new RegExp(
-        String.raw`^\[([^\]]+)\] ` +                        // m[1] тип чата
-        String.raw`(?:\[[^\]]*\] )?` +                      // [?] без захвата
-        String.raw`(?:\[((?:(?!\] ).)*)\] )?` +             // m[2] клан
-        String.raw`(?:\[([^\]]+)\] )?` +                    // m[3] игровое звание
-        String.raw`(?:\[(${this.STAFF_RANKS.join("|")})\] )?` + // m[4] стафф-звание
-        String.raw`${nickname_reg}: ` +                     // m[5] ник
-        String.raw`${message_reg}`                          // m[6] сообщение
+        String.raw`^([^\]]+)« ` +                        // m[1] тип чата
+        String.raw`(?:(${this.STAFF_RANKS.join("|")}) )?` + // m[3] стафф-звание
+        String.raw`(?:\[([^\]]+)\] )?` +                    // m[2] игровое звание
+        String.raw`${nickname_reg}: ` +                     // m[4] ник
+        String.raw`${message_reg}`                          // m[5] сообщение
       )
     }
 
-    this.CLAN_CHATS = ["Лк", "Гл"]
-    this.KNOWN_CHATS = ["Пати-чат", "Лк", "Гл", "Друзья"]
+    this.CLAN_CHATS = ["ЛК", "ГЛ"]
+    this.KNOWN_CHATS = ["Пати-чат", "ЛК", "ГЛ", "Друзья"]
   }
 
   parse(
@@ -55,11 +54,11 @@ class ChatSchema {
       const has_clan  = this.CLAN_CHATS.includes(type_chat)
       return {
         type_chat,
-        clan:    has_clan ? (m[2] ?? null) : null,
+        clan:    null,
+        staff:   m[2] ?? null,
         rank:    has_clan ? (m[3] ?? null) : null,
-        staff:   m[4] ?? null,
-        sender:  m[5],
-        message: m[6]
+        sender:  m[4],
+        message: m[5]
       }
     }
     return null
