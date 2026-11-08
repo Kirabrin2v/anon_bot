@@ -20,7 +20,7 @@ class ChatSchema {
 
       // [тип] стафф-звание [звание] ник: сообщение
       standard: new RegExp(
-        String.raw`^([^\]]+)« ` +                        // m[1] тип чата
+        String.raw`^\[?([^\]«]+)«?\]? ` +                        // m[1] тип чата
         String.raw`(?:(${this.STAFF_RANKS.join("|")}) )?` + // m[3] стафф-звание
         String.raw`(?:\[([^\]]+)\] )?` +                    // m[2] игровое звание
         String.raw`${nickname_reg}: ` +                     // m[4] ник
